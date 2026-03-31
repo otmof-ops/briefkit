@@ -155,8 +155,8 @@ class BookTemplate(BaseBriefingTemplate):
         story.append(Spacer(1, 2 * mm))
 
         toc_entries = [(1, "Preface")]
-        for i, (chapter_title, _) in enumerate(chapters, 1):
-            toc_entries.append((1, f"{i}. {chapter_title}"))
+        for chapter_title, _ in chapters:
+            toc_entries.append((1, chapter_title))
         if glossary_flowables:
             toc_entries.append((1, "Glossary"))
         if bib_flowables:
@@ -172,13 +172,10 @@ class BookTemplate(BaseBriefingTemplate):
         story.append(PageBreak())
 
         # --- Chapters (recto — each on new page) ---
-        for chap_num, (chapter_title, chapter_flowables) in enumerate(chapters, 1):
+        for chapter_title, chapter_flowables in chapters:
             # Update running header for this chapter
-            _hf_state["section"] = f"Chapter {chap_num}: {chapter_title}"
+            _hf_state["section"] = chapter_title
 
-            story.append(Paragraph(
-                f"Chapter {chap_num}", self.styles["STYLE_CAPTION"]
-            ))
             story.append(Paragraph(chapter_title, self.styles["STYLE_H1"]))
             story.append(Spacer(1, 2 * mm))
             story.extend(chapter_flowables)
@@ -272,6 +269,13 @@ class BookTemplate(BaseBriefingTemplate):
             rendered = 0
             pull_count = 0
 
+            # Use the first H1 heading from content as the chapter title
+            # (preserves special characters and original formatting)
+            for block in blocks:
+                if block["type"] == "heading" and block["level"] == 1:
+                    chapter_title = block["text"]
+                    break
+
             for block in blocks:
                 # Skip H1 headings — chapter title already rendered by build_story
                 if block["type"] == "heading" and block["level"] == 1:
@@ -310,8 +314,18 @@ class BookTemplate(BaseBriefingTemplate):
 
     def _build_glossary(self, content: dict) -> list:
         """
-        Build the glossary from the terms dict.
+        Build the glossary.  Sources:
+          1. glossary.md in target directory (preferred — renders as prose)
+          2. Extracted terms dict (fallback)
         """
+        glossary_path = self.target_path / "glossary.md"
+        if glossary_path.exists():
+            raw = glossary_path.read_text(encoding="utf-8", errors="replace")
+            flowables = []
+            for block in parse_markdown(raw):
+                flowables.extend(self.render_blocks([block]))
+            return flowables
+
         terms = content.get("terms", {})
         if not terms:
             return []
@@ -365,7 +379,14 @@ class BookTemplate(BaseBriefingTemplate):
         """
         Build an alphabetical index using the same 2-column layout as
         BaseBriefingTemplate.build_index(), but labelled 'Index'.
+
+        Suppressed when a glossary.md file exists (the glossary replaces
+        the auto-generated index for book-template outputs).
         """
+        glossary_path = self.target_path / "glossary.md"
+        if glossary_path.exists():
+            return []
+
         terms = content.get("terms", {})
         if not terms:
             return []

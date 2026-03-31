@@ -146,14 +146,14 @@ def _draw_header_footer(canvas, doc, state, brand=None):
     if hf_doc_id:
         doc_id_text = truncate_to_width(hf_doc_id, body_font, 7, max_text_width * 0.33)
         canvas.drawRightString(right, bottom + 1.5 * mm, doc_id_text)
-        copyright_text = truncate_to_width(copyright, body_font, 7, max_text_width * 0.5)
+        copyright_text = truncate_to_width(copyright, body_font, 7, max_text_width * 0.85)
         canvas.drawCentredString(
             (left + right) / 2,
             bottom - 1.5 * mm,
             copyright_text,
         )
     else:
-        copyright_text = truncate_to_width(copyright, body_font, 7, max_text_width * 0.33)
+        copyright_text = truncate_to_width(copyright, body_font, 7, max_text_width * 0.85)
         canvas.drawRightString(right, bottom + 1.5 * mm, copyright_text)
 
     canvas.restoreState()

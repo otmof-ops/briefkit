@@ -1,0 +1,5 @@
+# Foundations of Learning Theory
+
+## Preface
+
+This book provides a comprehensive introduction to the four major paradigms that have shaped how we understand human learning: behaviorism, cognitivism, constructivism, and connectivism. Each chapter traces a paradigm from its philosophical origins through its key theoretical contributions to its practical implications for teaching and instructional design. The book is written for graduate students in education, practicing teachers seeking theoretical grounding, and instructional designers who want to understand the evidence base behind design decisions. Rather than advocating for a single paradigm, the book presents each tradition on its own terms, identifies its strengths and limitations, and concludes with a comparative analysis that reveals how the four paradigms complement one another. The goal is to equip readers with the theoretical literacy needed to make informed, evidence-based decisions about instructional practice in an era of rapid technological and pedagogical change.

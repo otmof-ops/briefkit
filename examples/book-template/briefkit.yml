@@ -1,0 +1,10 @@
+# Book template example — foundations of learning theory
+project:
+  name: "Foundations of Learning Theory"
+  org: "Open Education Press"
+
+brand:
+  preset: "forest"
+
+template:
+  preset: "book"

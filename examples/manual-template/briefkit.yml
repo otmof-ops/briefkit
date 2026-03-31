@@ -1,0 +1,11 @@
+# Manual template example — LMS administration procedures
+project:
+  name: "LMS Administration Manual"
+  org: "EdTech Solutions"
+  tagline: "Learning Management System Operations Guide"
+
+brand:
+  preset: "slate"
+
+template:
+  preset: "manual"

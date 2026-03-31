@@ -1,0 +1,14 @@
+# Legal document templates — crimson preset with legal variant
+# Content sourced from The Codex (law/legal-practice/03-document-templates/)
+# Licensed under CC BY-NC-SA 4.0 © 2026 OFFTRACKMEDIA Studios
+project:
+  name: "Legal Document Templates"
+  org: "The Codex — Law Division"
+brand:
+  preset: "crimson"
+template:
+  preset: "manual"
+variants:
+  rules:
+    - pattern: "docs/document-templates/**"
+      variant: "legal"

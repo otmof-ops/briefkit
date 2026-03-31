@@ -1,0 +1,7 @@
+project:
+  name: "Board Meeting Minutes"
+  org: "ACME Corporation"
+brand:
+  preset: "charcoal"
+template:
+  preset: "minutes"

@@ -1,0 +1,21 @@
+# Corporate branding example
+project:
+  name: "ACME Engineering"
+  org: "ACME Corporation"
+  tagline: "Engineering Excellence Since 1952"
+  url: "https://acme.example.com"
+  copyright: "© {year} ACME Corporation. All rights reserved."
+
+brand:
+  preset: "charcoal"
+
+doc_ids:
+  prefix: "ACME-ENG"
+  group_codes:
+    api: "API"
+    backend: "BE"
+    frontend: "FE"
+    infra: "INF"
+
+template:
+  preset: "report"

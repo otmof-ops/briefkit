@@ -1,0 +1,7 @@
+project:
+  name: "Professional Services Agreement"
+  org: "ACME Corporation"
+brand:
+  preset: "navy"
+template:
+  preset: "contract"

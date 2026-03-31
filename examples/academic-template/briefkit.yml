@@ -1,0 +1,10 @@
+# Academic template example — learning theory literature review
+project:
+  name: "Learning Theory Literature Review"
+  org: "Melbourne Graduate School of Education"
+
+brand:
+  preset: "royal"
+
+template:
+  preset: "academic"

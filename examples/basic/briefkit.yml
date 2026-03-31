@@ -1,0 +1,4 @@
+# Basic example — zero-config getting started guide
+project:
+  name: "BriefKit Getting Started"
+  org: "BriefKit"

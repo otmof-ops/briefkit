@@ -1,0 +1,9 @@
+project:
+  name: "Engagement Letter"
+  org: "Morrison & Partners Legal"
+  tagline: "Level 12, 100 Collins Street, Melbourne VIC 3000"
+  url: "www.morrisonpartners.example.com"
+brand:
+  preset: "charcoal"
+template:
+  preset: "letter"

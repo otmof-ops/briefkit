@@ -1,0 +1,17 @@
+# Academic research example
+project:
+  name: "Machine Learning Research"
+  org: "University of Melbourne"
+
+brand:
+  preset: "royal"
+
+template:
+  preset: "academic"
+
+variants:
+  rules:
+    - pattern: "papers/ml/**"
+      variant: "aiml"
+    - pattern: "papers/stats/**"
+      variant: "research"

@@ -1,0 +1,10 @@
+# Briefing template example — executive briefing on cognitive load theory
+project:
+  name: "Cognitive Load Theory"
+  org: "Education Research Institute"
+
+brand:
+  preset: "navy"
+
+template:
+  preset: "briefing"

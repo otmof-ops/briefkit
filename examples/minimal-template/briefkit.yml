@@ -1,0 +1,10 @@
+# Minimal template example — assessment methods quick reference
+project:
+  name: "Assessment Methods Quick Reference"
+  org: "Teaching Excellence Center"
+
+brand:
+  preset: "mono"
+
+template:
+  preset: "minimal"

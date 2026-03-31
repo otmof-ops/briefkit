@@ -1,0 +1,7 @@
+project:
+  name: "Project Risk Register"
+  org: "ACME Corporation — PMO"
+brand:
+  preset: "slate"
+template:
+  preset: "register"

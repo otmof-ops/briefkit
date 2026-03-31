@@ -1,0 +1,11 @@
+# Report template example — curriculum effectiveness assessment
+project:
+  name: "Curriculum Effectiveness Assessment"
+  org: "National Education Board"
+  tagline: "Evidence-Based Curriculum Review 2026"
+
+brand:
+  preset: "charcoal"
+
+template:
+  preset: "report"

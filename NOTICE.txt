@@ -1,0 +1,145 @@
+NOTICE — BriefKit
+
+================================================================================
+COPYRIGHT NOTICE
+================================================================================
+
+Copyright (c) 2026 OFFTRACKMEDIA Studios
+ABN 84 290 819 896
+Western Australia, Commonwealth of Australia
+
+All rights reserved.
+
+"Building Empires, Not Just Brands."
+
+================================================================================
+LICENSE IDENTIFICATION
+================================================================================
+
+This work is licensed under the Creative Commons Attribution-NonCommercial-
+ShareAlike 4.0 International License (CC BY-NC-SA 4.0).
+
+Full license text: https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode
+
+SPDX License Identifier: CC-BY-NC-SA-4.0
+
+Additional terms and conditions are set forth in the End User License Agreement
+(EULA) located at: EULA/OFFTRACKMEDIA_EULA_2025.txt
+
+In the event of any conflict between the CC BY-NC-SA 4.0 license and the EULA,
+the terms of the EULA shall prevail to the maximum extent permitted by
+applicable law.
+
+================================================================================
+PERMITTED USE
+================================================================================
+
+This repository and its contents ("BriefKit") are provided for the following
+purposes:
+
+  1. Personal, non-commercial PDF generation from markdown documentation
+  2. Non-commercial educational and academic use
+  3. Internal organizational use for non-commercial documentation workflows
+  4. Engineering reference and professional development
+
+Commercial use, redistribution, SaaS deployment, and derivative works for
+commercial purposes require prior written consent from OFFTRACKMEDIA Studios.
+Contact: https://github.com/otmof-ops/briefkit/issues
+
+================================================================================
+THIRD-PARTY ACKNOWLEDGEMENTS
+================================================================================
+
+BriefKit uses the following third-party components, which remain the
+intellectual property of their respective owners:
+
+Runtime Dependencies:
+  - ReportLab — BSD-3-Clause license, Copyright ReportLab Europe Ltd.
+    PDF generation engine. https://www.reportlab.com/
+  - PyYAML — MIT license, Copyright Kirill Simonov.
+    YAML configuration parser. https://pyyaml.org/
+
+Development Dependencies:
+  - pytest — MIT license, Copyright Holger Krekel and contributors.
+  - pytest-cov — MIT license, Copyright Marc Schlaich.
+  - pypdf — BSD-3-Clause license, Copyright Mathieu Fenniak and contributors.
+
+================================================================================
+TRADEMARKS
+================================================================================
+
+"OFFTRACKMEDIA", "OFFTRACKMEDIA Studios", "Building Empires, Not Just Brands.",
+"BriefKit", and associated logos and trade dress are trademarks or registered
+trademarks of OFFTRACKMEDIA Studios.
+
+All other trademarks, service marks, trade names, product names, and logos
+appearing in this repository are the property of their respective owners.
+Reference to any third-party trademark does not constitute or imply
+endorsement, sponsorship, or recommendation by the trademark owner.
+
+================================================================================
+SAFETY NOTICE
+================================================================================
+
+BriefKit reads markdown files and source PDFs from the local filesystem and
+generates PDF documents. Users must:
+
+  1. Read SAFETY.md before processing directories containing sensitive content
+  2. Ensure input directories do not contain files with personal data unless
+     the user has lawful authority to process and distribute that data
+  3. Review target paths before running batch mode to avoid processing
+     unintended content
+  4. Verify the copyright status of input content before generating and
+     distributing output PDFs
+
+OFFTRACKMEDIA Studios accepts no liability for injury, damage, or loss arising
+from the use or misuse of BriefKit or its output. See SAFETY.md and the EULA
+for full terms.
+
+================================================================================
+WARRANTY DISCLAIMER
+================================================================================
+
+THE MATERIALS ARE PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTY OF ANY
+KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+
+OFFTRACKMEDIA STUDIOS DOES NOT WARRANT THAT THE MATERIALS ARE ACCURATE,
+COMPLETE, RELIABLE, CURRENT, OR ERROR-FREE. THE ENTIRE RISK AS TO THE QUALITY
+AND PERFORMANCE OF THE MATERIALS IS WITH YOU.
+
+IN NO EVENT SHALL OFFTRACKMEDIA STUDIOS BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING BUT NOT
+LIMITED TO PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, LOSS OF USE, DATA, OR
+PROFITS, OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THE MATERIALS, EVEN IF
+ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+================================================================================
+CONTACT
+================================================================================
+
+OFFTRACKMEDIA Studios
+Western Australia, Commonwealth of Australia
+ABN 84 290 819 896
+
+Repository:  https://github.com/otmof-ops/briefkit
+Issues:      https://github.com/otmof-ops/briefkit/issues
+
+================================================================================
+CROSS-REFERENCES
+================================================================================
+
+This NOTICE should be read in conjunction with:
+
+  - LICENSE                            — CC BY-NC-SA 4.0 full license text
+  - EULA/OFFTRACKMEDIA_EULA_2025.txt  — End User License Agreement
+  - SAFETY.md                         — Safety framework
+  - SECURITY.md                       — Vulnerability reporting policy
+  - CONTRIBUTING.md                   — Contribution standards and CLA
+  - README.md                         — Project overview and navigation
+
+================================================================================
+END OF NOTICE
+================================================================================

@@ -1,0 +1,7 @@
+# Cognitive Load Theory: Implications for Instructional Design
+
+Cognitive load theory provides one of the most rigorously validated frameworks for understanding how human memory architecture shapes learning. Originally formulated by John Sweller in the late 1980s, the theory rests on a fundamental observation: working memory is sharply limited in both capacity and duration, while long-term memory is vast and structurally organized through schemas. All new learning must pass through the bottleneck of working memory before it can be encoded as durable knowledge.
+
+This constraint has profound consequences for how instruction should be designed. The theory identifies three competing demands on working memory — intrinsic load from the material itself, extraneous load from poor instructional design, and germane load from productive learning processes — and provides evidence-based principles for managing each. Decades of experimental research have yielded actionable design guidelines: integrate related information sources, leverage multiple sensory channels, scaffold complexity through sequencing, and adapt instructional support to learner expertise.
+
+For education leaders, cognitive load theory offers a scientific basis for evaluating curricula, selecting instructional technologies, and training educators. This briefing synthesizes the theory's core mechanisms, its implications for schema development, and the practical design principles that follow from it.

@@ -13,6 +13,9 @@ Available templates
                                    discussion, recommendations, appendices, bibliography, back cover)
   book       BookTemplate       — long-form book (half-title, title page, copyright, TOC,
                                    preface, chapters, glossary, bibliography, index, colophon)
+  novel      NovelTemplate      — narrative-aware novel (extends book with pattern-based
+                                   styling for system commands, error tags, corrupted text,
+                                   entity voices, and metafictional intrusions)
   manual     ManualTemplate     — technical manual (cover, revision history, TOC, safety
                                    warnings, scope, procedures, reference tables, troubleshooting,
                                    bibliography, back cover)
@@ -41,6 +44,7 @@ from briefkit.templates.letter    import LetterTemplate
 from briefkit.templates.contract  import ContractTemplate
 from briefkit.templates.register import RegisterTemplate
 from briefkit.templates.minutes  import MinutesTemplate
+from briefkit.templates.novel    import NovelTemplate
 
 _REGISTRY: dict[str, type] = {
     "briefing":  BriefingTemplate,
@@ -53,6 +57,7 @@ _REGISTRY: dict[str, type] = {
     "contract":  ContractTemplate,
     "register":  RegisterTemplate,
     "minutes":   MinutesTemplate,
+    "novel":     NovelTemplate,
 }
 
 
@@ -102,6 +107,7 @@ __all__ = [
     "ContractTemplate",
     "RegisterTemplate",
     "MinutesTemplate",
+    "NovelTemplate",
     "get_template",
     "list_templates",
 ]

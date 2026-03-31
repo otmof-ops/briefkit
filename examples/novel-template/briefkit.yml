@@ -9,7 +9,7 @@ brand:
   preset: "gothic"
 
 template:
-  preset: "book"
+  preset: "novel"
 
 content:
   max_words_per_section: 10000

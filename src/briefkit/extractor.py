@@ -81,6 +81,7 @@ def parse_markdown(text: str) -> list[dict]:
         s = _RE_ITALIC_AST.sub(r'<i>\1</i>', s)
         s = _RE_ITALIC_UND.sub(r'<i>\1</i>', s)
         s = _RE_INLINE_CODE.sub(r'<font name="Courier">\1</font>', s)
+        s = re.sub(r'~~(.+?)~~', r'<strike>\1</strike>', s)
         s = _RE_MD_LINK.sub(r'\1', s)
         return s
 

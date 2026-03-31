@@ -5,8 +5,8 @@ Narrative-aware novel template.
 
 Extends BookTemplate with pattern-based detection and custom styling
 for meta-narrative elements common in literary and horror fiction:
-system commands, error tags, corrupted text, entity voices, and
-metafictional intrusions.
+system commands, error tags, corrupted text, entity voices,
+narrative erasure, and metafictional intrusions.
 
 Build order:
   Half Title -> Title Page -> Copyright Page -> TOC -> Preface ->
@@ -37,13 +37,28 @@ _CAT_SYSTEM_LOG = "system_log"
 _CAT_CORRUPTED = "corrupted"
 _CAT_ARROW_SEQ = "arrow_sequence"
 _CAT_ITALIC_VOICE = "italic_voice"
+_CAT_ERASURE = "erasure"
 
 # Regex for detecting all-caps system commands (after HTML tag stripping)
 _RE_ALL_CAPS = re.compile(r'^[A-Z][A-Z\s:.\-!,]+$')
+# Regex for all-caps with apostrophes/digits (mixed-case system commands)
+_RE_MOSTLY_CAPS = re.compile(r"^[A-Z][A-Z\s:.,!'\-0-9]+$")
 # Regex for detecting full-italic paragraphs (after inline formatting)
 _RE_FULL_ITALIC = re.compile(r'^<i>.+</i>$', re.DOTALL)
 # Regex for stripping HTML tags (for pattern matching on plain text)
 _RE_STRIP_TAGS = re.compile(r'<[^>]+>')
+# Regex for italic content that is all-caps (erasure commands)
+_RE_ITALIC_ALL_CAPS = re.compile(r'^[A-Z][A-Z\s\d\u2014:.\-!]+$')
+# Erasure phrases that should be rendered as devastating structural blows
+_ERASURE_PHRASES = [
+    "was never here",
+    "never met",
+    "never existed",
+    "does not need them",
+    "never left",
+    "never happened",
+    "protagonist never",
+]
 
 
 class NovelTemplate(BookTemplate):
@@ -51,12 +66,17 @@ class NovelTemplate(BookTemplate):
     Narrative-aware novel template.
 
     Detects meta-narrative elements in prose and applies distinct
-    typographic treatment: system commands in centered monospace,
-    error tags with background tint, corrupted text in italic
-    monospace, entity voices indented in serif italic.
+    typographic treatment:
 
-    All normal prose passes through to the parent BookTemplate's
-    render_blocks() unchanged.
+    - ERASURE: Large centered Courier-Bold — narrative commands that
+      erase characters or declare nonexistence. Devastating.
+    - SYSTEM_COMMAND: Centered Courier-Bold — the architecture speaking.
+    - SYSTEM_TAG: Monospace on tinted background — error codes.
+    - SYSTEM_LOG: Indented monospace — diagnostic output.
+    - CORRUPTED: Italic monospace — glitched text.
+    - ITALIC_VOICE: Indented serif italic — entity whispers, notebook.
+
+    All normal prose passes through unchanged.
     """
 
     def _build_novel_styles(self):
@@ -68,43 +88,54 @@ class NovelTemplate(BookTemplate):
         accent = _hex(b, "accent")
         caption = _hex(b, "caption")
         body_text = _hex(b, "body_text")
+        primary = _hex(b, "primary")
         code_bg = b.get("code_bg", "#F0EDE6")
 
         styles = {
+            _CAT_ERASURE: _ps(
+                "NovelErasure", brand=b,
+                fontName="Courier-Bold",
+                fontSize=12,
+                textColor=primary,
+                alignment=1,
+                spaceBefore=20,
+                spaceAfter=20,
+                leading=16,
+            ),
             _CAT_SYSTEM_COMMAND: _ps(
                 "NovelSystemCmd", brand=b,
                 fontName="Courier-Bold",
-                fontSize=9,
+                fontSize=11,
                 textColor=accent,
                 alignment=1,
-                spaceBefore=14,
-                spaceAfter=14,
-                leading=14,
+                spaceBefore=18,
+                spaceAfter=18,
+                leading=15,
             ),
             _CAT_SYSTEM_TAG: _ps(
                 "NovelSystemTag", brand=b,
                 fontName="Courier",
-                fontSize=8,
+                fontSize=9,
                 textColor=caption,
                 backColor=code_bg,
                 alignment=0,
-                spaceBefore=6,
-                spaceAfter=6,
+                spaceBefore=8,
+                spaceAfter=8,
                 leftIndent=0,
-                leading=12,
+                leading=13,
             ),
             _CAT_SYSTEM_LOG: _ps(
                 "NovelSystemLog", brand=b,
                 fontName="Courier",
-                fontSize=8,
+                fontSize=9,
                 textColor=caption,
                 backColor=code_bg,
                 alignment=0,
-                leftIndent=24,
-                rightIndent=24,
-                spaceBefore=4,
-                spaceAfter=4,
-                leading=12,
+                leftIndent=20,
+                rightIndent=20,
+                spaceBefore=6,
+                spaceAfter=6,
+                leading=13,
             ),
             _CAT_CORRUPTED: _ps(
                 "NovelCorrupted", brand=b,
@@ -112,8 +143,8 @@ class NovelTemplate(BookTemplate):
                 fontSize=9,
                 textColor=caption,
                 alignment=0,
-                spaceBefore=4,
-                spaceAfter=4,
+                spaceBefore=6,
+                spaceAfter=6,
                 leading=13,
             ),
             _CAT_ITALIC_VOICE: _ps(
@@ -123,8 +154,8 @@ class NovelTemplate(BookTemplate):
                 textColor=body_text,
                 leftIndent=18,
                 rightIndent=18,
-                spaceBefore=4,
-                spaceAfter=4,
+                spaceBefore=8,
+                spaceAfter=8,
                 leading=13,
             ),
         }
@@ -137,6 +168,7 @@ class NovelTemplate(BookTemplate):
         Classify a parsed block into a narrative category.
 
         Returns a category string or None (render normally).
+        Detection order matters — more specific patterns first.
         """
         btype = block.get("type", "")
         text = block.get("text", "")
@@ -158,26 +190,46 @@ class NovelTemplate(BookTemplate):
         if not plain:
             return None
 
-        # 1. System tags: starts with [ and contains ]
+        stripped = text.strip()
+
+        # 1. ERASURE: Full italic text that is either all-caps or contains
+        #    erasure phrases — the narrative destroying its own characters
+        if _RE_FULL_ITALIC.match(stripped):
+            italic_content = _RE_STRIP_TAGS.sub('', stripped).strip()
+
+            # All-caps inside italic = chapter markers, structural commands
+            if _RE_ITALIC_ALL_CAPS.match(italic_content):
+                return _CAT_ERASURE
+
+            # Erasure phrases inside italic = character deletion
+            lower = italic_content.lower()
+            for phrase in _ERASURE_PHRASES:
+                if phrase in lower:
+                    return _CAT_ERASURE
+
+            # Otherwise it's a regular italic voice (whisper, notebook)
+            return _CAT_ITALIC_VOICE
+
+        # 2. System tags: starts with [ and contains ]
         if plain.startswith('[') and ']' in plain:
             return _CAT_SYSTEM_TAG
 
-        # 2. Corrupted text: contains block character
-        if '\u2591' in plain or '░' in text:
+        # 3. Corrupted text: contains block character
+        if '\u2591' in plain or '\u2591' in text or '░' in text:
             return _CAT_CORRUPTED
 
-        # 3. Arrow sequences: contains ->
+        # 4. Arrow sequences: contains ->
         if '->' in plain:
             return _CAT_ARROW_SEQ
 
-        # 4. System commands: entirely uppercase (min 3 chars, not just "I")
+        # 5. System commands: entirely uppercase (min 3 chars)
         if len(plain) >= 3 and _RE_ALL_CAPS.match(plain):
             return _CAT_SYSTEM_COMMAND
 
-        # 5. Full italic voice: entire paragraph wrapped in <i>...</i>
-        stripped = text.strip()
-        if _RE_FULL_ITALIC.match(stripped):
-            return _CAT_ITALIC_VOICE
+        # 6. Mixed-case system commands: mostly uppercase with apostrophes/digits
+        #    Catches "IF YOU'RE READING THIS, IT'S NOT LEVEL 0."
+        if len(plain) >= 10 and _RE_MOSTLY_CAPS.match(plain):
+            return _CAT_SYSTEM_COMMAND
 
         return None
 
@@ -200,11 +252,16 @@ class NovelTemplate(BookTemplate):
 
         flowables = []
 
-        # System commands get extra spacing for dramatic pause
-        if category == _CAT_SYSTEM_COMMAND:
-            flowables.append(Spacer(1, 2 * mm))
+        if category == _CAT_ERASURE:
+            # Erasure gets maximum dramatic isolation — the void opening
+            flowables.append(Spacer(1, 6 * mm))
             flowables.append(_safe_para(text, style))
-            flowables.append(Spacer(1, 2 * mm))
+            flowables.append(Spacer(1, 6 * mm))
+        elif category == _CAT_SYSTEM_COMMAND:
+            # System commands get dramatic spacing
+            flowables.append(Spacer(1, 3 * mm))
+            flowables.append(_safe_para(text, style))
+            flowables.append(Spacer(1, 3 * mm))
         else:
             flowables.append(_safe_para(text, style))
 

@@ -36,6 +36,19 @@
 
 ---
 
+## Guides
+
+| Guide | Description |
+|-------|-------------|
+| [Quick Start](docs/quick-start.md) | Zero to PDF in 60 seconds |
+| [Directory Structure](docs/directory-structure.md) | How to organize source files for each template |
+| [Templates Guide](docs/templates-guide.md) | What each template produces and when to use it |
+| [Presets Guide](docs/presets-guide.md) | Color presets, fonts, and custom branding |
+| [CLI Reference](docs/cli-reference.md) | Every command and flag with examples |
+| [Troubleshooting](docs/troubleshooting.md) | Common issues and debugging steps |
+
+---
+
 ## About
 
 **OFFTRACKMEDIA Studios** — ABN 84 290 819 896

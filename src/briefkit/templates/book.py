@@ -285,28 +285,20 @@ class BookTemplate(BaseBriefingTemplate):
                 if block["type"] == "heading" and block["level"] == 1:
                     continue
 
-                for fl in self.render_blocks([block]):
-                    chap_flowables.append(fl)
-                    rendered += 1
+                rendered_items = self.render_blocks([block])
 
-                # Insert pull quotes every ~25 flowables for visual rhythm
-                if (rendered % 25 == 0 and pull_count < 3
-                        and block["type"] == "paragraph"):
-                    text = block.get("text", "")
-                    if len(text) > 80:
-                        chap_flowables.extend(
-                            build_pull_quote(text[:200], brand=self.brand, content_width=self.content_width)
-                        )
-                        pull_count += 1
+                # Keep headings with the next content (prevent orphaned chapter titles)
+                if block["type"] == "heading":
+                    for fl in rendered_items:
+                        fl.keepWithNext = True
+                        chap_flowables.append(fl)
+                else:
+                    for fl in rendered_items:
+                        chap_flowables.append(fl)
 
-                if rendered >= 120:
-                    break
+                rendered += len(rendered_items)
 
-            # Blockquote insights as callout boxes
-            for insight in sub.get("insights", [])[:2]:
-                chap_flowables.append(
-                    build_callout_box(insight[:400], "insight", brand=self.brand, content_width=self.content_width)
-                )
+                # No flowable cap — render all content in chapter
 
             chapters.append((chapter_title, chap_flowables))
 

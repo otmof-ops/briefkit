@@ -120,14 +120,7 @@ def _draw_header_footer(canvas, doc, state, brand=None):
     canvas.setLineWidth(0.5)
     canvas.line(left, bottom + 4 * mm, right, bottom + 4 * mm)
 
-    # Date (left)
-    date_str = state.get("date", "")
-    canvas.setFont(body_font, 7)
-    canvas.setFillColor(caption)
-    date_text = truncate_to_width(date_str, body_font, 7, max_text_width * 0.33)
-    canvas.drawString(left, bottom + 1.5 * mm, date_text)
-
-    # Page number (centre)
+    # Page number (centre, upper line)
     page_num = doc.page
     total    = state.get("total_pages")
     page_text = f"Page {page_num} of {total}" if total else f"Page {page_num}"
@@ -135,26 +128,24 @@ def _draw_header_footer(canvas, doc, state, brand=None):
     canvas.setFillColor(body_text)
     canvas.drawCentredString((left + right) / 2, bottom + 1.5 * mm, page_text)
 
-    # Doc ID or copyright (right)
+    # Copyright (centre, lower line — below page number)
     hf_doc_id   = state.get("doc_id", "")
     year        = datetime.date.today().year
     raw_cr      = b.get("copyright", "\u00a9 {year}")
     copyright   = raw_cr.replace("{year}", str(year))
 
-    canvas.setFont(body_font, 7)
+    canvas.setFont(body_font, 6)
     canvas.setFillColor(caption)
+    copyright_text = truncate_to_width(copyright, body_font, 6, max_text_width)
+    canvas.drawCentredString(
+        (left + right) / 2,
+        bottom - 1.5 * mm,
+        copyright_text,
+    )
+
     if hf_doc_id:
-        doc_id_text = truncate_to_width(hf_doc_id, body_font, 7, max_text_width * 0.33)
-        canvas.drawRightString(right, bottom + 1.5 * mm, doc_id_text)
-        copyright_text = truncate_to_width(copyright, body_font, 7, max_text_width * 0.85)
-        canvas.drawCentredString(
-            (left + right) / 2,
-            bottom - 1.5 * mm,
-            copyright_text,
-        )
-    else:
-        copyright_text = truncate_to_width(copyright, body_font, 7, max_text_width * 0.85)
-        canvas.drawRightString(right, bottom + 1.5 * mm, copyright_text)
+        doc_id_text = truncate_to_width(hf_doc_id, body_font, 6, max_text_width * 0.4)
+        canvas.drawRightString(right, bottom - 1.5 * mm, doc_id_text)
 
     canvas.restoreState()
 

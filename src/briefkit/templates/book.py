@@ -174,6 +174,8 @@ class BookTemplate(BaseBriefingTemplate):
         # --- Chapters (recto — each on new page) ---
         for chapter_title, chapter_flowables in chapters:
             # Update running header for this chapter
+            if hasattr(self, '_hf_state'):
+                self._hf_state["section"] = chapter_title
             _hf_state["section"] = chapter_title
 
             story.append(Paragraph(chapter_title, self.styles["STYLE_H1"]))
@@ -182,6 +184,8 @@ class BookTemplate(BaseBriefingTemplate):
             story.append(PageBreak())
 
         # Reset running header
+        if hasattr(self, '_hf_state'):
+            self._hf_state["section"] = content.get("title", "")
         _hf_state["section"] = content.get("title", "")
 
         # --- Back matter ---
@@ -449,12 +453,13 @@ class BookTemplate(BaseBriefingTemplate):
             self.doc_id = ""
 
         # Build header/footer for body pages only
-        hf_state = {
+        # Store on self so build_story can update the running section header
+        self._hf_state = {
             "section": content.get("title", self.target_path.name),
             "date": self.date_str,
             "doc_id": self.doc_id,
         }
-        hf = make_header_footer(hf_state, brand=self.brand)
+        hf = make_header_footer(self._hf_state, brand=self.brand)
 
         # Page setup
         _PAGE_SIZES = {"A4": A4, "A3": A3, "Letter": letter, "Legal": legal}

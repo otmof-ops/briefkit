@@ -21,19 +21,28 @@ from reportlab.platypus import Paragraph
 # =============================================================================
 
 DEFAULT_BRAND = {
-    "primary":    "#1B2A4A",
-    "secondary":  "#2E86AB",
-    "accent":     "#E8C547",
-    "body_text":  "#2C2C2C",
-    "caption":    "#666666",
-    "background": "#FFFFFF",
-    "rule":       "#CCCCCC",
-    "org":        "",
-    "tagline":    "",
-    "abn":        "",
-    "logo":       "",
-    "copyright":  "\u00a9 {year}",
-    "url":        "",
+    "primary":      "#1B2A4A",
+    "secondary":    "#2E86AB",
+    "accent":       "#E8C547",
+    "body_text":    "#2C2C2C",
+    "caption":      "#666666",
+    "background":   "#FFFFFF",
+    "rule":         "#CCCCCC",
+    "success":      "#00b894",
+    "warning":      "#fdcb6e",
+    "danger":       "#d63031",
+    "code_bg":      "#f5f6fa",
+    "table_alt":    "#f8f9fa",
+    "font_body":    "Helvetica",
+    "font_heading": "Helvetica-Bold",
+    "font_mono":    "Courier",
+    "font_caption": "Helvetica-Oblique",
+    "org":          "",
+    "tagline":      "",
+    "abn":          "",
+    "logo":         "",
+    "copyright":    "\u00a9 {year}",
+    "url":          "",
 }
 
 
@@ -149,8 +158,9 @@ def _safe_text(text):
 
     # After restoring font tags, sanitize attributes to allowlist
     _safe_fonts = {
-        'Courier', 'Helvetica', 'Helvetica-Bold', 'Helvetica-Oblique',
-        'Times-Roman', 'Times-Bold', 'Times-Italic',
+        'Courier', 'Courier-Bold', 'Courier-Oblique', 'Courier-BoldOblique',
+        'Helvetica', 'Helvetica-Bold', 'Helvetica-Oblique', 'Helvetica-BoldOblique',
+        'Times-Roman', 'Times-Bold', 'Times-Italic', 'Times-BoldItalic',
     }
 
     def _sanitize_font_attrs(match):
@@ -200,7 +210,7 @@ def _ps(name, brand=None, **kw):
     """
     b = _get_brand(brand)
     defaults = {
-        "fontName":  "Helvetica",
+        "fontName":  b.get("font_body", "Helvetica"),
         "textColor": _hex(b, "body_text"),
         "spaceAfter": 6,
         "spaceBefore": 0,
@@ -236,15 +246,15 @@ def build_styles(brand=None):
     # Derived semantic aliases matching source conventions
     otm_navy  = primary
     otm_steel = secondary
-    bg_grey   = HexColor("#f5f6fa")  # near-white; not brand-specific
-    table_alt = HexColor("#f8f9fa")
+    bg_grey   = HexColor(b.get("code_bg", "#f5f6fa"))
+    table_alt = HexColor(b.get("table_alt", "#f8f9fa"))
 
     styles = {}
 
     styles["STYLE_TITLE"] = _ps(
         "BKTitle",
         brand=b,
-        fontName="Helvetica-Bold",
+        fontName=b.get("font_heading", "Helvetica-Bold"),
         fontSize=28,
         textColor=otm_navy,
         leading=34,
@@ -256,7 +266,7 @@ def build_styles(brand=None):
     styles["STYLE_H1"] = _ps(
         "BKH1",
         brand=b,
-        fontName="Helvetica-Bold",
+        fontName=b.get("font_heading", "Helvetica-Bold"),
         fontSize=18,
         textColor=otm_navy,
         leading=22,
@@ -268,7 +278,7 @@ def build_styles(brand=None):
     styles["STYLE_H2"] = _ps(
         "BKH2",
         brand=b,
-        fontName="Helvetica-Bold",
+        fontName=b.get("font_heading", "Helvetica-Bold"),
         fontSize=14,
         textColor=otm_navy,
         leading=18,
@@ -280,7 +290,7 @@ def build_styles(brand=None):
     styles["STYLE_H3"] = _ps(
         "BKH3",
         brand=b,
-        fontName="Helvetica-Bold",
+        fontName=b.get("font_heading", "Helvetica-Bold"),
         fontSize=12,
         textColor=otm_steel,
         leading=16,
@@ -301,7 +311,7 @@ def build_styles(brand=None):
     styles["STYLE_TABLE_HEADER"] = _ps(
         "BKTableHeader",
         brand=b,
-        fontName="Helvetica-Bold",
+        fontName=b.get("font_heading", "Helvetica-Bold"),
         fontSize=9,
         textColor=white,
         leading=12,
@@ -322,7 +332,7 @@ def build_styles(brand=None):
     styles["STYLE_CAPTION"] = _ps(
         "BKCaption",
         brand=b,
-        fontName="Helvetica-Oblique",
+        fontName=b.get("font_caption", "Helvetica-Oblique"),
         fontSize=8,
         textColor=caption,
         leading=11,
@@ -341,7 +351,7 @@ def build_styles(brand=None):
     styles["STYLE_CODE"] = _ps(
         "BKCode",
         brand=b,
-        fontName="Courier",
+        fontName=b.get("font_mono", "Courier"),
         fontSize=9,
         textColor=otm_steel,
         leading=13,
@@ -364,7 +374,7 @@ def build_styles(brand=None):
     styles["STYLE_METRIC_NUMBER"] = _ps(
         "BKMetricNumber",
         brand=b,
-        fontName="Helvetica-Bold",
+        fontName=b.get("font_heading", "Helvetica-Bold"),
         fontSize=36,
         textColor=white,
         leading=42,
@@ -385,7 +395,7 @@ def build_styles(brand=None):
     styles["STYLE_PULL_QUOTE"] = _ps(
         "BKPullQuote",
         brand=b,
-        fontName="Helvetica-Oblique",
+        fontName=b.get("font_caption", "Helvetica-Oblique"),
         fontSize=14,
         textColor=otm_navy,
         leading=20,

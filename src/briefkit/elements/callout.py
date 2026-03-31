@@ -11,20 +11,6 @@ from reportlab.lib.units import mm
 
 from briefkit.styles import _get_brand, _hex, _ps, _safe_para, CONTENT_WIDTH, build_styles
 
-# Semantic tint colors for callout backgrounds.
-# These are intentionally kept as near-neutral tints so they work across
-# different brand primaries; callers may override via brand dict extensions.
-_GOLD_BG  = HexColor("#fef9e7")
-_GREEN_BG = HexColor("#eafaf1")
-_RED_BG   = HexColor("#fdeaea")
-_BG_GREY  = HexColor("#f5f6fa")
-
-# Semantic status colors (not brand-specific — convey meaning universally)
-SUCCESS = HexColor("#00b894")
-WARNING = HexColor("#fdcb6e")
-DANGER  = HexColor("#d63031")
-
-
 def build_callout_box(text, box_type="insight", brand=None, content_width=None):
     """
     Build a callout box Table flowable.
@@ -58,18 +44,28 @@ def build_callout_box(text, box_type="insight", brand=None, content_width=None):
     accent    = _hex(b, "accent")
     rule      = _hex(b, "rule")
 
+    # Brand-derived semantic colors
+    success_c = HexColor(b.get("success", "#00b894"))
+    warning_c = HexColor(b.get("warning", "#fdcb6e"))
+    danger_c  = HexColor(b.get("danger", "#d63031"))
+    code_bg   = HexColor(b.get("code_bg", "#f5f6fa"))
+
+    gold_bg  = HexColor("#fef9e7")
+    green_bg = HexColor("#eafaf1")
+    red_bg   = HexColor("#fdeaea")
+
     config = {
-        "insight":  {"border": secondary, "bg": _BG_GREY,  "label": "KEY INSIGHT"},
-        "takeaway": {"border": accent,    "bg": _GOLD_BG,  "label": "KEY TAKEAWAYS"},
-        "warning":  {"border": DANGER,    "bg": _RED_BG,   "label": "WARNING"},
-        "learn":    {"border": SUCCESS,   "bg": _GREEN_BG, "label": "WHAT YOU'LL LEARN"},
+        "insight":  {"border": secondary, "bg": code_bg,   "label": "KEY INSIGHT"},
+        "takeaway": {"border": accent,    "bg": gold_bg,   "label": "KEY TAKEAWAYS"},
+        "warning":  {"border": danger_c,  "bg": red_bg,    "label": "WARNING"},
+        "learn":    {"border": success_c, "bg": green_bg,  "label": "WHAT YOU'LL LEARN"},
     }
     cfg = config.get(box_type, config["insight"])
 
     label_style = _ps(
         f"BKCalloutLabel_{box_type}",
         brand=b,
-        fontName="Helvetica-Bold",
+        fontName=b.get("font_heading", "Helvetica-Bold"),
         fontSize=8,
         textColor=cfg["border"],
         spaceAfter=2,
@@ -142,7 +138,7 @@ def build_pull_quote(text, attribution="", brand=None, content_width=None):
     pull_style = _ps(
         "BKPullQuote",
         brand=b,
-        fontName="Helvetica-Oblique",
+        fontName=b.get("font_caption", "Helvetica-Oblique"),
         fontSize=14,
         textColor=primary,
         leading=20,
@@ -178,7 +174,7 @@ def build_pull_quote(text, attribution="", brand=None, content_width=None):
         attr_style = _ps(
             "PullQuoteAttr", brand=b,
             fontSize=9, textColor=caption,
-            alignment=1, fontName="Helvetica-Oblique",
+            alignment=1, fontName=b.get("font_caption", "Helvetica-Oblique"),
         )
         flowables.append(Paragraph(f"\u2014 {attribution}", attr_style))
 

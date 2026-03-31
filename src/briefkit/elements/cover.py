@@ -79,7 +79,7 @@ def build_cover_page(title, subtitle, path, level, date, doc_id="", brand=None, 
     navy_bar_data = [[
         Paragraph(
             left_text,
-            _ps("CoverTopBarLeft", brand=b, fontSize=10, textColor=white, fontName="Helvetica-Bold"),
+            _ps("CoverTopBarLeft", brand=b, fontSize=10, textColor=white, fontName=b.get("font_heading", "Helvetica-Bold")),
         ),
         Paragraph(
             f'<font color="white">{level_label}</font>',
@@ -102,7 +102,7 @@ def build_cover_page(title, subtitle, path, level, date, doc_id="", brand=None, 
 
     # --- Title (auto-size font for long titles) ---
     title_font_size = 28
-    while stringWidth(str(title), "Helvetica-Bold", title_font_size) > cw * 0.85 and title_font_size > 16:
+    while stringWidth(str(title), b.get("font_heading", "Helvetica-Bold"), title_font_size) > cw * 0.85 and title_font_size > 16:
         title_font_size -= 2
 
     flowables.append(Paragraph(title, styles["STYLE_TITLE"]))
@@ -115,7 +115,7 @@ def build_cover_page(title, subtitle, path, level, date, doc_id="", brand=None, 
             brand=b,
             fontSize=14,
             textColor=secondary,
-            fontName="Helvetica-Oblique",
+            fontName=b.get("font_caption", "Helvetica-Oblique"),
             alignment=1,
             spaceAfter=8,
         )
@@ -140,7 +140,7 @@ def build_cover_page(title, subtitle, path, level, date, doc_id="", brand=None, 
         fontSize=9,
         textColor=caption,
         alignment=1,
-        fontName="Courier",
+        fontName=b.get("font_mono", "Courier"),
         spaceAfter=4,
     )
     flowables.append(Paragraph(breadcrumb, path_style))
@@ -151,7 +151,7 @@ def build_cover_page(title, subtitle, path, level, date, doc_id="", brand=None, 
         Paragraph(
             f'<font color="white"><b>{level_label}</b></font>',
             _ps("CoverBadge", brand=b, fontSize=9, textColor=white,
-                fontName="Helvetica-Bold", alignment=1),
+                fontName=b.get("font_heading", "Helvetica-Bold"), alignment=1),
         )
     ]]
     badge = Table(badge_data, colWidths=[80 * mm], rowHeights=[8 * mm])
@@ -207,7 +207,7 @@ def build_cover_page(title, subtitle, path, level, date, doc_id="", brand=None, 
         Paragraph(
             footer_right_content,
             _ps("CoverFooterRight", brand=b, fontSize=7, textColor=white,
-                fontName="Helvetica-Oblique", alignment=2),
+                fontName=b.get("font_caption", "Helvetica-Oblique"), alignment=2),
         ),
     ]]
     footer_bar = Table(

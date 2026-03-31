@@ -78,7 +78,7 @@ def build_back_cover(date=None, generator_note="", brand=None, content_width=Non
         Paragraph(
             f'<font color="white"><b>{org_display}</b></font>',
             _ps("BKBackCoverTop", brand=b, fontSize=12, textColor=white,
-                fontName="Helvetica-Bold"),
+                fontName=b.get("font_heading", "Helvetica-Bold")),
         ),
     ]]
     top_bar = Table(top_data, colWidths=[cw], rowHeights=[16 * mm])
@@ -97,7 +97,7 @@ def build_back_cover(date=None, generator_note="", brand=None, content_width=Non
             brand=b,
             fontSize=20,
             textColor=primary,
-            fontName="Helvetica-Bold",
+            fontName=b.get("font_heading", "Helvetica-Bold"),
             alignment=1,
         )
         flowables.append(Paragraph(f'"{tagline}"', tagline_style))
@@ -109,7 +109,7 @@ def build_back_cover(date=None, generator_note="", brand=None, content_width=Non
         brand=b,
         fontSize=11,
         textColor=caption,
-        fontName="Helvetica-Oblique",
+        fontName=b.get("font_caption", "Helvetica-Oblique"),
         alignment=1,
     )
     flowables.append(Paragraph(org if org else "\u00a0", sub_style))
@@ -122,7 +122,7 @@ def build_back_cover(date=None, generator_note="", brand=None, content_width=Non
             brand=b,
             fontSize=9,
             textColor=secondary,
-            fontName="Courier",
+            fontName=b.get("font_mono", "Courier"),
             alignment=1,
         )
         flowables.append(Paragraph(url, url_style))

@@ -42,6 +42,15 @@ DEFAULTS: dict[str, Any] = {
         "caption": "#666666",
         "background": "#FFFFFF",
         "rule": "#CCCCCC",
+        "success": "#00b894",
+        "warning": "#fdcb6e",
+        "danger": "#d63031",
+        "code_bg": "#f5f6fa",
+        "table_alt": "#f8f9fa",
+        "font_body": "Helvetica",
+        "font_heading": "Helvetica-Bold",
+        "font_mono": "Courier",
+        "font_caption": "Helvetica-Oblique",
         "logo": "",
     },
     "doc_ids": {
@@ -128,9 +137,10 @@ _VALID_REPORT_FORMATS = {"markdown", "json", "text"}
 _VALID_YEAR_FORMATS = {"short", "full"}
 _HEX_COLOR_RE = re.compile(r"^#[0-9A-Fa-f]{6}$")
 
-_COLOR_KEYS = frozenset(
-    {"primary", "secondary", "accent", "body_text", "caption", "background", "rule"}
-)
+_COLOR_KEYS = frozenset({
+    "primary", "secondary", "accent", "body_text", "caption", "background", "rule",
+    "success", "warning", "danger", "code_bg", "table_alt",
+})
 
 
 def _validate_config(cfg: dict[str, Any]) -> list[str]:
@@ -323,8 +333,7 @@ def resolve_brand(
     # Re-apply explicit user overrides so they win over the preset
     if user_brand_overrides:
         for k, v in user_brand_overrides.items():
-            if k in _COLOR_KEYS:
-                brand[k] = v
+            brand[k] = v
 
     return cfg
 
@@ -396,8 +405,9 @@ def load_config(config_path: str | Path | None = None) -> dict[str, Any]:
                 )
             # Capture explicit color overrides before merging with defaults
             raw_brand = user_data.get("brand", {})
+            _FONT_KEYS = {"font_body", "font_heading", "font_mono", "font_caption"}
             user_brand_overrides = {
-                k: v for k, v in raw_brand.items() if k in _COLOR_KEYS
+                k: v for k, v in raw_brand.items() if k in _COLOR_KEYS or k in _FONT_KEYS
             }
             cfg = _deep_merge(cfg, user_data)
     else:

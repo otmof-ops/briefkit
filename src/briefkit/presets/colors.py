@@ -3,14 +3,23 @@ briefkit.presets.colors
 ~~~~~~~~~~~~~~~~~~~~~~~~
 All built-in color scheme presets.
 
-Each preset defines seven hex color values:
-  primary     — dominant brand color (headers, cover, accents)
-  secondary   — supporting brand color (sub-headers, links)
-  accent      — highlight / call-out color
-  body_text   — main body copy color
-  caption     — captions, footnotes, supporting text
-  background  — page / panel background
-  rule        — horizontal rules, table borders, dividers
+Each preset defines hex color values and font family names:
+  primary       — dominant brand color (headers, cover, accents)
+  secondary     — supporting brand color (sub-headers, links)
+  accent        — highlight / call-out color
+  body_text     — main body copy color
+  caption       — captions, footnotes, supporting text
+  background    — page / panel background
+  rule          — horizontal rules, table borders, dividers
+  success       — positive / success indicators
+  warning       — warning indicators
+  danger        — error / danger indicators
+  code_bg       — code block background
+  table_alt     — alternating table row background
+  font_body     — body text font family
+  font_heading  — heading font family
+  font_mono     — monospace / code font family
+  font_caption  — caption / oblique font family
 """
 
 from __future__ import annotations
@@ -24,6 +33,15 @@ PRESETS: dict[str, dict[str, str]] = {
         "caption": "#666666",
         "background": "#FFFFFF",
         "rule": "#CCCCCC",
+        "success": "#00b894",
+        "warning": "#fdcb6e",
+        "danger": "#d63031",
+        "code_bg": "#f5f6fa",
+        "table_alt": "#f8f9fa",
+        "font_body": "Helvetica",
+        "font_heading": "Helvetica-Bold",
+        "font_mono": "Courier",
+        "font_caption": "Helvetica-Oblique",
     },
     "charcoal": {
         "primary": "#2D2D2D",
@@ -33,6 +51,15 @@ PRESETS: dict[str, dict[str, str]] = {
         "caption": "#777777",
         "background": "#FFFFFF",
         "rule": "#DDDDDD",
+        "success": "#00b894",
+        "warning": "#fdcb6e",
+        "danger": "#d63031",
+        "code_bg": "#f5f6fa",
+        "table_alt": "#f8f9fa",
+        "font_body": "Helvetica",
+        "font_heading": "Helvetica-Bold",
+        "font_mono": "Courier",
+        "font_caption": "Helvetica-Oblique",
     },
     "ocean": {
         "primary": "#0A2463",
@@ -42,6 +69,15 @@ PRESETS: dict[str, dict[str, str]] = {
         "caption": "#5A5A7A",
         "background": "#FFFFFF",
         "rule": "#D0D0E0",
+        "success": "#00b894",
+        "warning": "#fdcb6e",
+        "danger": "#d63031",
+        "code_bg": "#f5f6fa",
+        "table_alt": "#f8f9fa",
+        "font_body": "Helvetica",
+        "font_heading": "Helvetica-Bold",
+        "font_mono": "Courier",
+        "font_caption": "Helvetica-Oblique",
     },
     "forest": {
         "primary": "#1B4332",
@@ -51,6 +87,15 @@ PRESETS: dict[str, dict[str, str]] = {
         "caption": "#6B7F6B",
         "background": "#FFFFFF",
         "rule": "#C8D5C8",
+        "success": "#00b894",
+        "warning": "#fdcb6e",
+        "danger": "#d63031",
+        "code_bg": "#f5f6fa",
+        "table_alt": "#f8f9fa",
+        "font_body": "Helvetica",
+        "font_heading": "Helvetica-Bold",
+        "font_mono": "Courier",
+        "font_caption": "Helvetica-Oblique",
     },
     "crimson": {
         "primary": "#590D22",
@@ -60,6 +105,15 @@ PRESETS: dict[str, dict[str, str]] = {
         "caption": "#6D6D6D",
         "background": "#FFFFFF",
         "rule": "#D4D4D4",
+        "success": "#00b894",
+        "warning": "#fdcb6e",
+        "danger": "#d63031",
+        "code_bg": "#f5f6fa",
+        "table_alt": "#f8f9fa",
+        "font_body": "Helvetica",
+        "font_heading": "Helvetica-Bold",
+        "font_mono": "Courier",
+        "font_caption": "Helvetica-Oblique",
     },
     "slate": {
         "primary": "#37474F",
@@ -69,6 +123,15 @@ PRESETS: dict[str, dict[str, str]] = {
         "caption": "#78909C",
         "background": "#FFFFFF",
         "rule": "#CFD8DC",
+        "success": "#00b894",
+        "warning": "#fdcb6e",
+        "danger": "#d63031",
+        "code_bg": "#f5f6fa",
+        "table_alt": "#f8f9fa",
+        "font_body": "Helvetica",
+        "font_heading": "Helvetica-Bold",
+        "font_mono": "Courier",
+        "font_caption": "Helvetica-Oblique",
     },
     "royal": {
         "primary": "#2D1B69",
@@ -78,6 +141,15 @@ PRESETS: dict[str, dict[str, str]] = {
         "caption": "#6A6A8A",
         "background": "#FFFFFF",
         "rule": "#D8D0E8",
+        "success": "#00b894",
+        "warning": "#fdcb6e",
+        "danger": "#d63031",
+        "code_bg": "#f5f6fa",
+        "table_alt": "#f8f9fa",
+        "font_body": "Times-Roman",
+        "font_heading": "Times-Bold",
+        "font_mono": "Courier",
+        "font_caption": "Times-Italic",
     },
     "sunset": {
         "primary": "#3D1C02",
@@ -87,6 +159,15 @@ PRESETS: dict[str, dict[str, str]] = {
         "caption": "#7A6A5A",
         "background": "#FFFCF7",
         "rule": "#E0D4C4",
+        "success": "#00b894",
+        "warning": "#fdcb6e",
+        "danger": "#d63031",
+        "code_bg": "#f5f6fa",
+        "table_alt": "#f8f9fa",
+        "font_body": "Helvetica",
+        "font_heading": "Helvetica-Bold",
+        "font_mono": "Courier",
+        "font_caption": "Helvetica-Oblique",
     },
     "mono": {
         "primary": "#000000",
@@ -96,6 +177,15 @@ PRESETS: dict[str, dict[str, str]] = {
         "caption": "#555555",
         "background": "#FFFFFF",
         "rule": "#AAAAAA",
+        "success": "#00b894",
+        "warning": "#fdcb6e",
+        "danger": "#d63031",
+        "code_bg": "#f5f6fa",
+        "table_alt": "#f8f9fa",
+        "font_body": "Courier",
+        "font_heading": "Courier-Bold",
+        "font_mono": "Courier",
+        "font_caption": "Courier-Oblique",
     },
     "midnight": {
         "primary": "#E0E0E0",
@@ -105,5 +195,104 @@ PRESETS: dict[str, dict[str, str]] = {
         "caption": "#909090",
         "background": "#121212",
         "rule": "#333333",
+        "success": "#00b894",
+        "warning": "#fdcb6e",
+        "danger": "#d63031",
+        "code_bg": "#1e272e",
+        "table_alt": "#2d3436",
+        "font_body": "Helvetica",
+        "font_heading": "Helvetica-Bold",
+        "font_mono": "Courier",
+        "font_caption": "Helvetica-Oblique",
+    },
+    "emerald": {
+        "primary": "#10ac84",
+        "secondary": "#1dd1a1",
+        "accent": "#feca57",
+        "body_text": "#2d3436",
+        "caption": "#636e72",
+        "background": "#FFFFFF",
+        "rule": "#dfe6e9",
+        "success": "#00b894",
+        "warning": "#fdcb6e",
+        "danger": "#d63031",
+        "code_bg": "#f0fff4",
+        "table_alt": "#f0fff4",
+        "font_body": "Helvetica",
+        "font_heading": "Helvetica-Bold",
+        "font_mono": "Courier",
+        "font_caption": "Helvetica-Oblique",
+    },
+    "corporate": {
+        "primary": "#2c3e50",
+        "secondary": "#3498db",
+        "accent": "#e74c3c",
+        "body_text": "#2c3e50",
+        "caption": "#7f8c8d",
+        "background": "#FFFFFF",
+        "rule": "#bdc3c7",
+        "success": "#27ae60",
+        "warning": "#f39c12",
+        "danger": "#c0392b",
+        "code_bg": "#ecf0f1",
+        "table_alt": "#ecf0f1",
+        "font_body": "Helvetica",
+        "font_heading": "Helvetica-Bold",
+        "font_mono": "Courier",
+        "font_caption": "Helvetica-Oblique",
+    },
+    "arctic": {
+        "primary": "#0a3d62",
+        "secondary": "#3c6382",
+        "accent": "#82ccdd",
+        "body_text": "#2c2c54",
+        "caption": "#718093",
+        "background": "#FFFFFF",
+        "rule": "#dcdde1",
+        "success": "#4cd137",
+        "warning": "#fbc531",
+        "danger": "#e84118",
+        "code_bg": "#f1f2f6",
+        "table_alt": "#f1f2f6",
+        "font_body": "Helvetica",
+        "font_heading": "Helvetica-Bold",
+        "font_mono": "Courier",
+        "font_caption": "Helvetica-Oblique",
+    },
+    "terracotta": {
+        "primary": "#6F1E51",
+        "secondary": "#B53471",
+        "accent": "#FDA7DF",
+        "body_text": "#2C3A47",
+        "caption": "#82589F",
+        "background": "#FFFFFF",
+        "rule": "#d2dae2",
+        "success": "#05c46b",
+        "warning": "#ffa801",
+        "danger": "#ff3f34",
+        "code_bg": "#fef6f8",
+        "table_alt": "#fef6f8",
+        "font_body": "Helvetica",
+        "font_heading": "Helvetica-Bold",
+        "font_mono": "Courier",
+        "font_caption": "Helvetica-Oblique",
+    },
+    "ink": {
+        "primary": "#222f3e",
+        "secondary": "#576574",
+        "accent": "#ff9f43",
+        "body_text": "#222f3e",
+        "caption": "#8395a7",
+        "background": "#FFFFFF",
+        "rule": "#c8d6e5",
+        "success": "#10ac84",
+        "warning": "#ff9f43",
+        "danger": "#ee5253",
+        "code_bg": "#f5f6fa",
+        "table_alt": "#f5f6fa",
+        "font_body": "Times-Roman",
+        "font_heading": "Times-Bold",
+        "font_mono": "Courier",
+        "font_caption": "Times-Italic",
     },
 }

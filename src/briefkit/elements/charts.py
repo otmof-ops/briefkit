@@ -20,9 +20,6 @@ from briefkit.styles import (
 )
 from briefkit.elements.callout import build_pull_quote  # canonical location
 
-_BG_GREY = HexColor("#f5f6fa")
-
-
 def build_bar_chart(data, title="", brand=None, content_width=None):
     """
     Build a horizontal bar chart Drawing.
@@ -47,6 +44,7 @@ def build_bar_chart(data, title="", brand=None, content_width=None):
     styles    = build_styles(b)
     secondary = _hex(b, "secondary")
     body_text = _hex(b, "body_text")
+    bg_grey   = HexColor(b.get("code_bg", "#f5f6fa"))
 
     flowables = []
     if title:
@@ -65,7 +63,7 @@ def build_bar_chart(data, title="", brand=None, content_width=None):
     d = Drawing(chart_width, chart_height)
 
     # Light background
-    bg = Rect(0, 0, chart_width, chart_height, fillColor=_BG_GREY, strokeColor=None)
+    bg = Rect(0, 0, chart_width, chart_height, fillColor=bg_grey, strokeColor=None)
     d.add(bg)
 
     max_val = max((v for _, v in data if isinstance(v, (int, float))), default=1)
@@ -93,7 +91,7 @@ def build_bar_chart(data, title="", brand=None, content_width=None):
         lbl = String(
             label_width - 4, y + bar_height * 0.35,
             str(label)[:28],
-            fontName="Helvetica",
+            fontName=b.get("font_body", "Helvetica"),
             fontSize=8,
             fillColor=body_text,
             textAnchor="end",
@@ -104,7 +102,7 @@ def build_bar_chart(data, title="", brand=None, content_width=None):
         val_lbl = String(
             label_width + bar_w + 4, y + bar_height * 0.35,
             str(value),
-            fontName="Helvetica-Bold",
+            fontName=b.get("font_heading", "Helvetica-Bold"),
             fontSize=8,
             fillColor=body_text,
             textAnchor="start",
@@ -138,7 +136,7 @@ def build_timeline(events, title="", brand=None, content_width=None):
     primary   = _hex(b, "primary")
     accent    = _hex(b, "accent")
     caption_c = _hex(b, "caption")
-    bg_grey   = HexColor("#f5f6fa")
+    bg_grey   = HexColor(b.get("code_bg", "#f5f6fa"))
 
     flowables = []
     if not events:
@@ -178,7 +176,7 @@ def build_timeline(events, title="", brand=None, content_width=None):
         text_y = axis_y + tick_height + 2 * mm if i % 2 == 0 else axis_y - tick_height - 8 * mm
         year_str = String(
             x, text_y, str(label)[:10],
-            fontName="Helvetica-Bold", fontSize=8,
+            fontName=b.get("font_heading", "Helvetica-Bold"), fontSize=8,
             fillColor=primary, textAnchor="middle",
         )
         d.add(year_str)
@@ -186,7 +184,7 @@ def build_timeline(events, title="", brand=None, content_width=None):
         desc_y = text_y - 5 * mm if i % 2 == 0 else text_y + 5 * mm
         desc_str = String(
             x, desc_y, str(desc)[:20],
-            fontName="Helvetica", fontSize=6,
+            fontName=b.get("font_body", "Helvetica"), fontSize=6,
             fillColor=caption_c, textAnchor="middle",
         )
         d.add(desc_str)

@@ -51,7 +51,7 @@ def build_data_table(headers, rows, title=None, brand=None, content_width=None):
     primary = _hex(b, "primary")
     rule    = _hex(b, "rule")
 
-    table_alt = HexColor("#f8f9fa")
+    table_alt = HexColor(b.get("table_alt", "#f8f9fa"))
 
     flowables = []
     if title:
@@ -81,7 +81,8 @@ def build_data_table(headers, rows, title=None, brand=None, content_width=None):
         ])
 
     # Content-aware column widths based on header text
-    raw = [sw(str(h), "Helvetica-Bold", 9) + 16 for h in headers]
+    heading_font = b.get("font_heading", "Helvetica-Bold")
+    raw = [sw(str(h), heading_font, 9) + 16 for h in headers]
     total_raw = sum(raw) or 1
     if total_raw > cw:
         col_widths = [w * cw / total_raw for w in raw]
@@ -94,7 +95,7 @@ def build_data_table(headers, rows, title=None, brand=None, content_width=None):
     t.setStyle(TableStyle([
         ("BACKGROUND",    (0, 0), (-1, 0),  primary),
         ("TEXTCOLOR",     (0, 0), (-1, 0),  white),
-        ("FONTNAME",      (0, 0), (-1, 0),  "Helvetica-Bold"),
+        ("FONTNAME",      (0, 0), (-1, 0),  b.get("font_heading", "Helvetica-Bold")),
         ("FONTSIZE",      (0, 0), (-1, 0),  9),
         ("VALIGN",        (0, 0), (-1, -1), "TOP"),
         ("TOPPADDING",    (0, 0), (-1, -1), 4),
@@ -142,7 +143,7 @@ def build_comparison_table(headers, rows, brand=None, content_width=None):
     primary = _hex(b, "primary")
     rule    = _hex(b, "rule")
 
-    table_alt = HexColor("#f8f9fa")
+    table_alt = HexColor(b.get("table_alt", "#f8f9fa"))
 
     flowables = []
 
@@ -174,14 +175,14 @@ def build_comparison_table(headers, rows, brand=None, content_width=None):
     style_commands = [
         ("BACKGROUND",   (0, 0), (-1, 0),  primary),
         ("TEXTCOLOR",    (0, 0), (-1, 0),  white),
-        ("FONTNAME",     (0, 0), (-1, 0),  "Helvetica-Bold"),
+        ("FONTNAME",     (0, 0), (-1, 0),  b.get("font_heading", "Helvetica-Bold")),
         ("VALIGN",       (0, 0), (-1, -1), "MIDDLE"),
         ("TOPPADDING",   (0, 0), (-1, -1), 4),
         ("BOTTOMPADDING",(0, 0), (-1, -1), 4),
         ("LEFTPADDING",  (0, 0), (-1, -1), 5),
         ("RIGHTPADDING", (0, 0), (-1, -1), 5),
         ("GRID",         (0, 0), (-1, -1), 0.4, rule),
-        ("FONTNAME",     (0, 1), (0, -1),  "Helvetica-Bold"),
+        ("FONTNAME",     (0, 1), (0, -1),  b.get("font_heading", "Helvetica-Bold")),
         ("ROWBACKGROUNDS",(0, 1), (-1, -1), [white, table_alt]),
     ]
 

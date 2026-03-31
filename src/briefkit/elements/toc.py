@@ -36,7 +36,7 @@ def build_toc(sections, brand=None, content_width=None):
     toc_h1 = _ps(
         "BKTOC1",
         brand=b,
-        fontName="Helvetica-Bold",
+        fontName=b.get("font_heading", "Helvetica-Bold"),
         fontSize=11,
         textColor=primary,
         spaceBefore=4,
@@ -46,7 +46,7 @@ def build_toc(sections, brand=None, content_width=None):
     toc_h2 = _ps(
         "BKTOC2",
         brand=b,
-        fontName="Helvetica",
+        fontName=b.get("font_body", "Helvetica"),
         fontSize=10,
         textColor=secondary,
         spaceBefore=1,

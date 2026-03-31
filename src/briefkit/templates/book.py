@@ -420,7 +420,9 @@ class BookTemplate(BaseBriefingTemplate):
         # Doc IDs
         if self.config.get("doc_ids", {}).get("enabled", True):
             self.doc_id = get_or_assign_doc_id(
-                self.target_path, self.config, level=self.level
+                self.target_path, level=self.level,
+                title=content.get("title", self.target_path.name),
+                config=self.config,
             )
         else:
             self.doc_id = ""

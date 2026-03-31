@@ -1,0 +1,20 @@
+# Novel template example — The Backrooms: a horror novel
+project:
+  name: "The Backrooms"
+  org: "Offtrack Media"
+  tagline: "There are places the map does not show."
+  copyright: "© 2024 Offtrack Media"
+
+brand:
+  preset: "gothic"
+
+template:
+  preset: "book"
+
+content:
+  max_words_per_section: 10000
+
+hierarchy:
+  root_level: 3
+  depth_to_level:
+    0: 3

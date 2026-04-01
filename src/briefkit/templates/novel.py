@@ -391,14 +391,37 @@ class NovelTemplate(BookTemplate):
             "CopyrightPage", brand=b,
             fontSize=9, textColor=caption_c, leading=14,
         )
-        story.append(Spacer(1, 120 * mm))
+        story.append(Spacer(1, 100 * mm))
         story.append(Paragraph(f"First published {year}", cp_style))
+        story.append(Spacer(1, 4 * mm))
         story.append(Paragraph(copyright_str, cp_style))
+        story.append(Spacer(1, 4 * mm))
         story.append(Paragraph(
             "All rights reserved. No part of this publication may be reproduced, "
             "stored in a retrieval system, or transmitted in any form or by any means, "
-            "without the prior written permission of the publisher.",
+            "electronic, mechanical, photocopying, recording, or otherwise, without "
+            "the prior written permission of the publisher.",
             cp_style,
+        ))
+        story.append(Spacer(1, 8 * mm))
+        # Acknowledgment block
+        ack_style = _ps(
+            "CopyrightAck", brand=b,
+            fontSize=8, textColor=caption_c, leading=12,
+        )
+        story.append(Paragraph(
+            "<b>ACKNOWLEDGMENT</b>",
+            ack_style,
+        ))
+        story.append(Spacer(1, 2 * mm))
+        story.append(Paragraph(
+            "The Backrooms concept originated from an anonymous 4chan post (2019) "
+            "and has been developed by the collaborative Backrooms community, "
+            "including contributors to the Backrooms Wiki. This novel is an original "
+            "literary work of fiction inspired by and set within the Backrooms universe. "
+            "The author acknowledges and respects the community that built and "
+            "continues to expand this shared mythology.",
+            ack_style,
         ))
         story.append(PageBreak())
 

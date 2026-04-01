@@ -22,12 +22,15 @@ from __future__ import annotations
 
 import re
 
-from reportlab.platypus import Paragraph, Spacer
+from reportlab.platypus import Paragraph, Spacer, PageBreak, CondPageBreak
 from reportlab.lib.units import mm
+from reportlab.lib.colors import HexColor
 
 from briefkit.templates.book import BookTemplate
-from briefkit.styles import _safe_para, _ps, _hex
+from briefkit.generator import _hf_state, build_toc
+from briefkit.styles import _safe_para, _ps, _hex, CONTENT_WIDTH
 from briefkit.extractor import parse_markdown
+from briefkit.elements.header_footer import make_header_footer
 
 
 # Pattern categories
@@ -314,22 +317,192 @@ class NovelTemplate(BookTemplate):
 
         return chapters
 
+    def build_story(self, content):
+        """
+        Override build_story to use continuous flow between Parts.
+
+        Instead of forcing a PageBreak after every Part (which creates
+        half-empty pages), the novel template uses CondPageBreak —
+        only breaks to a new page if less than 80mm remains. Otherwise
+        it inserts a visual separator (rule + spacer) and continues
+        flowing on the same page.
+        """
+        # Delegate front matter to parent
+        story = []
+
+        title = content.get("title", self.target_path.name.replace("-", " ").title())
+        b = self.brand
+        primary = _hex(b, "primary")
+        secondary = _hex(b, "secondary")
+        caption_c = _hex(b, "caption")
+        org = b.get("org", "")
+        year = self.date.year
+        copyright_str = b.get("copyright", f"\u00a9 {year}")
+
+        from reportlab.pdfbase.pdfmetrics import stringWidth
+
+        # --- Half-title page ---
+        cw = getattr(self, 'content_width', CONTENT_WIDTH)
+        ht_size = 24
+        while stringWidth(title, "Helvetica-Bold", ht_size) > cw * 0.85 and ht_size > 16:
+            ht_size -= 1
+        half_title_style = _ps(
+            "HalfTitle", brand=b,
+            fontSize=ht_size, textColor=primary,
+            fontName="Helvetica-Bold", alignment=1,
+        )
+        story.append(Spacer(1, 80 * mm))
+        story.append(Paragraph(title, half_title_style))
+        story.append(PageBreak())
+
+        # --- Full title page ---
+        ft_size = 32
+        while stringWidth(title, "Helvetica-Bold", ft_size) > cw * 0.80 and ft_size > 18:
+            ft_size -= 1
+        title_style = _ps(
+            "BookTitle", brand=b,
+            fontSize=ft_size, textColor=primary,
+            fontName="Helvetica-Bold", alignment=1,
+            spaceAfter=10,
+        )
+        subtitle_text = self.config.get("project", {}).get("tagline", "")
+        sub_style = _ps(
+            "BookSubtitle", brand=b,
+            fontSize=16, textColor=secondary,
+            fontName="Helvetica-Oblique", alignment=1,
+        )
+        author_style = _ps(
+            "BookAuthor", brand=b,
+            fontSize=14, textColor=caption_c, alignment=1,
+        )
+        story.append(Spacer(1, 50 * mm))
+        story.append(Paragraph(title, title_style))
+        if subtitle_text:
+            story.append(Paragraph(subtitle_text, sub_style))
+        story.append(Spacer(1, 20 * mm))
+        if org:
+            story.append(Paragraph(org, author_style))
+        story.append(Spacer(1, 30 * mm))
+        story.append(Paragraph(str(year), author_style))
+        story.append(PageBreak())
+
+        # --- Copyright page ---
+        cp_style = _ps(
+            "CopyrightPage", brand=b,
+            fontSize=9, textColor=caption_c, leading=14,
+        )
+        story.append(Spacer(1, 120 * mm))
+        story.append(Paragraph(f"First published {year}", cp_style))
+        story.append(Paragraph(copyright_str, cp_style))
+        story.append(Paragraph(
+            "All rights reserved. No part of this publication may be reproduced, "
+            "stored in a retrieval system, or transmitted in any form or by any means, "
+            "without the prior written permission of the publisher.",
+            cp_style,
+        ))
+        story.append(PageBreak())
+
+        # Pre-build sections
+        preface_flowables = self._build_preface(content)
+        chapters = self._build_chapters(content)
+        glossary_flowables = self._build_glossary(content)
+
+        # --- TOC ---
+        story.append(_safe_para("Contents", self.styles["STYLE_H1"]))
+        story.append(Spacer(1, 2 * mm))
+        toc_entries = [(1, "Preface")]
+        for chapter_title, _ in chapters:
+            toc_entries.append((1, chapter_title))
+        if glossary_flowables:
+            toc_entries.append((1, "Glossary"))
+        story.extend(build_toc(toc_entries, brand=b, content_width=self.content_width))
+        story.append(PageBreak())
+
+        # --- Preface ---
+        story.extend(preface_flowables)
+        story.append(PageBreak())
+
+        # --- Chapters (continuous flow, no forced page breaks) ---
+        for idx, (chapter_title, chapter_flowables) in enumerate(chapters):
+            if hasattr(self, '_hf_state'):
+                self._hf_state["section"] = chapter_title
+            _hf_state["section"] = chapter_title
+
+            # First chapter: no separator needed (starts after preface)
+            # Subsequent chapters: conditional page break — only if less
+            # than 80mm remains on the page. Otherwise, visual separator.
+            if idx > 0:
+                story.append(CondPageBreak(80 * mm))
+
+            story.append(Paragraph(chapter_title, self.styles["STYLE_H1"]))
+            story.append(Spacer(1, 2 * mm))
+            story.extend(chapter_flowables)
+
+        # Reset running header
+        if hasattr(self, '_hf_state'):
+            self._hf_state["section"] = content.get("title", "")
+        _hf_state["section"] = content.get("title", "")
+
+        # --- Glossary ---
+        if glossary_flowables:
+            story.append(PageBreak())
+            story.extend(glossary_flowables)
+
+        # --- Colophon ---
+        story.append(PageBreak())
+        story.extend(self._build_colophon(title, org, year, copyright_str))
+
+        return story
+
     def _build_colophon(self, title, org, year, copyright_str):
         """
-        Build the colophon without tooling attribution.
-
-        Novels should end with publisher/copyright only,
-        not "Typeset by briefkit."
+        Build a proper closing page for a novel.
         """
-        cp_style = _ps(
-            "Colophon", brand=self.brand,
-            fontSize=9, textColor=_hex(self.brand, "caption"),
+        b = self.brand
+        primary = _hex(b, "primary")
+        caption = _hex(b, "caption")
+        accent = _hex(b, "accent")
+
+        title_style = _ps(
+            "ColophonTitle", brand=b,
+            fontSize=14, textColor=primary,
+            fontName=b.get("font_heading", "Times-Bold"),
+            leading=18, alignment=1,
+        )
+        body_style = _ps(
+            "ColophonBody", brand=b,
+            fontSize=9, textColor=caption,
+            fontName=b.get("font_body", "Times-Roman"),
             leading=14, alignment=1,
         )
+        rule_style = _ps(
+            "ColophonRule", brand=b,
+            fontSize=6, textColor=accent,
+            alignment=1,
+        )
+
         flowables = []
-        flowables.append(Spacer(1, 100 * mm))
-        flowables.append(Paragraph(title, cp_style))
+        flowables.append(Spacer(1, 60 * mm))
+        flowables.append(Paragraph(title, title_style))
+        flowables.append(Spacer(1, 8 * mm))
         if org:
-            flowables.append(Paragraph(org, cp_style))
-        flowables.append(Paragraph(copyright_str, cp_style))
+            flowables.append(Paragraph(org, body_style))
+            flowables.append(Spacer(1, 4 * mm))
+        flowables.append(Paragraph(
+            "\u2014 \u2014 \u2014",
+            rule_style,
+        ))
+        flowables.append(Spacer(1, 4 * mm))
+        flowables.append(Paragraph(copyright_str, body_style))
+        flowables.append(Spacer(1, 8 * mm))
+        flowables.append(Paragraph(
+            "This is a work of fiction. The Backrooms mythology originated as collaborative "
+            "internet fiction. This adaptation is an independent creative work.",
+            body_style,
+        ))
+        flowables.append(Spacer(1, 4 * mm))
+        flowables.append(Paragraph(
+            f"First edition {year}",
+            body_style,
+        ))
         return flowables

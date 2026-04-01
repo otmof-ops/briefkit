@@ -1,255 +1,249 @@
-# Turning a Novel Manuscript into a Book PDF
+# Tutorial: Turning a Markdown Novel into a BriefKit PDF
 
-## Overview
+This tutorial walks through the complete process of converting a novel manuscript — whether a single file or a collection of files — into a professionally typeset PDF using BriefKit's `novel` template. It covers directory structure, configuration, heading conventions, the split script, preset selection, the generate command, and every known issue encountered during the production of a full-length novel PDF, including the Backrooms session that originated the `novel` template.
 
-BriefKit's book template generates professional book PDFs from structured markdown: half-title, title page, copyright page, table of contents, preface, chapters, glossary, and colophon. This tutorial walks through the complete process of converting a single-file markdown novel into a finished book.
-
-This process was validated by generating a 113-page PDF from a 50,000-word horror novel (*The Backrooms: A Jcore Adaptation*). Every section below reflects lessons learned from that real production run.
+By the end you will be able to take any markdown manuscript and produce a print-ready book with a half-title page, title page, copyright page, table of contents, preface, narrative-aware chapter content, glossary, and colophon.
 
 ---
 
-## Prerequisites
+## 1. Prerequisites
 
-- Python 3.10+
-- BriefKit installed (`pip install briefkit` or from source)
-- A markdown novel manuscript (single file or already split)
+- BriefKit installed (`pip install briefkit`). Verify with `briefkit --version`.
+- A markdown novel manuscript. This can be a single `.md` file or a collection of files you have already begun to split. The manuscript should be in plain markdown — no HTML entities such as `&nbsp;` or `&amp;`, no embedded HTML tags. BriefKit uses ReportLab, not a browser, and HTML entities render as literal strings.
+- A plain text editor or IDE.
 
 ---
 
-## Step 1: Understand the Directory Structure
+## 2. Understanding BriefKit's Novel Template
 
-BriefKit's book template expects a flat directory of numbered markdown files:
+The `novel` template is purpose-built for fiction. It extends the `book` template with two major improvements: continuous flow pagination and automatic narrative formatting for meta-textual elements common in literary fiction and genre prose.
+
+### What the novel template generates
+
+The novel template produces the following pages in order:
+
+1. Half-title page (title centered, nothing else)
+2. Full title page (title, tagline/subtitle, organization, year)
+3. Copyright page
+4. Table of contents
+5. Preface (from `preface.md` if present, otherwise from README overview)
+6. Chapters (continuous flow, with narrative-aware formatting applied automatically)
+7. Glossary (from `glossary.md` if present, otherwise auto-extracted terms — see section 8g)
+8. Colophon (title, organization, decorative rule, copyright, fiction disclaimer, first edition date)
+
+### The novel template versus the book template
+
+The critical difference between `novel` and `book` is how page breaks between Parts are handled.
+
+The `book` template forces a `PageBreak` after every chapter file. This mirrors the behavior of academic and technical document templates, where each chapter starts on a fresh page regardless of where the previous chapter ended. For fiction, this creates half-empty pages whenever a Part ends mid-page — an artifact that wastes space and looks typographically wrong.
+
+The `novel` template replaces forced page breaks with `CondPageBreak(80mm)`: a conditional break that only inserts a new page if fewer than 80mm remain on the current page. Parts flow continuously with their heading providing the visual separation. In the Backrooms novel, this change alone reduced the PDF from 117 pages to 109 pages.
+
+### Directory structure
+
+BriefKit reads from a flat directory. The novel template expects the following layout:
 
 ```
-my-book/
-  briefkit.yml          # Config (at project root, NOT inside docs/)
+your-project/
+  briefkit.yml             # Config file at project root
   docs/
-    my-novel/
-      README.md         # Title + brief description
-      preface.md        # Optional: preface content
-      glossary.md       # Optional: term definitions
-      01-part-one.md    # First chapter/part
-      02-part-two.md    # Second chapter/part
+    your-novel/
+      README.md            # Title and brief description
+      preface.md           # Preface content (optional but recommended)
+      glossary.md          # Glossary page (optional but recommended)
+      01-part-one.md       # Part / chapter files, numbered
+      02-part-two.md
+      03-part-three.md
       ...
 ```
 
-Key rules:
-- Each `NN-name.md` file becomes one "chapter" in the PDF
-- The H1 heading (`# ...`) in each file becomes the chapter title
-- H2 headings (`## ...`) become sub-sections within the chapter
-- `README.md` provides the book title and overview
-- `preface.md` is used as the preface if present (otherwise BriefKit generates one from README)
-- `glossary.md` is rendered as a proper glossary if present (otherwise BriefKit auto-extracts terms from headings, which produces junk for novels)
+The `README.md` file sets the document title (from its first `# Heading`) and the project description. The numbered files — any file matching the pattern `[0-9][0-9]-*.md` — become the chapters of the book, rendered in numeric order.
 
-### File naming conventions
+### How headings map to the PDF
 
-Use zero-padded two-digit prefixes to control chapter order:
+Within each numbered chapter file, heading levels map directly to the PDF structure:
 
-```
-01-opening.md
-02-descent.md
-03-the-levels.md
-...
-12-final-chapter.md
-```
+- `# H1` — the Part or chapter title, rendered as the large chapter header; appears in the table of contents
+- `## H2` — a chapter heading within a Part, rendered as a section heading in the body
+- `### H3` — a sub-section, rendered smaller
 
-BriefKit sorts files lexicographically. Zero-padding ensures correct order up to 99 chapters. If you have more, use three digits (`001-`, `002-`, ...).
-
-Avoid spaces in filenames. Use hyphens. Keep names short and descriptive — they are not displayed in the PDF, but they help you navigate the source.
-
----
-
-## Step 2: Split Your Manuscript
-
-If your novel is a single markdown file, split it at major structural breaks.
-
-### Choosing split points
-
-For a novel with Parts/Acts: one file per Part.
-For a novel with only chapters: group into logical sections of 3-8 chapters each, or one file per chapter if chapters are short.
-
-Split points to consider:
-- Part/Act boundaries (strongest option)
-- Major time jumps or POV shifts
-- Scene breaks that already function as structural markers
-- Natural pacing beats (inciting incident, midpoint, climax)
-
-Avoid splitting mid-scene or mid-chapter. The PDF will work, but it makes the source harder to manage.
-
-### Heading conversion
-
-BriefKit uses H1 for chapter titles. If your manuscript uses a different heading hierarchy, convert before splitting:
-
-| Original | Convert To | Role in PDF |
-|----------|-----------|-------------|
-| `## Part 1 — The Beginning` | `# Part 1 — The Beginning` | Chapter title |
-| `### Chapter 1: First Light` | `## Chapter 1: First Light` | Sub-section heading |
-| `#### Scene header` | `### Scene header` | Sub-sub-section (renders smaller) |
-
-If your manuscript has no structural headings at all (prose only), add H1 headings to the top of each file you create. The template requires at least one H1 per chapter file.
-
-### Example Python split script
-
-This script splits a manuscript at Part headers and writes numbered chapter files:
-
-```python
-import re
-import os
-
-src = "manuscript.md"
-out = "docs/my-novel/"
-os.makedirs(out, exist_ok=True)
-
-with open(src, encoding="utf-8") as f:
-    content = f.read()
-
-# Split at Part headers (adjust regex to match your heading style)
-parts = re.split(r'(?=## Part \d+)', content)
-
-for i, part in enumerate(parts[1:], 1):  # skip front matter before first Part
-    # Convert heading levels
-    part = re.sub(r'^## (Part \d+)', r'# \1', part, count=1, flags=re.MULTILINE)
-    part = re.sub(r'^### (Chapter \d+)', r'## \1', part, flags=re.MULTILINE)
-
-    # Generate filename from H1 title
-    title_match = re.match(r'# (.+)', part)
-    if not title_match:
-        continue
-    title_text = title_match.group(1)
-    name = re.sub(r'[^a-z0-9]+', '-', title_text.lower()).strip('-')
-    filename = f"{i:02d}-{name}.md"
-
-    filepath = os.path.join(out, filename)
-    with open(filepath, 'w', encoding="utf-8") as f:
-        f.write(part.rstrip() + "\n")
-    print(f"Wrote: {filename}  ({len(part.split()):,} words approx)")
-```
-
-Run it:
-
-```bash
-python split_manuscript.py
-```
-
-Check the output:
-
-```bash
-ls -lh docs/my-novel/
-wc -w docs/my-novel/*.md
-```
-
-### Splitting at chapter level instead of part level
-
-If you want one file per chapter rather than one per part, adjust the regex:
-
-```python
-# Split at any Chapter header
-parts = re.split(r'(?=### Chapter \d+)', content)
-```
-
-Then convert `### Chapter N` to `# Chapter N` in each chunk.
-
-### What to strip during splitting
-
-Remove the following content during or after splitting — it either breaks the PDF renderer or produces duplicate content:
-
-- **Rewrite notes and craft logs** — editorial scaffolding like "REWRITE: tighten this scene" should not appear in the final PDF
-- **HTML entities** (`&nbsp;`, `&mdash;`, `&hellip;`) — ReportLab (BriefKit's PDF engine) does not interpret HTML entities; they render as literal text (e.g., `&nbsp;` appears as-is in the PDF)
-- **Back matter** — END markers, manual copyright lines, "The End" banners, acknowledgments that duplicate what the template generates
-- **Draft headers** — lines like "Rewritten Chapters 1-10" or "DRAFT 3" at the top of sections
-- **Markdown comments** — `<!-- editor note -->` blocks (these are invisible in web rendering but may cause issues in PDF)
-
-Strip HTML entities with a quick Python pass:
-
-```python
-import html
-
-with open("docs/my-novel/01-opening.md", encoding="utf-8") as f:
-    content = f.read()
-
-# Unescape HTML entities to plain Unicode
-content = html.unescape(content)
-
-# Or strip &nbsp; specifically
-content = content.replace("&nbsp;", " ")
-
-with open("docs/my-novel/01-opening.md", "w", encoding="utf-8") as f:
-    f.write(content)
-```
-
-Apply this to all chapter files after splitting.
-
----
-
-## Step 3: Create Supporting Files
-
-### README.md
-
-The README provides the book title and a brief description. Keep it short — it is used internally by BriefKit, not displayed as a page in the PDF.
+The convention for a novel structured by Parts and Chapters is:
 
 ```markdown
-# My Novel Title
+# Part 1 — Level 0: The Lobby
 
-A brief description of the book for internal reference. One or two sentences is enough.
+## Chapter 1: The First Step
+
+Prose content here...
+
+## Chapter 2: The Sound
+
+More prose content...
 ```
 
-Do not put the full synopsis or author bio here. Those belong in `preface.md`.
+Each numbered file has exactly one `# H1` at the top. Subsequent headings within the file are `## H2` or lower.
 
-### preface.md (optional but recommended)
+---
 
-Write your actual preface. This is the content that appears in the Preface section of the PDF, before Chapter 1.
+## 3. Splitting a Single Manuscript into BriefKit Format
+
+Most novel manuscripts start as a single file. The following steps convert a single-file manuscript into the directory structure BriefKit expects. A Python split script that automates the majority of this work is provided in section 3.3.
+
+### 3.1 Manual split steps
+
+**Step 1: Create the source directory.**
+
+```bash
+mkdir -p my-novel/docs/novel-name
+```
+
+The outer directory (`my-novel/`) will hold `briefkit.yml`. The inner directory (`my-novel/docs/novel-name/`) is where the markdown files live and where BriefKit will write the PDF.
+
+**Step 2: Identify structural breaks.**
+
+Open your manuscript and identify the major structural divisions. For a novel these are typically Parts, Acts, or Books. Each major division becomes one numbered file. Chapters within each Part become `## H2` headings within that file.
+
+**Step 3: Create the numbered files.**
+
+For each Part or major section, create a numbered file with a two-digit prefix controlling sort order and a kebab-case name:
+
+```
+01-part-one.md
+02-part-two.md
+99-coda.md
+```
+
+**Step 4: Convert heading levels.**
+
+BriefKit reads your `# H1` as the chapter/Part title. Adjust heading levels accordingly:
+
+| Original in manuscript | Convert to in BriefKit file | Role in PDF |
+|------------------------|----------------------------|------------|
+| `## Part I` or `# Part I` | `# Part I — Subtitle` | Chapter title (appears in TOC) |
+| `### Chapter 1` or `## Chapter 1` | `## Chapter 1: Name` | Section heading in body |
+| `#### Scene` | `### Scene` | Minor sub-section |
+
+**Step 5: Strip back matter.**
+
+If your manuscript file includes back matter — an END marker, copyright notice, acknowledgments, author biography — strip it before splitting. BriefKit generates its own copyright page and colophon. Including a manuscript copyright block in the body content will result in duplicate copyright text appearing in the chapter content.
+
+**Step 6: Strip HTML entities.**
+
+If your manuscript was written in or exported from a tool that uses HTML entities, replace them before importing:
+
+```bash
+sed -i 's/&nbsp;/ /g; s/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g; s/&mdash;/—/g; s/&ndash;/–/g' manuscript.md
+```
+
+BriefKit uses ReportLab for PDF generation, not a browser or HTML renderer. HTML entities are not interpreted — they render as the literal string `&nbsp;` in the PDF.
+
+**Step 7: Create README.md.**
+
+Create `README.md` in the docs directory with the novel's title as an `# H1` heading and a brief description as the first paragraph:
+
+```markdown
+# The Backrooms
+
+A horror novel set in the labyrinthine spaces that exist between the walls of the known world.
+```
+
+**Step 8: Create preface.md (optional but recommended).**
+
+Create `preface.md` in the docs directory. BriefKit uses it verbatim as the preface page:
 
 ```markdown
 # Preface
 
-This novel began as a short story in 2024, a single hallway extending forever in both
-directions. What you hold now is that hallway made into a world.
-
-The Backrooms mythology — the shared folklore of liminal spaces — belongs to everyone who
-has contributed to it. This adaptation draws from that collective imagination while telling
-a specific story about one person's journey through it.
-
-Read slowly. The spaces between scenes matter.
+Your preface content here.
 ```
 
-If you omit `preface.md`, BriefKit generates a generic preface from the README description. This works but produces a thin, generic page. Write your own.
+If you skip this file, BriefKit generates a generic preface from the README overview text. For a novel, writing an actual preface produces a far better result.
 
-### glossary.md (optional but important for genre fiction)
+**Step 9: Create glossary.md (optional but recommended for fiction).**
 
-For horror, fantasy, science fiction, or any genre with invented terminology, a glossary adds polish and prevents a broken auto-generated one.
+If your novel has world-specific terminology, create `glossary.md`:
 
 ```markdown
 # Glossary
 
-**The Backrooms** — A vast non-Euclidean space existing outside normal reality, accessible
-by "noclipping" through the geometry of the physical world. Consists of numbered Levels,
-each with distinct properties and dangers.
+**term** — Definition of the term.
 
-**Level 0** — The entry point. An infinite expanse of yellow-wallpapered rooms under
-humming fluorescent lights. Smell of wet carpet. No exits visible.
-
-**Level 1** — Concrete warehouse. Industrial shelving, flickering lights. Supplies appear
-occasionally. Considered relatively safe.
-
-**Noclip** — The act of passing through solid geometry into the Backrooms, typically
-by accident. Named after the video game cheat code that disables collision detection.
-
-**The Wanderers** — Term for humans trapped in the Backrooms, whether recent arrivals or
-long-term survivors who have adapted to its rules.
-
-**Smilers** — An entity type found primarily on lower levels. Characterized by a luminous
-smile visible in darkness. Avoid direct eye contact.
+**another term** — Definition of another term.
 ```
 
-If you do not create a `glossary.md`, BriefKit auto-extracts "terms" from your H2 headings. For a novel, this means chapter sub-section titles appear as glossary entries — which is meaningless and looks unprofessional. Always create a `glossary.md` for novels, even if it only has a few entries.
+If you skip this file, BriefKit's automatic term extractor will attempt to derive glossary terms from H2 headings in your chapter files. For fiction, this extracts chapter names as glossary entries, which is not useful. Always provide a real `glossary.md` for novel projects.
 
-To suppress the glossary entirely, leave `glossary.md` empty or omit it and note that the auto-generated glossary will still appear. The cleanest solution is to provide real terms.
+### 3.2 Strikethrough support
+
+BriefKit supports the `~~strikethrough~~` markdown convention. It renders as `<strike>text</strike>` in the PDF output. This is active in all templates.
+
+### 3.3 Automated split script (v2)
+
+The following Python script automates the split for a single-file manuscript structured with `## Part N` and `### Chapter N` headings. It:
+
+- Extracts the main content starting from Part 1
+- Stops before the Coda (writes it as a separate `99-coda.md`)
+- Strips END markers and raw copyright blocks from the body text
+- Converts heading levels (`## Part` to `# Part`, `### Chapter` to `## Chapter`)
+
+Save this as `split.py` at your project root and adjust the `src`, `out`, and `title` variables:
+
+```python
+import re, os
+
+src = "manuscript.md"
+out = "docs/my-novel/"
+title = "My Novel Title"
+os.makedirs(out, exist_ok=True)
+
+with open(src) as f:
+    content = f.read()
+
+# Find structural boundaries
+front_end = content.find("## Part 1")
+coda_start = content.find("## Coda")
+end_marker = content.find("\nEND\n")
+
+# Main content without Coda and back matter
+main = content[front_end:coda_start].rstrip() if coda_start > 0 else content[front_end:]
+
+# README
+with open(os.path.join(out, "README.md"), 'w') as f:
+    f.write(f"# {title}\n\nBrief description.\n")
+
+# Split at Part headers
+parts = re.split(r'(?=## Part \d+)', main)
+for i, part in enumerate([p for p in parts if p.strip()], 1):
+    part = re.sub(r'^## (Part \d+)', r'# \1', part, count=1)
+    part = re.sub(r'### (Chapter \d+)', r'## \1', part)
+    title_match = re.match(r'# (.+)', part)
+    name = re.sub(r'[^a-z0-9]+', '-', title_match.group(1).lower()).strip('-')
+    with open(os.path.join(out, f"{i:02d}-{name}.md"), 'w') as f:
+        f.write(part.rstrip() + "\n")
+
+# Coda
+if coda_start > 0:
+    coda = content[coda_start:end_marker].strip() if end_marker > 0 else content[coda_start:].strip()
+    coda = re.sub(r'^## Coda', '# Coda', coda)
+    with open(os.path.join(out, "99-coda.md"), 'w') as f:
+        f.write(coda.rstrip() + "\n")
+```
+
+Run it from the project root:
+
+```bash
+python split.py
+```
+
+After running, add `preface.md` and `glossary.md` to the docs directory manually.
 
 ---
 
-## Step 4: Configure briefkit.yml
+## 4. Configuration (briefkit.yml)
 
-Place the config file at your **project root** (not inside `docs/`). This is a common mistake — if briefkit.yml is inside the docs directory, BriefKit will not find it without an explicit `--config` flag pointing to it, and if it does find it, hierarchy detection breaks.
+The configuration file controls the project identity, visual preset, template selection, and content extraction settings. It must be placed at the project root — the directory that contains the `docs/` folder — not inside the docs directory itself.
+
+Below is the complete configuration for a novel project:
 
 ```yaml
 project:
@@ -258,615 +252,405 @@ project:
   tagline: "A Subtitle or Genre Tag"
 
 brand:
-  preset: "gothic"                    # or: ink, charcoal, mono, crimson
+  preset: "gothic"
   org: "Publisher Name"
   copyright: "(c) 2026 Publisher · CC BY-NC-SA 4.0"
 
 template:
-  preset: "book"
+  preset: "novel"
 
 content:
-  max_words_per_section: 10000        # Default 3000 is too low for novels
-
-hierarchy:
-  root_level: 3                       # Treats the docs dir as a doc-set
-  depth_to_level:
-    0: 3
-```
-
-### Critical config notes
-
-**`hierarchy.root_level: 3` is REQUIRED.** This is the most common source of broken output for novels. Without it, BriefKit's document hierarchy detector examines the project root, finds no doc-sets there, and reports "Extracted: 0 subsystems, 0 words." Setting `root_level: 3` tells BriefKit that your `docs/my-novel/` directory IS the document set, not a subdirectory within one.
-
-**`content.max_words_per_section: 10000` prevents truncation.** The default value of 3000 words cuts off any chapter longer than roughly 12 pages. A typical horror novel chapter runs 2,000-5,000 words. Set this to 10000 to be safe. For very long chapters (10,000+ words), go higher.
-
-**`template.preset: "book"` is required.** Without this, BriefKit defaults to its technical documentation template, which produces a corporate report layout instead of a book layout.
-
-**The `--config` flag must point to the right file.** If you run BriefKit from a different working directory, use an absolute path:
-
-```bash
-briefkit generate /home/jay/my-book/docs/my-novel/ \
-  --config /home/jay/my-book/briefkit.yml \
-  --force --no-ids
-```
-
-### Full annotated config
-
-```yaml
-project:
-  # Internal name. Appears in metadata, not prominently in the PDF itself.
-  name: "The Backrooms: A Jcore Adaptation"
-
-  # Organization or author name. Appears on title page and colophon.
-  org: "Jcore Universe"
-
-  # Subtitle or genre tag. Appears on title page beneath the main title.
-  tagline: "A Liminal Horror Novel"
-
-brand:
-  # Visual preset. Controls fonts, colors, and accent styles.
-  # Options: gothic, ink, charcoal, mono, crimson
-  preset: "gothic"
-
-  # Overrides the project.org for branding purposes (can be same value).
-  org: "Jcore Universe"
-
-  # Copyright string. Appears on the copyright page and in the colophon footer.
-  copyright: "(c) 2026 Jcore Universe · All Rights Reserved"
-
-template:
-  # Use the book template. Without this, you get a technical docs layout.
-  preset: "book"
-
-content:
-  # Maximum words extracted per section before truncation.
-  # Default is 3000, which cuts off novel-length chapters.
   max_words_per_section: 10000
 
 hierarchy:
-  # root_level: 3 tells BriefKit the docs/my-novel/ directory IS the doc-set.
-  # Without this, extraction yields 0 subsystems.
   root_level: 3
   depth_to_level:
     0: 3
 ```
 
+### Key configuration fields explained
+
+**`project.name`** — The novel's title as it appears on the title page, half-title page, and running headers. Separate from the `# H1` in `README.md` — if both are present, `project.name` takes precedence for cover and title display.
+
+**`project.org`** — Publisher or author name. Appears on the title page and in the colophon.
+
+**`project.tagline`** — Subtitle or tagline. Appears beneath the title on the full title page.
+
+**`brand.preset`** — The visual theme. See section 5 for fiction-appropriate choices and a full breakdown of the gothic preset.
+
+**`brand.copyright`** — The copyright notice used on the copyright page and in the colophon.
+
+**`template.preset`** — Must be `"novel"` for the novel template. Using `"book"` will lose continuous flow pagination and narrative formatting.
+
+**`content.max_words_per_section`** — BriefKit's default is 3000 words per section. A single chapter of a novel can easily exceed this, causing content truncation mid-chapter. Set this to 10000 or higher for novel projects. There is no practical upper limit.
+
+**`hierarchy.root_level`** — Tells BriefKit to treat the docs directory as a Level 3 (doc set) rather than attempting to resolve it as a higher-level aggregate. Without this, BriefKit will attempt to recurse into subdirectories and extract 0 subsystems from the flat novel directory.
+
+**`hierarchy.depth_to_level`** — Maps directory depth (0 = root of the path you pass to `generate`) to BriefKit level. Setting `0: 3` ensures BriefKit treats the directory you pass directly as a doc set.
+
+### Config file location and the --config flag
+
+BriefKit searches for `briefkit.yml` by walking up from the current working directory. If you run `briefkit generate` from inside the project root, it will find the config automatically. If you run from a different directory, pass the config explicitly:
+
+```bash
+briefkit generate docs/novel-name/ --config /path/to/project/briefkit.yml
+```
+
+The config must not be inside the docs directory. If `briefkit.yml` is at `docs/novel-name/briefkit.yml`, BriefKit will ignore hierarchy settings and may extract 0 subsystems.
+
 ---
 
-## Step 5: Choose a Preset
+## 5. Choosing a Preset
 
-BriefKit ships with several visual presets. For fiction, these are the most relevant:
+BriefKit ships with 15 color presets. The following presets work well for fiction:
 
-| Preset | Typography | Background | Accents | Best For |
-|--------|-----------|------------|---------|----------|
-| `gothic` | Times-Roman serif | Warm off-white (#FAFAF5) | Muted brown (#8B7355) | Horror, literary fiction, atmospheric prose |
-| `ink` | Times-Roman serif | Pure white | Dark navy | Literary fiction, general novels |
-| `charcoal` | Helvetica sans-serif | White | Dark neutral gray | Contemporary fiction, thrillers |
-| `mono` | Courier monospace | White | Black | Experimental, print-first, noir |
-| `crimson` | Helvetica sans-serif | White | Deep red | Dark fiction, crime, gothic romance |
+| Preset | Character | Best for |
+|--------|-----------|---------|
+| `gothic` | Near-black ink on warm off-white; muted brown accents; serif body font | Horror, literary fiction, atmospheric prose |
+| `ink` | Dark charcoal on white; orange accent; serif body font | Literary fiction, narrative non-fiction, memoir |
+| `charcoal` | Dark neutral grey on white; sans-serif | Dark literary fiction, thriller |
+| `mono` | Pure black on white; monospace throughout | Print-first output, ARCs, manuscript drafts |
+| `royal` | Deep purple with gold accent; serif | Fantasy, epic fiction, academic-adjacent literary works |
 
-The `gothic` preset was purpose-built for horror fiction. It uses Times-Roman for readability, warm off-white paper to reduce eye strain over long reading sessions, and muted brown accents that evoke aged parchment without being ornate.
+### The gothic preset — design philosophy
 
-### Overriding individual brand values
+The `gothic` preset was designed for horror novels and atmospheric literary prose. Its full color palette:
 
-You can use a preset as a base and override specific values:
+```
+primary:    "#1A1A1A"
+secondary:  "#4A4A4A"
+accent:     "#8B7355"
+body_text:  "#1C1C1C"
+caption:    "#555555"
+background: "#FAFAF5"
+rule:       "#C0B8A8"
+code_bg:    "#F0EDE6"
+font_body:    "Times-Roman"
+font_heading: "Times-Bold"
+font_caption: "Times-Italic"
+```
+
+**Typography.** Both body and heading fonts are Times-Roman variants, the traditional serif typeface of printed books. Times-Roman at 10-11pt with generous leading reads cleanly and carries the historical weight appropriate to literary fiction.
+
+**Color.** Body text is `#1C1C1C` rather than pure black. The difference is subtle on screen but visible in print: near-black is warmer and less clinical than `#000000`. The page background `#FAFAF5` is a warm off-white that reduces the harshness of pure white and gives the page the quality of aged stock.
+
+**Accent.** The accent color `#8B7355` is a muted warm brown — the color of old bindings, dried ink, and aged paper. It appears in section rules, callout borders, and decoration. It recedes rather than competing with the prose.
+
+**Code background.** The `code_bg` value `#F0EDE6` gives monospace elements a warm parchment tone rather than the stark grey of technical document presets. This matters for the novel template's narrative formatting categories (see section 6), which use monospace for system tags, logs, and corrupted text.
+
+**Intent.** The overall effect is a page that looks typeset by a human rather than generated by software, which is appropriate for fiction where the design must serve the prose and not compete with it.
+
+To use gothic for any novel project:
 
 ```yaml
 brand:
   preset: "gothic"
-
-  # Override body font (must be a ReportLab built-in or registered font)
-  font_body: "Times-Roman"
-
-  # Override heading font
-  font_heading: "Times-Bold"
-
-  # Override body text color (hex)
-  body_text: "#1C1C1C"
-
-  # Override page background color
-  background: "#FAFAF5"
-
-  # Override accent color (used for rules, chapter number styling)
-  accent: "#8B7355"
-
-  # Override divider/rule color
-  rule_color: "#C0B8A8"
 ```
 
-### Font availability
+To override individual values while keeping the rest of the palette:
 
-BriefKit uses ReportLab for PDF generation. The available built-in fonts are:
-
-- `Helvetica`, `Helvetica-Bold`, `Helvetica-Oblique`, `Helvetica-BoldOblique`
-- `Times-Roman`, `Times-Bold`, `Times-Italic`, `Times-BoldItalic`
-- `Courier`, `Courier-Bold`, `Courier-Oblique`, `Courier-BoldOblique`
-
-Custom fonts (TTF/OTF) can be registered if you need them, but that requires code changes. The built-in fonts cover most fiction typography needs.
-
----
-
-## Step 6: Generate the PDF
-
-From your project root:
-
-```bash
-briefkit generate docs/my-novel/ --config briefkit.yml --force --no-ids
-```
-
-### What each flag does
-
-| Flag | Effect |
-|------|--------|
-| `--force` | Regenerates even if output already exists. Always use this during iteration. |
-| `--no-ids` | Skips document ID assignment (OTM-style IDs are for technical documentation, not novels). |
-| `--verbose` | Prints extraction statistics. Useful for debugging missing content. |
-| `--config PATH` | Explicitly points to briefkit.yml. Required if not running from project root. |
-
-### Expected output (verbose mode)
-
-When running correctly, you should see output similar to:
-
-```
-BriefKit v1.0.0 — Book Template
-Loading config: briefkit.yml
-Scanning: docs/my-novel/
-  Found: README.md, preface.md, glossary.md
-  Found: 12 chapter files (01-opening.md ... 12-finale.md)
-Extracting content...
-  Extracted: 12 chapters, 49,847 words
-  Chapter word range: 2,100 – 5,900 words
-Rendering PDF...
-  Pages: 113
-  Output: docs/my-novel/executive-briefing.pdf
-Done.
-```
-
-Key things to verify in verbose output:
-- Chapter count matches your file count
-- Total word count is close to your manuscript word count (minor differences are normal due to stripping)
-- No chapters show 0 words (indicates a parsing problem with that file)
-
-### Rename the output
-
-The book template always outputs to `executive-briefing.pdf` (a BriefKit convention). Rename it:
-
-```bash
-mv docs/my-novel/executive-briefing.pdf "My_Novel.pdf"
-```
-
-Or to a versioned name during drafts:
-
-```bash
-cp docs/my-novel/executive-briefing.pdf "My_Novel_$(date +%Y%m%d).pdf"
-```
-
----
-
-## Step 7: What the PDF Contains
-
-The book template generates these pages in order:
-
-### 1. Half-title page
-The book title, centered, alone on the page. No author, no subtitle. Traditional book printing convention.
-
-### 2. Title page
-Full title, subtitle/tagline (from `project.tagline`), organization/author name (from `brand.org`), and publication year. This is the main title page.
-
-### 3. Copyright page
-Copyright notice (from `brand.copyright`), rights statement, and any additional legal text. Generated automatically.
-
-### 4. Table of contents
-Auto-generated from your chapter H1 headings with page numbers. If a chapter title is long, it wraps cleanly. Page numbers are right-aligned with dot leaders.
-
-### 5. Preface
-Content from `preface.md`. If not present, generated from README description.
-
-### 6. Chapters
-Each chapter starts on a new page. The H1 heading becomes the chapter title (rendered large, with an optional chapter number if you choose). H2 headings become section headers within the chapter. Body text is set in the preset's body font.
-
-Chapter flow:
-- Chapter title (H1) — large, centered or left-aligned depending on preset
-- Optional decorative rule beneath the title
-- Body text
-- H2 sub-sections with styled headers
-- Continued body text
-
-### 7. Glossary
-From `glossary.md` if present. Each bolded term becomes a definition entry. The glossary renders in a two-column layout by default: term on the left, definition on the right.
-
-If `glossary.md` is absent, BriefKit auto-generates a glossary from H2 headings. For novels, this produces a useless list of chapter sub-headings. Always provide a real `glossary.md` or accept that the glossary page will look wrong.
-
-### 8. Colophon
-Final page. Includes: typeset date, organization name, copyright notice, and BriefKit attribution. The colophon signals the end of the book.
-
----
-
-## Troubleshooting
-
-### "Extracted: 0 subsystems, 0 words"
-
-Your hierarchy config is wrong, or briefkit.yml is in the wrong location.
-
-Fix:
-1. Set `hierarchy.root_level: 3` in briefkit.yml
-2. Set `hierarchy.depth_to_level: {0: 3}`
-3. Ensure briefkit.yml is at the project root, NOT inside `docs/`
-4. Run with `--config path/to/briefkit.yml` to be explicit
-
-Verify with:
-```bash
-briefkit generate docs/my-novel/ --config briefkit.yml --force --no-ids --verbose
-```
-
-If you still see 0 words, check that your chapter files have H1 headings and non-empty body text.
-
----
-
-### Chapters are truncated or missing
-
-Symptoms: PDF generates, but some chapters end abruptly mid-sentence, or entire chapters after a certain point are absent.
-
-Cause: `content.max_words_per_section` is set too low (default: 3000).
-
-Fix:
 ```yaml
-content:
-  max_words_per_section: 10000
-```
-
-For very long chapters (10,000+ words each), increase to 15000 or 20000.
-
----
-
-### HTML entities render as literal text
-
-Symptom: Words like `&nbsp;`, `&mdash;`, or `&hellip;` appear verbatim in the PDF.
-
-Cause: ReportLab does not parse HTML entities. BriefKit passes your markdown content through to ReportLab, which treats `&nbsp;` as the five characters `&`, `n`, `b`, `s`, `p`.
-
-Fix — strip entities before generating:
-
-```python
-import html, os, glob
-
-for path in glob.glob("docs/my-novel/*.md"):
-    with open(path, encoding="utf-8") as f:
-        content = f.read()
-    content = html.unescape(content)
-    # Also catch any remaining naked & sequences that aren't real HTML
-    content = content.replace("&nbsp;", "\u00a0")   # non-breaking space
-    content = content.replace("&mdash;", "\u2014")  # em dash
-    content = content.replace("&hellip;", "\u2026") # ellipsis
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(content)
-```
-
----
-
-### Chapter numbers are doubled
-
-Symptom: Chapter headings display as "Chapter 1 Part 1 — The Opening" when the file already starts with "# Part 1 — The Opening".
-
-Cause: An older BriefKit version prepended its own "Chapter N" label before using your H1 heading as the title.
-
-Fix: Update to BriefKit v1.0.0+. The template now uses your H1 heading verbatim as the chapter title without adding a prefix.
-
-Workaround for older versions: Remove your own "Part N" / "Chapter N" labels and let BriefKit generate the numbers, or rename your H1 headings to avoid duplication.
-
----
-
-### Footer text overlaps or is truncated
-
-Symptom: Page number and copyright text overlap on the footer line, or the copyright string is cut off.
-
-Cause: A layout bug in pre-1.0.0 versions where page number and footer text were placed on the same baseline.
-
-Fix: Update to BriefKit v1.0.0+. Page number and copyright now render on separate lines within the footer.
-
-Workaround for older versions: Shorten your `brand.copyright` string to under 60 characters.
-
----
-
-### Chapter headings appear alone on empty pages
-
-Symptom: A chapter title appears at the bottom of a page with no content following it. The actual content begins on the next page.
-
-Cause: A page break occurs between the heading and its following paragraph.
-
-Fix: Update to BriefKit v1.0.0+. The template now applies `keepWithNext` to all chapter headings, preventing orphaned titles.
-
----
-
-### Glossary is just a list of chapter titles
-
-Symptom: The Glossary section contains entries like "The Descent," "Into the Dark," "Awakening" — which are your chapter sub-headings, not glossary terms.
-
-Cause: No `glossary.md` file was provided. BriefKit auto-extracts H2 headings as glossary terms.
-
-Fix: Create `docs/my-novel/glossary.md` with real term definitions. See Step 3 for format.
-
----
-
-### Duplicate content from back matter
-
-Symptom: The PDF contains duplicate copyright notices, "The End" text, or repeated colophon content from the manuscript source.
-
-Cause: The original manuscript contained back matter (copyright page, acknowledgments, "THE END" banner) that was not stripped during splitting.
-
-Fix: Strip all back matter from your chapter files. The book template generates its own copyright page and colophon. Anything you leave in the source will appear in addition to the template's generated content.
-
-Common things to strip:
-- `---\n\n**THE END**`
-- Manual copyright blocks
-- "Thank you for reading..." acknowledgment text
-- Dedication pages (unless you want them — but format them as a proper `dedication.md` file)
-
----
-
-### PDF is much shorter than expected
-
-Symptom: You have a 50,000-word manuscript but the PDF is only 30 pages.
-
-Possible causes:
-
-1. **Truncation** — Check `content.max_words_per_section`. Increase it.
-2. **0 words extracted** — Run `--verbose` and check per-chapter word counts. A chapter showing 0 words likely has a malformed heading.
-3. **Only first file rendered** — If BriefKit is treating your `docs/my-novel/` as a single document rather than a set, it may only read `README.md`. Check the hierarchy config.
-4. **Wrong template** — Ensure `template.preset: "book"` is set.
-
----
-
-### PDF file not generated / no output
-
-Check for Python errors in the terminal output. Common causes:
-- Missing required field in briefkit.yml
-- A chapter file contains malformed markdown that crashes the parser
-- Insufficient disk space
-- Permissions issue on the output directory
-
-Run with `--verbose` to narrow down where the failure occurs.
-
----
-
-## Full Example
-
-The `examples/novel-template/` directory contains a working example using the gothic preset with sample content from a horror novel. Use it as a reference or starting point.
-
-```bash
-cd /home/jay/briefkit
-briefkit generate examples/novel-template/docs/backrooms-novel/ \
-  --config examples/novel-template/briefkit.yml \
-  --force --no-ids --verbose
-```
-
-Expected output: `examples/novel-template/docs/backrooms-novel/executive-briefing.pdf`
-
-### Minimal working example from scratch
-
-```bash
-# 1. Create directory structure
-mkdir -p my-book/docs/my-novel
-
-# 2. Write config
-cat > my-book/briefkit.yml << 'EOF'
-project:
-  name: "My Novel"
-  org: "My Press"
-  tagline: "A Novel"
 brand:
   preset: "gothic"
-  org: "My Press"
-  copyright: "(c) 2026 My Press"
-template:
-  preset: "book"
-content:
-  max_words_per_section: 10000
+  body_text: "#000000"    # Pure black instead of near-black
+  background: "#FFFFFF"   # Pure white instead of warm off-white
+```
+
+---
+
+## 6. Narrative Formatting — The Novel Template's Core Feature
+
+The novel template automatically detects and styles seven categories of meta-narrative text common in literary fiction, horror, and experimental prose. Detection is based on the content and formatting of each paragraph — you write plain markdown and the template applies the appropriate styling.
+
+### The seven categories
+
+| Category | Detection rule | Style applied |
+|----------|---------------|---------------|
+| ERASURE | Italic text that is all-caps, OR italic text containing erasure phrases ("was never here", "never met", "does not exist", etc.) | Courier-Bold 12pt, centered, 6mm spacing above and below — visually devastating |
+| SYSTEM_COMMAND | All-caps text (e.g. RETURN TO STREAM, RUN, ERASE), or mostly-caps text with apostrophes (e.g. IF YOU'RE READING THIS) | Courier-Bold 11pt, centered, 3mm spacing |
+| SYSTEM_TAG | Paragraph that starts with `[` and contains `]` (e.g. `[NO SOUND]`, `[LOADING ERROR]`) | Courier 9pt on tinted background |
+| SYSTEM_LOG | Blockquote paragraphs (lines starting with `>`) | Courier 9pt on tinted background, indented — renders as monospace log, not a "KEY INSIGHT" callout box |
+| CORRUPTED | Contains the `░` block character | Courier-Oblique 9pt |
+| ITALIC_VOICE | Entire paragraph wrapped in `*italic*` (entity whispers, notebook entries, interior voice) | Times-Italic 9.5pt, indented 18pt on both sides |
+| Normal prose | Everything else | Passes through unchanged in the body font |
+
+### How to use these categories in your manuscript
+
+You do not configure or annotate these categories. Write your manuscript naturally:
+
+- For a system command, write it in all caps: `RETURN TO STREAM`
+- For a system tag, write it in brackets: `[NO SOUND]`
+- For corrupted text, include the `░` character in the line
+- For blockquote logs, use standard markdown blockquote syntax: `> LOG ENTRY 4412`
+- For an entity voice or notebook entry, wrap the entire paragraph in `*asterisks*`
+- For an erasure (redacted text that implies a presence), write in all-caps italic: `*SHE WAS NEVER HERE*`
+
+The template detects the category and styles accordingly. All other paragraphs are treated as normal prose.
+
+### Why SYSTEM_LOG matters
+
+The `book` template renders blockquotes as "KEY INSIGHT" callout boxes — a design element appropriate for technical documentation and executive briefings, not for in-world log entries, found footage, or system readouts. The `novel` template overrides this behavior. Blockquotes render as indented monospace text on a tinted background, functioning as a visual log panel rather than a highlight box.
+
+---
+
+## 7. Generating the PDF
+
+Once your directory is structured and your config is in place, generate the PDF with:
+
+```bash
+briefkit generate docs/novel-name/ --config briefkit.yml --force --no-ids --template novel
+```
+
+### Flag explanation
+
+**`docs/novel-name/`** — The path to the directory containing the numbered chapter files and `README.md`. This is the directory that holds the `.md` files, not the project root.
+
+**`--config briefkit.yml`** — Explicitly points to the config file at the project root. Passing it explicitly is safer than relying on automatic discovery and avoids ambiguity when running from different working directories.
+
+**`--force`** — Regenerate the PDF even if BriefKit determines the output is already current. During writing and editing, sources change frequently; `--force` ensures every run produces a fresh PDF.
+
+**`--no-ids`** — Skip document ID assignment. BriefKit's document ID system is designed for technical documentation sets and is not useful for novels. Skipping it keeps chapter files clean.
+
+**`--template novel`** — Explicitly select the novel template. This supplements the `template.preset: "novel"` in `briefkit.yml`. If `briefkit.yml` already specifies the novel preset, the flag is redundant but harmless. Passing it explicitly prevents accidental use of the wrong template if the config is missing or misconfigured.
+
+### Output location
+
+BriefKit writes the PDF to `executive-briefing.pdf` inside the docs directory you passed:
+
+```
+docs/novel-name/executive-briefing.pdf
+```
+
+Rename it after generation:
+
+```bash
+mv docs/novel-name/executive-briefing.pdf "My Novel Title.pdf"
+```
+
+### Verbose mode
+
+If the output is not what you expected, run with `--verbose` to see what BriefKit extracted:
+
+```bash
+briefkit generate docs/novel-name/ --config briefkit.yml --force --no-ids --template novel --verbose
+```
+
+Verbose output shows the number of subsystems (chapters) detected, the word count per chapter, and the config values in effect. If you see 0 subsystems, the chapter files were not detected — check the numbered file naming pattern and the hierarchy settings.
+
+---
+
+## 8. Common Issues and Fixes
+
+### a) 0 subsystems extracted — no chapters in the PDF
+
+**Symptom:** BriefKit generates a PDF with a title page and TOC but no chapter content. The verbose output reports "0 subsystems extracted."
+
+**Cause:** BriefKit is not finding the numbered chapter files. This is almost always caused by one of two things:
+
+1. The `briefkit.yml` is missing the `hierarchy` settings, or the hierarchy settings are wrong for a flat novel directory.
+2. The `briefkit.yml` is inside the docs directory rather than at the project root.
+
+**Fix:** Ensure `briefkit.yml` is at the project root (the directory that contains `docs/`), not inside `docs/novel-name/`. Ensure the config contains:
+
+```yaml
 hierarchy:
   root_level: 3
   depth_to_level:
     0: 3
-EOF
-
-# 3. Write README
-cat > my-book/docs/my-novel/README.md << 'EOF'
-# My Novel
-
-A horror novel about liminal spaces.
-EOF
-
-# 4. Write a preface
-cat > my-book/docs/my-novel/preface.md << 'EOF'
-# Preface
-
-This book began as a thought experiment. It became something else.
-EOF
-
-# 5. Write a chapter
-cat > my-book/docs/my-novel/01-the-beginning.md << 'EOF'
-# Part 1 — The Beginning
-
-## Chapter 1: The Door
-
-The door was always there. Most people never noticed it.
-
-She noticed it on a Tuesday, which is the sort of day when such things happen.
-The hallway behind it stretched further than it should have, lit by fluorescent tubes
-that hummed at a frequency just below conscious hearing.
-
-She stepped through.
-EOF
-
-# 6. Write a glossary
-cat > my-book/docs/my-novel/glossary.md << 'EOF'
-# Glossary
-
-**The Liminal** — Spaces that exist between defined places; thresholds, waiting rooms,
-empty hallways. In folk tradition, sites of transition and potential transformation.
-
-**The Door** — Not a specific door, but a door. Recognizable by the way it seems
-to be waiting for you.
-EOF
-
-# 7. Generate
-briefkit generate my-book/docs/my-novel/ \
-  --config my-book/briefkit.yml \
-  --force --no-ids --verbose
-
-# 8. Rename output
-mv my-book/docs/my-novel/executive-briefing.pdf my-book/My_Novel.pdf
-echo "Done. PDF at: my-book/My_Novel.pdf"
 ```
 
----
+### b) Content truncated — chapters cut off mid-scene
 
-## The Gothic Preset
+**Symptom:** Chapters appear in the PDF but end abruptly before the actual content ends.
 
-The `gothic` preset was designed specifically for horror and literary fiction. It prioritizes readability and atmosphere over corporate branding.
+**Cause:** BriefKit's default `max_words_per_section` is 3000 words. A single chapter file for a novel frequently exceeds this.
 
-### Design values
-
-| Property | Value | Rationale |
-|----------|-------|-----------|
-| Body font | Times-Roman | Literary tradition; easier to read than sans-serif in long prose |
-| Heading font | Times-Bold | Consistent with body; authoritative without being corporate |
-| Body text color | `#1C1C1C` (near-black) | Readable without the harshness of pure black on white |
-| Page background | `#FAFAF5` (warm off-white) | Easier on the eyes than pure white; reduces glare in digital reading |
-| Accent color | `#8B7355` (muted brown) | Aged parchment; appropriate for horror and Gothic fiction |
-| Rule/divider color | `#C0B8A8` (warm gray) | Subtle; does not compete with text |
-| Chapter title style | Large, centered | Classic book typography |
-
-### Where it came from
-
-The gothic preset was created during production of *The Backrooms: A Jcore Adaptation*, a 50,000-word liminal horror novel that became the first BriefKit book. The design brief: readable for long sittings, atmospheric without being theatrical, and appropriate for digital distribution.
-
-### When to use gothic
-
-Use gothic for:
-- Horror fiction (obviously)
-- Gothic romance
-- Literary fiction with atmospheric or dark themes
-- Historical fiction
-- Anything where "old book" aesthetics serve the story
-
-Do not use gothic for:
-- Contemporary fiction that should feel modern (use `ink` or `charcoal`)
-- Children's books or light comedy
-- Science fiction with a technological aesthetic (use `mono`)
-
-### Customizing gothic
+**Fix:** Set the limit higher in `briefkit.yml`:
 
 ```yaml
-brand:
-  preset: "gothic"
-
-  # Make it darker and more intense
-  body_text: "#0D0D0D"
-  background: "#F5F0E8"
-  accent: "#6B4F2A"
-
-  # Or lighter and more readable
-  body_text: "#2A2A2A"
-  background: "#FFFFFF"
-  accent: "#A09070"
+content:
+  max_words_per_section: 10000
 ```
 
+For very long chapters, increase this further. There is no practical upper limit.
+
+### c) `&nbsp;` or other HTML entities rendering as literal text
+
+**Symptom:** The PDF contains the string `&nbsp;` or `&amp;` or `&mdash;` in the body text.
+
+**Cause:** BriefKit uses ReportLab for PDF generation, not an HTML renderer. HTML character entities are treated as plain text and are not decoded.
+
+**Fix:** Strip HTML entities from your source markdown before generating:
+
+```bash
+sed -i 's/&nbsp;/ /g; s/&amp;/\&/g; s/&mdash;/—/g; s/&ndash;/–/g; s/&ldquo;/"/g; s/&rdquo;/"/g' docs/novel-name/*.md
+```
+
+### d) Doubled chapter numbers in the PDF
+
+**Symptom:** The PDF renders chapter headings as "Chapter 1 Chapter 1: The First Step" — the number appears twice.
+
+**Cause:** An older version of the book template added its own "Chapter N" prefix before the H1 content. This was a template bug.
+
+**Fix:** Update BriefKit to the current version. The novel template uses the H1 heading from your content directly as the chapter title, with no prefix added.
+
+```bash
+pip install --upgrade briefkit
+```
+
+### e) Footer copyright text truncated
+
+**Symptom:** The copyright notice in the page footer is cut off mid-sentence.
+
+**Cause:** An earlier version of the book template allocated insufficient width to the footer text field.
+
+**Fix:** Update BriefKit. The current footer uses 85% of page width and places the page number and copyright notice on separate lines to prevent collision.
+
+### f) Orphaned chapter headings
+
+**Symptom:** A chapter title (`## H2`) appears alone at the bottom of a page with no body text following it.
+
+**Cause:** ReportLab placed the heading at the bottom of one page and the paragraph content at the top of the next, splitting the heading from its content.
+
+**Fix:** Update BriefKit. The novel template applies `keepWithNext` to H2 headings, which instructs ReportLab to keep the heading on the same page as the content that follows it.
+
+### g) Auto-generated glossary contains chapter names
+
+**Symptom:** The glossary page in the PDF lists "Chapter 1: The First Step", "Chapter 2: The Sound", etc. rather than actual glossary terms.
+
+**Cause:** If no `glossary.md` file is present, BriefKit's automatic term extractor treats H2 headings throughout the body content as glossary terms. For fiction, H2 headings are chapter names, not terms to define.
+
+**Fix:** Create `glossary.md` in the docs directory with genuine definitions. When BriefKit finds `glossary.md`, it uses it instead of the auto-extractor. See section 3.1, step 9.
+
+### h) Duplicate content from the manuscript split
+
+**Symptom:** The PDF includes an "END" marker, a raw copyright block, or author notes that were in the original manuscript but should not appear in the typeset PDF.
+
+**Cause:** The manuscript was split without stripping back matter. BriefKit renders everything it finds in the numbered chapter files.
+
+**Fix:** Edit the chapter files to remove any end-of-manuscript markers, raw copyright text, or notes. Alternatively, use the v2 split script in section 3.3, which strips END markers and back matter automatically. BriefKit generates its own copyright page and colophon — the manuscript's originals must not appear in the body chapters.
+
+### i) Generic preface rather than the novel's actual preface
+
+**Symptom:** The preface page contains generic text derived from the README rather than the preface you wrote.
+
+**Cause:** BriefKit generates a preface from the README overview if no `preface.md` file is present in the docs directory.
+
+**Fix:** Create `preface.md` in the docs directory. See section 3.1, step 8.
+
+### j) Half-empty pages between Parts
+
+**Symptom:** Each Part in the PDF ends on a half-empty page, leaving a large block of whitespace before the next Part begins.
+
+**Cause:** You are using the `book` template. The `book` template forces a `PageBreak` after every chapter file regardless of how much space remains on the current page.
+
+**Fix:** Use the `novel` template instead. Set `template.preset: "novel"` in `briefkit.yml` and pass `--template novel` on the command line. The novel template uses `CondPageBreak(80mm)`, which only inserts a page break if fewer than 80mm remain on the current page. Parts flow continuously and the Part heading provides the visual separation.
+
+### k) Meta-narrative elements render as plain text
+
+**Symptom:** System commands, erasure text, in-world tags, and other meta-narrative elements appear in the same body font as normal prose, with no visual distinction.
+
+**Cause:** You are using the `book` template. The `book` template has no narrative formatting categories and passes all paragraph text through unchanged.
+
+**Fix:** Use the `novel` template. Set `template.preset: "novel"` in `briefkit.yml` and pass `--template novel` on the command line. The novel template auto-detects and styles all seven narrative formatting categories described in section 6.
+
+### l) Blockquotes render as "KEY INSIGHT" callout boxes
+
+**Symptom:** In-world log entries, found footage transcripts, and system readouts written as blockquotes (`>`) render as highlighted callout boxes with a "KEY INSIGHT" label, styled as executive document pull-quotes.
+
+**Cause:** You are using the `book` template. The `book` template renders all blockquotes as callout boxes, which is appropriate for technical documents but not for fiction.
+
+**Fix:** Use the `novel` template. The novel template renders blockquotes as indented monospace text on a tinted background — visually a log panel, not a highlight box.
+
+### m) Colophon says "Typeset by briefkit"
+
+**Symptom:** The colophon page ends with "Typeset by briefkit" rather than a proper publisher colophon.
+
+**Cause:** You are using the `book` template. The `book` template generates a generic colophon with a "Typeset by BriefKit" line.
+
+**Fix:** Use the `novel` template. The novel template generates a proper closing colophon containing the title, organization, a decorative rule, the copyright notice, a fiction disclaimer, and the first edition date. There is no "Typeset by briefkit" line.
+
 ---
 
-## Production Checklist
+## 9. Full Example: The Backrooms
 
-Before generating your final PDF, verify:
+The `examples/novel-template/` directory in this repository demonstrates the complete setup described in this tutorial, using a Backrooms horror novel as the sample project.
 
-- [ ] All chapter files are zero-padded and in correct order
-- [ ] Every chapter file has an H1 heading as its first heading
-- [ ] HTML entities stripped from all chapter files
-- [ ] Back matter stripped from all chapter files
-- [ ] `README.md` present with book title
-- [ ] `preface.md` written (not auto-generated)
-- [ ] `glossary.md` created with real terms
-- [ ] `briefkit.yml` at project root (not inside `docs/`)
-- [ ] `hierarchy.root_level: 3` set in config
-- [ ] `content.max_words_per_section: 10000` set in config
-- [ ] `template.preset: "book"` set in config
-- [ ] Run with `--verbose` to verify all chapters extracted
-- [ ] Total word count in verbose output close to manuscript word count
-- [ ] Renamed output from `executive-briefing.pdf` to final filename
-- [ ] Opened PDF and verified: title page, TOC, all chapters present, no truncation
+The `novel` template was developed during the production of this novel. The Backrooms manuscript — a multi-Part horror novel with system commands, erasure text, in-world tags, corrupted passages, and entity voice narration — exposed all of the formatting limitations of the `book` template described in issues j through m above. The `novel` template was built specifically to address them.
 
----
+### Example directory structure
 
-## Reference
+```
+examples/novel-template/
+  briefkit.yml
+  docs/
+    backrooms-novel/
+      README.md
+      preface.md
+      glossary.md
+      01-level-0-the-lobby.md
+      02-level-1-pipe-dreams.md
+      03-the-descent.md
+      executive-briefing.pdf
+```
 
-### briefkit.yml full schema for books
+The `briefkit.yml` at `examples/novel-template/briefkit.yml` uses the `novel` template and `gothic` preset:
 
 ```yaml
 project:
-  name: string               # Book title (required)
-  org: string                # Author or publisher (required)
-  tagline: string            # Subtitle or genre tag (optional)
+  name: "The Backrooms"
+  org: "Offtrack Media"
+  tagline: "There are places the map does not show."
 
 brand:
-  preset: string             # gothic | ink | charcoal | mono | crimson
-  org: string                # Display org on title page
-  copyright: string          # Copyright notice string
-  font_body: string          # ReportLab font name (optional override)
-  font_heading: string       # ReportLab font name (optional override)
-  body_text: string          # Hex color for body text (optional override)
-  background: string         # Hex color for page background (optional override)
-  accent: string             # Hex color for accents (optional override)
-  rule_color: string         # Hex color for rules/dividers (optional override)
+  preset: "gothic"
+  org: "Offtrack Media"
+  copyright: "(c) 2024 Offtrack Media"
 
 template:
-  preset: "book"             # Required for book output
+  preset: "novel"
 
 content:
-  max_words_per_section: int # Truncation limit per chapter (default: 3000)
+  max_words_per_section: 10000
 
 hierarchy:
-  root_level: 3              # Required for docs/ directory structure
+  root_level: 3
   depth_to_level:
-    0: 3                     # Required alongside root_level
+    0: 3
 ```
 
-### CLI reference for novel generation
+### Generating the example PDF
+
+From the repository root:
 
 ```bash
-# Standard generate command
-briefkit generate DOCSET_PATH --config CONFIG_PATH --force --no-ids
-
-# With verbose output for debugging
-briefkit generate DOCSET_PATH --config CONFIG_PATH --force --no-ids --verbose
-
-# Check BriefKit version
-briefkit --version
-
-# List available presets
-briefkit presets
-
-# Validate config without generating
-briefkit validate --config CONFIG_PATH
+cd examples/novel-template
+briefkit generate docs/backrooms-novel/ --config briefkit.yml --force --no-ids --template novel
 ```
 
-### File structure quick reference
+The PDF is written to `examples/novel-template/docs/backrooms-novel/executive-briefing.pdf`.
 
-```
-project-root/
-  briefkit.yml               ← Config here (REQUIRED at root)
-  docs/
-    my-novel/
-      README.md              ← Book title + description (REQUIRED)
-      preface.md             ← Preface content (recommended)
-      glossary.md            ← Term definitions (recommended for genre fiction)
-      01-chapter-one.md      ← Chapter files (at least 1 required)
-      02-chapter-two.md
-      ...
-      NN-chapter-last.md
-```
+### Applying this setup to your own novel
 
-Output after generation:
-```
-  docs/
-    my-novel/
-      executive-briefing.pdf ← Generated PDF (rename this)
-```
+1. Copy `examples/novel-template/briefkit.yml` to your project root.
+2. Update `project.name`, `project.org`, `project.tagline`, and `brand.copyright`.
+3. Create your docs directory and split your manuscript into numbered files following the heading conventions in section 3.
+4. Add `preface.md` and `glossary.md` to the docs directory.
+5. Run the generate command pointing at your docs directory.
 
+---
+
+## 10. Reference: Pages the Novel Template Generates
+
+| Page | Content | Source |
+|------|---------|--------|
+| Half-title page | Novel title, centered, nothing else | `project.name` in `briefkit.yml` |
+| Full title page | Title, tagline, organization, year | `project.name`, `project.tagline`, `project.org` |
+| Copyright page | Copyright notice, rights reserved statement | `brand.copyright` |
+| Table of contents | Auto-generated from chapter H1 headings | Numbered `.md` files |
+| Preface | Full preface text | `preface.md` if present, otherwise README overview |
+| Chapters | Continuous flow, narrative-aware formatting | `01-*.md`, `02-*.md`, etc. |
+| Glossary | Term definitions | `glossary.md` if present, otherwise auto-extracted H2 headings |
+| Colophon | Title, org, decorative rule, copyright, fiction disclaimer, edition | Auto-generated from `brand` and `project` config |
+
+The novel template does not produce a cover or back cover. These are features of briefing-template document types, not the novel template. The novel template produces front matter, body, and back matter in the tradition of printed fiction.

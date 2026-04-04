@@ -17,11 +17,14 @@ class TestTemplateRegistry:
         names = [t["name"] if isinstance(t, dict) else t for t in list_templates()]
         assert "briefing" in names
 
-    def test_list_templates_includes_all_eleven(self):
+    def test_list_templates_includes_all_twenty_five(self):
         names = [t["name"] if isinstance(t, dict) else t for t in list_templates()]
         expected = {
             "briefing", "report", "book", "manual", "academic",
             "minimal", "letter", "contract", "register", "minutes", "novel",
+            "proposal", "policy", "invoice", "quote", "certificate", "resume",
+            "evaluation", "newsletter", "sop", "memo", "whitepaper", "datasheet",
+            "playbook", "deck",
         }
         assert expected.issubset(set(names))
 
@@ -40,6 +43,9 @@ class TestTemplateRegistry:
     @pytest.mark.parametrize("name", [
         "briefing", "report", "book", "manual", "academic",
         "minimal", "letter", "contract", "register", "minutes", "novel",
+        "proposal", "policy", "invoice", "quote", "certificate", "resume",
+        "evaluation", "newsletter", "sop", "memo", "whitepaper", "datasheet",
+        "playbook", "deck",
     ])
     def test_get_template_returns_class(self, name):
         cls = get_template(name)

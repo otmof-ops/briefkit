@@ -56,6 +56,10 @@ Available templates
                                    alpha-numeric body sections, justified text, back cover)
   datasheet  DatasheetTemplate  — technical datasheet/spec (org grid, project sections,
                                    component spec tables, teal banners — no cover, no TOC)
+  playbook   PlaybookTemplate   — phase-based playbook (dark cover, auto-detected phases,
+                                   role callouts, running footer — incident response, runbooks)
+  deck       DeckTemplate       — landscape slide deck (one subsystem per slide, Sequoia-flow
+                                   reordering, title bars, cover/closing slides)
 """
 from __future__ import annotations
 
@@ -65,6 +69,7 @@ from briefkit.templates.briefing import BriefingTemplate
 from briefkit.templates.certificate import CertificateTemplate
 from briefkit.templates.contract import ContractTemplate
 from briefkit.templates.datasheet import DatasheetTemplate
+from briefkit.templates.deck import DeckTemplate
 from briefkit.templates.evaluation import EvaluationTemplate
 from briefkit.templates.invoice import InvoiceTemplate
 from briefkit.templates.letter import LetterTemplate
@@ -74,6 +79,7 @@ from briefkit.templates.minimal import MinimalTemplate
 from briefkit.templates.minutes import MinutesTemplate
 from briefkit.templates.newsletter import NewsletterTemplate
 from briefkit.templates.novel import NovelTemplate
+from briefkit.templates.playbook import PlaybookTemplate
 from briefkit.templates.policy import PolicyTemplate
 from briefkit.templates.proposal import ProposalTemplate
 from briefkit.templates.quote import QuoteTemplate

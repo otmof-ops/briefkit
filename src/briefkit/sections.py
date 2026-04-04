@@ -14,6 +14,7 @@ from briefkit.generator import (
 )
 from briefkit.styles import (
     _get_brand, _hex, _ps, _safe_para, _safe_text,
+    get_brand, hex_color, make_style, safe_para, safe_text,
     CONTENT_WIDTH, GUTTER, MARGIN_TOP, MARGIN_BOTTOM, MARGIN_LEFT, MARGIN_RIGHT,
     build_styles,
 )
@@ -29,6 +30,9 @@ __all__ = [
     "BaseBriefingTemplate",
     "HierarchyTreeFlowable",
     "detect_level",
+    # Public API (prefer these)
+    "get_brand", "hex_color", "make_style", "safe_para", "safe_text",
+    # Legacy underscore names (kept for backward compat)
     "_get_brand", "_hex", "_ps", "_safe_para", "_safe_text",
     "CONTENT_WIDTH", "GUTTER", "MARGIN_TOP", "MARGIN_BOTTOM", "MARGIN_LEFT", "MARGIN_RIGHT",
     "build_styles",

@@ -83,7 +83,7 @@ def _register_header_footer(canvas, doc):
     if title:
         caption_c = HexColor(b.get("caption", "#666666"))
         top_y = page_height - doc.topMargin + 8 * mm
-        canvas.setFont("Helvetica", 8)
+        canvas.setFont(b.get("font_body", "Helvetica"), 8)
         canvas.setFillColor(caption_c)
         canvas.drawRightString(page_width - doc.rightMargin, top_y, title)
 
@@ -95,7 +95,7 @@ def _register_header_footer(canvas, doc):
 
     # Footer — "Page X of Y" centered
     bottom_y = doc.bottomMargin - 6 * mm
-    canvas.setFont("Helvetica", 7)
+    canvas.setFont(b.get("font_body", "Helvetica"), 7)
     canvas.setFillColor(HexColor(b.get("caption", "#666666")))
     canvas.drawCentredString(
         page_width / 2, bottom_y + 1.5 * mm,

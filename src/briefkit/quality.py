@@ -61,9 +61,9 @@ def run_quality_gates(pdf_path, level=3, thresholds=None):
             report.append("FAIL: Invalid PDF header (not a PDF file)")
         else:
             report.append("PASS: Valid PDF header")
-    except Exception as e:
+    except OSError as exc:
         passed = False
-        report.append(f"FAIL: Could not read file: {e}")
+        report.append(f"FAIL: Could not read file: {exc}")
 
     # Check page count and metadata (if pypdf available)
     try:
@@ -87,7 +87,7 @@ def run_quality_gates(pdf_path, level=3, thresholds=None):
                 report.append("PASS: PDF metadata present")
             else:
                 report.append("WARN: No title in PDF metadata")
-        except Exception:
+        except Exception:  # noqa: BLE001 — pypdf may raise various errors
             report.append("WARN: Could not read page count")
 
     return passed, report

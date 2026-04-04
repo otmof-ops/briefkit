@@ -308,7 +308,7 @@ def _extract_doc_set_content(path: Path, config: dict) -> dict:
     # .source-type marker
     source_type_file = path / ".source-type"
     if source_type_file.exists():
-        raw_st = _read(source_type_file)
+        raw_st = _read_file(source_type_file)
         st_info: dict[str, str] = {}
         for ln in raw_st.splitlines():
             if ":" in ln:
@@ -320,7 +320,7 @@ def _extract_doc_set_content(path: Path, config: dict) -> dict:
     # Orientation doc (e.g. 00-what-is-*.md)
     orientation_files = sorted(path.glob(ori_pattern))
     if orientation_files:
-        raw_ori = _read(orientation_files[0])
+        raw_ori = _read_file(orientation_files[0])
         total_words += _count_words(raw_ori)
         result["orientation"] = raw_ori
         result["metrics"]["has_orientation"] = True
@@ -328,7 +328,7 @@ def _extract_doc_set_content(path: Path, config: dict) -> dict:
     # README.md
     readme = path / "README.md"
     if readme.exists():
-        raw = _read(readme)
+        raw = _read_file(readme)
         total_words += _count_words(raw)
         m = re.search(r'^#\s+(.+)$', raw, re.MULTILINE)
         if m:
@@ -361,7 +361,7 @@ def _extract_doc_set_content(path: Path, config: dict) -> dict:
     total_table_count = 0
 
     for fp in numbered_files:
-        raw = _read(fp)
+        raw = _read_file(fp)
         raw_size = len(raw.encode("utf-8", errors="replace"))
         chapter_sizes.append(raw_size)
         total_words += _count_words(raw)
@@ -434,14 +434,14 @@ def _extract_doc_set_content(path: Path, config: dict) -> dict:
     # engineering-brilliance.md
     brilliance = path / "engineering-brilliance.md"
     if brilliance.exists():
-        raw = _read(brilliance)
+        raw = _read_file(brilliance)
         total_words += _count_words(raw)
         result["brilliance_summary"] = raw
 
     # guide.md
     guide = path / "guide.md"
     if guide.exists():
-        raw = _read(guide)
+        raw = _read_file(guide)
         total_words += _count_words(raw)
         result["guide_content"] = raw
 
@@ -580,10 +580,7 @@ def _aggregate_subject_content(path: Path, config: dict, date: datetime.date) ->
 
     readme = path / "README.md"
     if readme.exists():
-        if readme.is_symlink():
-            raw = ""
-        else:
-            raw = readme.read_text(encoding="utf-8", errors="replace")
+        raw = _read_file(readme)
         m   = re.search(r'^#\s+(.+)$', raw, re.MULTILINE)
         if m:
             agg["title"] = m.group(1).strip()
@@ -636,10 +633,7 @@ def _aggregate_division_content(path: Path, config: dict, date: datetime.date) -
 
     readme = path / "README.md"
     if readme.exists():
-        if readme.is_symlink():
-            raw = ""
-        else:
-            raw = readme.read_text(encoding="utf-8", errors="replace")
+        raw = _read_file(readme)
         m   = re.search(r'^#\s+(.+)$', raw, re.MULTILINE)
         if m:
             agg["title"] = m.group(1).strip()
@@ -655,10 +649,7 @@ def _aggregate_division_content(path: Path, config: dict, date: datetime.date) -
             }
             sub_readme = child / "README.md"
             if sub_readme.exists():
-                if sub_readme.is_symlink():
-                    raw = ""
-                else:
-                    raw = sub_readme.read_text(encoding="utf-8", errors="replace")
+                raw = _read_file(sub_readme)
                 subject_data["overview"] = raw[:500]
                 m = re.search(r'^#\s+(.+)$', raw, re.MULTILINE)
                 if m:
@@ -701,10 +692,7 @@ def _aggregate_root_content(path: Path, config: dict, date: datetime.date) -> di
 
     readme = path / "README.md"
     if readme.exists():
-        if readme.is_symlink():
-            raw = ""
-        else:
-            raw = readme.read_text(encoding="utf-8", errors="replace")
+        raw = _read_file(readme)
         agg["overview"] = raw[:3000]
         m = re.search(r'^#\s+(.+)$', raw, re.MULTILINE)
         if m:
@@ -712,10 +700,7 @@ def _aggregate_root_content(path: Path, config: dict, date: datetime.date) -> di
 
     guide = path / "guide.md"
     if guide.exists():
-        if guide.is_symlink():
-            raw = ""
-        else:
-            raw = guide.read_text(encoding="utf-8", errors="replace")
+        raw = _read_file(guide)
         agg["guide_content"] = raw[:2000]
 
     return agg

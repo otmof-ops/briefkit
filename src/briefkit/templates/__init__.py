@@ -48,6 +48,14 @@ Available templates
                                    title, recipient, description, signature)
   resume     ResumeTemplate     — professional CV/resume (centered name, education,
                                    work experience, skills — monochrome, single page)
+  sop        SOPTemplate        — standard operating procedure (header block, approval table,
+                                   change history, auto-numbered sections, SOP header/footer)
+  memo       MemoTemplate       — memorandum (title, metadata block, flat prose body,
+                                   closing — no headers/footers, wider margins)
+  whitepaper WhitepaperTemplate — NASA-style white paper (cover, alphabetic TOC,
+                                   alpha-numeric body sections, justified text, back cover)
+  datasheet  DatasheetTemplate  — technical datasheet/spec (org grid, project sections,
+                                   component spec tables, teal banners — no cover, no TOC)
 """
 from __future__ import annotations
 
@@ -56,10 +64,12 @@ from briefkit.templates.book import BookTemplate
 from briefkit.templates.briefing import BriefingTemplate
 from briefkit.templates.certificate import CertificateTemplate
 from briefkit.templates.contract import ContractTemplate
+from briefkit.templates.datasheet import DatasheetTemplate
 from briefkit.templates.evaluation import EvaluationTemplate
 from briefkit.templates.invoice import InvoiceTemplate
 from briefkit.templates.letter import LetterTemplate
 from briefkit.templates.manual import ManualTemplate
+from briefkit.templates.memo import MemoTemplate
 from briefkit.templates.minimal import MinimalTemplate
 from briefkit.templates.minutes import MinutesTemplate
 from briefkit.templates.newsletter import NewsletterTemplate
@@ -70,6 +80,8 @@ from briefkit.templates.quote import QuoteTemplate
 from briefkit.templates.register import RegisterTemplate
 from briefkit.templates.report import ReportTemplate
 from briefkit.templates.resume import ResumeTemplate
+from briefkit.templates.sop import SOPTemplate
+from briefkit.templates.whitepaper import WhitepaperTemplate
 
 _REGISTRY: dict[str, type] = {
     "briefing":  BriefingTemplate,
@@ -91,6 +103,10 @@ _REGISTRY: dict[str, type] = {
     "quote":        QuoteTemplate,
     "certificate":  CertificateTemplate,
     "resume":       ResumeTemplate,
+    "sop":          SOPTemplate,
+    "memo":         MemoTemplate,
+    "whitepaper":   WhitepaperTemplate,
+    "datasheet":    DatasheetTemplate,
 }
 
 
@@ -103,7 +119,8 @@ def get_template(name: str) -> type:
     name : str
         Template name, case-insensitive.  One of:
         briefing, report, book, manual, academic, minimal, letter, contract,
-        register, minutes, evaluation, newsletter, proposal, policy, invoice, quote.
+        register, minutes, evaluation, newsletter, proposal, policy, invoice, quote,
+        certificate, resume, sop, memo.
 
     Returns
     -------
@@ -149,6 +166,10 @@ __all__ = [
     "QuoteTemplate",
     "CertificateTemplate",
     "ResumeTemplate",
+    "SOPTemplate",
+    "MemoTemplate",
+    "WhitepaperTemplate",
+    "DatasheetTemplate",
     "get_template",
     "list_templates",
 ]

@@ -87,7 +87,8 @@ class BookTemplate(BaseBriefingTemplate):
             "BookTitle", brand=b,
             fontSize=ft_size, textColor=primary,
             fontName="Helvetica-Bold", alignment=1,
-            spaceAfter=10,
+            leading=ft_size + 8,
+            spaceAfter=6 * mm,
         )
         subtitle_text = self.config.get("project", {}).get("tagline", "")
         sub_style = _ps(

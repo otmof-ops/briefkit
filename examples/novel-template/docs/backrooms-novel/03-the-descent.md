@@ -1,31 +1,55 @@
-# Part 3 — Level 2: Pipe Dreams
+# Part 3 — The Descent
 
-## Chapter 11: The Heat
+## Chapter 7: What Lies Below
 
-The difference between Level 1 and Level 2 was not architectural. She only understood that she had crossed when she realized she could no longer breathe without effort.
+She did not expect Level 2 to be dark.
 
-The air in Level 1 had been close and slightly metallic, the smell of old galvanized steel and standing water and the faint almond undertone that seemed to be the Backrooms' own atmospheric signature. She had grown used to it the way you grow used to the smell of a basement apartment: gradually, completely, until the smell was simply the quality of air and air was simply what existed. Level 2's air was different in a way that took her body several seconds to communicate to her brain. It was hot. Not the ambient warmth of the pipes in Level 1, which had been the warmth of something useful, something domestic. This was heat without purpose. The temperature of a room that had been sealed for years with a heat source inside it and no ventilation to carry the accumulation away.
+She had come to understand the Backrooms as a place that was committed to a certain kind of light: institutional, sourceless, eternal. It was one of the handful of certainties she had accumulated. So when she stepped through the maintenance corridor and felt the air change — colder, damper, carrying a mineral quality that suggested underground rather than simply enclosed — and looked ahead into genuine, thorough darkness, she felt something she had not felt since the first minutes in Level 0.
 
-She stopped walking. The maintenance corridor had opened, without warning or transition, into a space that was simply large. She could not see the far wall. She could see the ceiling because the ceiling was low — eight feet, maybe nine — and it was not concrete here but a suspended grid of acoustic tile, the kind used in commercial drop ceilings, except that perhaps a third of the tiles were missing and the gaps showed darkness above them, and from several of those gaps trailed the ends of what might have been cables or might have been something else, hanging motionless in the hot dead air.
+She felt like a child.
 
-She did not look at the hanging things for long.
+Her phone was dead. She had a small LED flashlight she had found in a maintenance cabinet in Level 1, the kind that took two AA batteries and produced a cone of white light approximately six feet in diameter. The batteries would last, she estimated, another eight hours if she used it continuously. She had no additional batteries.
 
-The floor was carpet again. Not the mustard of Level 0 but a deep institutional grey, the color of a government building in the decade before it got its first renovation budget. The carpet was dry. In Level 1 the floors had always been faintly damp, the moisture seeping up through the concrete with the patient indifference of water finding its level. Here the carpet was dry enough that her footsteps made a faint sound she had not heard in a long time: the soft static of friction.
+Eight hours. She turned the flashlight on and started walking.
 
-## Chapter 12: The Ceiling
+Level 2 was industrial in scale. The ceiling, when her light reached it, was high enough to suggest a warehouse or a production floor, hung with ductwork and cable trays and the remnants of a lighting system that had failed completely. The floor was bare concrete, cracked along geological lines that spoke of settling over time measured in decades. Rows of shelving units, empty, ran in both directions, their geometry giving her something like a map: if she followed one row, she would at least travel in a consistent direction.
 
-She had been moving for what she estimated was three hours when she heard the ceiling move.
+She followed the nearest row east.
 
-It was not a dramatic sound. It was not the crash and scrape of something large relocating itself in the darkness above the tiles. It was small and unhurried and it covered distance with a consistency that suggested not one thing moving but a distributed system, a network of small adjustments, the way a building sounds when it settles in winter — except that buildings settle in response to temperature change and the temperature here was not changing, had not changed since she entered, was the same oppressive and sourceless heat in every direction.
+## Chapter 8: The Noise
 
-She stopped. She counted her own breaths. The sound stopped when she did, which was worse than if it had continued.
+Something made a noise in the dark on the sixth hour.
 
-The note from Level 1 had said: do not stop moving through the room.
+She had turned the flashlight off twice to conserve batteries and both times the darkness had been so complete — the kind of darkness that presses against the eyes like a physical weight and convinces the visual cortex that it is producing input when it is receiving none — that she had turned it back on within thirty seconds, unable to bear the absolute sensory deprivation of it.
 
-She started moving again. The sound started again, slightly ahead of her now, which should not have been possible given that she was certain it had been behind her. She filed this under the category she had mentally labeled things that do not obey ordinary rules, a category that had been expanding steadily since the department store.
+The noise was high and irregular, like metal under stress. She stopped walking. She swept the flashlight in a slow arc. The shelving. The ductwork overhead. The far wall, which she had now reached, bare concrete with the impression of where large machinery had once been bolted, the outlines of its footprint still visible in the floor.
 
-There was a door on the east wall. She had not seen it when she entered the space but she saw it now, a grey rectangle in a grey wall, visible only because someone had taped a strip of yellow electrical tape diagonally across it at eye height. The same tape she had seen in Level 1. The same handwriting on a piece of cardboard hung from the door handle on a wire: "Level 3 is through here. The heat does not follow. Do not stop to read this."
+The noise stopped.
 
-She did not stop to read it.
+She waited.
 
-She was already through.
+It started again, closer, and she identified it this time: a sound of movement across a metal grating she could not see, somewhere above her in the ductwork, something that was not moving toward her but was not moving away either, something that was simply present in the space in the way that all the entities she had encountered were present — without apparent agenda, without the narrative logic that human movement implies, simply occupying the infrastructure and doing whatever it was they did in the spaces between encounters with wanderers.
+
+She walked faster.
+
+## Chapter 9: The Exit
+
+The exit was not what the stories had led her to expect.
+
+She had collected fragments of other wanderers' accounts throughout her passage: notes on walls, scratches on surfaces, the residue of other people's thinking distributed through the architecture of the Backrooms in the way that human thought always distributes itself across physical space given enough time and enough wall space to write on. Most accounts of exits described sudden transitions: a door that had not been there before, a corridor that ended in daylight, a staircase going up that emerged into a street or a building or a field.
+
+Her exit was a loading dock.
+
+She found it on the ninth hour, when the flashlight battery was producing light that was amber rather than white and losing brightness measurably every twenty minutes. The loading dock was at the far end of Level 2, its roll-up door partially raised, the gap beneath it showing a quality of light that was different from the Backrooms' institutional spectrum: the inconsistent, variable, directional light of a real source. Daylight. The particular kind of daylight that comes late in the afternoon when the sun has already moved past its zenith and is beginning its consideration of the horizon.
+
+She lay on the concrete and rolled under the door.
+
+The air hit her with the force of a memory: cold and particulate and carrying the smell of exhaust and leaves and the faint industrial residue of a neighborhood that had once been something other than residential. She was in an alley. Real brick on both sides. A real sky above, grey and specific. The loading dock door behind her was ordinary painted steel, flush with the building's exterior, and when she turned and looked at it she saw that the lock was rusted through, the door slightly ajar as though it had been opened from inside some time ago by something that had not been her.
+
+She stood in the alley for a long time.
+
+Then she took out her notebook — she had kept the notebook dry, against everything, because the habit of writing had been the thing that kept her organized when nothing else remained organized — and she wrote the date as best she could estimate it and the words "Level 0 entry to exit: seventeen days approximate" and a brief inventory of what she had learned.
+
+She did not look back at the door. She already knew that if she looked back the door would be ordinary, would have always been ordinary, would offer nothing but rust and old paint and the smell of a building that had been empty for years.
+
+She walked to the end of the alley and turned left and found a street with traffic on it and stood on the curb and breathed the ordinary contaminated air of the ordinary contaminated world for a long time before she did anything else at all.

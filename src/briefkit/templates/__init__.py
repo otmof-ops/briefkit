@@ -44,12 +44,17 @@ Available templates
                                    line items table, totals, payment terms)
   quote      QuoteTemplate      — quote/estimate (header, metadata, client info,
                                    scope of work, pricing table, terms, acceptance)
+  certificate CertificateTemplate — single-page landscape certificate (decorative border,
+                                   title, recipient, description, signature)
+  resume     ResumeTemplate     — professional CV/resume (centered name, education,
+                                   work experience, skills — monochrome, single page)
 """
 from __future__ import annotations
 
 from briefkit.templates.academic import AcademicTemplate
 from briefkit.templates.book import BookTemplate
 from briefkit.templates.briefing import BriefingTemplate
+from briefkit.templates.certificate import CertificateTemplate
 from briefkit.templates.contract import ContractTemplate
 from briefkit.templates.evaluation import EvaluationTemplate
 from briefkit.templates.invoice import InvoiceTemplate
@@ -64,6 +69,7 @@ from briefkit.templates.proposal import ProposalTemplate
 from briefkit.templates.quote import QuoteTemplate
 from briefkit.templates.register import RegisterTemplate
 from briefkit.templates.report import ReportTemplate
+from briefkit.templates.resume import ResumeTemplate
 
 _REGISTRY: dict[str, type] = {
     "briefing":  BriefingTemplate,
@@ -81,8 +87,10 @@ _REGISTRY: dict[str, type] = {
     "policy":    PolicyTemplate,
     "evaluation": EvaluationTemplate,
     "newsletter": NewsletterTemplate,
-    "invoice":   InvoiceTemplate,
-    "quote":     QuoteTemplate,
+    "invoice":      InvoiceTemplate,
+    "quote":        QuoteTemplate,
+    "certificate":  CertificateTemplate,
+    "resume":       ResumeTemplate,
 }
 
 
@@ -139,6 +147,8 @@ __all__ = [
     "PolicyTemplate",
     "InvoiceTemplate",
     "QuoteTemplate",
+    "CertificateTemplate",
+    "ResumeTemplate",
     "get_template",
     "list_templates",
 ]

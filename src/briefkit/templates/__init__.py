@@ -35,6 +35,11 @@ Available templates
                                    compliance matrices)
   minutes    MinutesTemplate    — meeting minutes (header, attendees, agenda items,
                                    action items, resolutions, closing)
+  evaluation EvaluationTemplate — evaluation report (cover, summary, rubric table,
+                                   detailed findings, statistics, recommendations,
+                                   back cover)
+  newsletter NewsletterTemplate — newsletter (banner, feature article, article sections,
+                                   pull quotes, callout boxes, footer)
   invoice    InvoiceTemplate    — professional invoice (header, metadata, bill-to,
                                    line items table, totals, payment terms)
   quote      QuoteTemplate      — quote/estimate (header, metadata, client info,
@@ -52,6 +57,7 @@ from briefkit.templates.letter import LetterTemplate
 from briefkit.templates.manual import ManualTemplate
 from briefkit.templates.minimal import MinimalTemplate
 from briefkit.templates.minutes import MinutesTemplate
+from briefkit.templates.newsletter import NewsletterTemplate
 from briefkit.templates.novel import NovelTemplate
 from briefkit.templates.policy import PolicyTemplate
 from briefkit.templates.proposal import ProposalTemplate
@@ -73,6 +79,8 @@ _REGISTRY: dict[str, type] = {
     "novel":     NovelTemplate,
     "proposal":  ProposalTemplate,
     "policy":    PolicyTemplate,
+    "evaluation": EvaluationTemplate,
+    "newsletter": NewsletterTemplate,
     "invoice":   InvoiceTemplate,
     "quote":     QuoteTemplate,
 }
@@ -87,7 +95,7 @@ def get_template(name: str) -> type:
     name : str
         Template name, case-insensitive.  One of:
         briefing, report, book, manual, academic, minimal, letter, contract,
-        register, minutes, proposal, policy, invoice, quote.
+        register, minutes, evaluation, newsletter, proposal, policy, invoice, quote.
 
     Returns
     -------
@@ -124,7 +132,9 @@ __all__ = [
     "ContractTemplate",
     "RegisterTemplate",
     "MinutesTemplate",
+    "NewsletterTemplate",
     "NovelTemplate",
+    "EvaluationTemplate",
     "ProposalTemplate",
     "PolicyTemplate",
     "InvoiceTemplate",

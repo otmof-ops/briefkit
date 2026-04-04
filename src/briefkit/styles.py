@@ -446,3 +446,11 @@ def _build_styles_cached(brand_key):
     styles["_table_alt"] = table_alt
 
     return styles
+
+
+# Public aliases for template authors (prefer these over underscore-prefixed versions)
+get_brand = _get_brand
+hex_color = _hex
+make_style = _ps
+safe_para = _safe_para
+safe_text = _safe_text

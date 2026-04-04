@@ -46,6 +46,23 @@ _RE_ITALIC_AST = re.compile(r'\*(.+?)\*')
 _RE_ITALIC_UND = re.compile(r'(?<!\w)_(.+?)_(?!\w)')  # word-boundary restricted
 _RE_INLINE_CODE = re.compile(r'`(.+?)`')
 _RE_MD_LINK = re.compile(r'\[([^\]]+)\]\([^\)]*\)')
+_RE_STRIKETHROUGH = re.compile(r'~~(.+?)~~')
+
+
+def _strip_inline(s: str) -> str:
+    """Convert inline markdown to basic HTML that ReportLab Paragraph accepts."""
+    if not any(c in s for c in '*_`['):
+        return s
+    s = _RE_BOLD_ITALIC_AST.sub(r'<b><i>\1</i></b>', s)
+    s = _RE_BOLD_ITALIC_UND.sub(r'<b><i>\1</i></b>', s)
+    s = _RE_BOLD_AST.sub(r'<b>\1</b>', s)
+    s = _RE_BOLD_UND.sub(r'<b>\1</b>', s)
+    s = _RE_ITALIC_AST.sub(r'<i>\1</i>', s)
+    s = _RE_ITALIC_UND.sub(r'<i>\1</i>', s)
+    s = _RE_INLINE_CODE.sub(r'<font name="Courier">\1</font>', s)
+    s = _RE_STRIKETHROUGH.sub(r'<strike>\1</strike>', s)
+    s = _RE_MD_LINK.sub(r'\1', s)
+    return s
 
 
 # ---------------------------------------------------------------------------
@@ -68,22 +85,6 @@ def parse_markdown(text: str) -> list[dict]:
     blocks: list[dict] = []
     lines = text.splitlines()
     i = 0
-    list_counter = 0
-
-    def _strip_inline(s: str) -> str:
-        """Convert inline markdown to basic HTML that ReportLab Paragraph accepts."""
-        if not any(c in s for c in '*_`['):
-            return s
-        s = _RE_BOLD_ITALIC_AST.sub(r'<b><i>\1</i></b>', s)
-        s = _RE_BOLD_ITALIC_UND.sub(r'<b><i>\1</i></b>', s)
-        s = _RE_BOLD_AST.sub(r'<b>\1</b>', s)
-        s = _RE_BOLD_UND.sub(r'<b>\1</b>', s)
-        s = _RE_ITALIC_AST.sub(r'<i>\1</i>', s)
-        s = _RE_ITALIC_UND.sub(r'<i>\1</i>', s)
-        s = _RE_INLINE_CODE.sub(r'<font name="Courier">\1</font>', s)
-        s = re.sub(r'~~(.+?)~~', r'<strike>\1</strike>', s)
-        s = _RE_MD_LINK.sub(r'\1', s)
-        return s
 
     in_code_block = False
     code_lines: list[str] = []
@@ -193,9 +194,6 @@ def parse_markdown(text: str) -> list[dict]:
         m = _RE_ORDERED_LIST.match(line)
         if m:
             _flush_paragraph()
-            if not last_was_list:
-                list_counter = 0
-            list_counter += 1
             blocks.append({
                 "type": "list_item",
                 "ordered": True,
@@ -237,6 +235,24 @@ def parse_markdown(text: str) -> list[dict]:
 
     return blocks
 
+
+
+_MAX_FILE_BYTES = 10 * 1024 * 1024  # 10 MB
+
+
+def _read_file(fp: Path) -> str:
+    """Read a file safely, skipping symlinks and oversized files."""
+    if fp.is_symlink():
+        return ""
+    try:
+        if fp.stat().st_size > _MAX_FILE_BYTES:
+            return ""
+    except OSError:
+        pass
+    try:
+        return fp.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
 
 
 # ---------------------------------------------------------------------------
@@ -283,22 +299,6 @@ def _extract_doc_set_content(path: Path, config: dict) -> dict:
         },
         "source_type_info": {},
     }
-
-    MAX_FILE_BYTES = 10 * 1024 * 1024  # 10 MB
-
-    def _read(fp: Path) -> str:
-        if fp.is_symlink():
-            return ""
-        try:
-            if fp.stat().st_size > MAX_FILE_BYTES:
-                print(f"Warning: Skipping oversized file ({fp.stat().st_size} bytes): {fp}", file=sys.stderr)
-                return ""
-        except OSError:
-            pass
-        try:
-            return fp.read_text(encoding="utf-8", errors="replace")
-        except OSError:  # file permission / encoding / not-found
-            return ""
 
     def _count_words(t: str) -> int:
         return len(t.split())

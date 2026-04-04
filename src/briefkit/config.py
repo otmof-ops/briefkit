@@ -142,6 +142,8 @@ _COLOR_KEYS = frozenset({
     "success", "warning", "danger", "code_bg", "table_alt",
 })
 
+_FONT_KEYS = frozenset({"font_body", "font_heading", "font_mono", "font_caption"})
+
 
 def _validate_config(cfg: dict[str, Any]) -> list[str]:
     """Return a list of validation error messages (empty means valid)."""
@@ -360,7 +362,8 @@ def _apply_dynamic_defaults(cfg: dict[str, Any], root: Path | None) -> dict[str,
     year = date.today().year
     org = project.get("org", "")
     copyright_tpl = project.get("copyright", "© {year} {org}")
-    project["copyright"] = copyright_tpl.format(year=year, org=org)
+    # Safe substitution — only {year} and {org} are allowed
+    project["copyright"] = copyright_tpl.replace("{year}", str(year)).replace("{org}", org)
 
     return cfg
 
@@ -405,7 +408,6 @@ def load_config(config_path: str | Path | None = None) -> dict[str, Any]:
                 )
             # Capture explicit color overrides before merging with defaults
             raw_brand = user_data.get("brand", {})
-            _FONT_KEYS = {"font_body", "font_heading", "font_mono", "font_caption"}
             user_brand_overrides = {
                 k: v for k, v in raw_brand.items() if k in _COLOR_KEYS or k in _FONT_KEYS
             }

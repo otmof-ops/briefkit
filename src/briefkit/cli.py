@@ -43,7 +43,16 @@ def _load_config(args: argparse.Namespace) -> dict[str, Any]:
         cfg["project"]["org"] = args.org
 
     if getattr(args, "logo", None):
-        cfg["brand"]["logo"] = args.logo
+        logo_path = Path(args.logo)
+        _ALLOWED_LOGO_EXTS = {".png", ".jpg", ".jpeg", ".svg", ".gif"}
+        if not logo_path.exists():
+            print(f"Warning: Logo file not found: {logo_path}", file=sys.stderr)
+        elif logo_path.is_symlink():
+            print(f"Warning: Logo path is a symlink, skipping: {logo_path}", file=sys.stderr)
+        elif logo_path.suffix.lower() not in _ALLOWED_LOGO_EXTS:
+            print(f"Warning: Logo has unsupported extension: {logo_path.suffix}", file=sys.stderr)
+        else:
+            cfg["brand"]["logo"] = str(logo_path.resolve())
 
     return cfg
 
@@ -61,6 +70,9 @@ def _output_path(args: argparse.Namespace, cfg: dict[str, Any], path: Path) -> P
 
 def _open_file(path: Path) -> None:
     """Open *path* with the system default application."""
+    if path.suffix.lower() != ".pdf":
+        print(f"Warning: Refusing to open non-PDF file: {path}", file=sys.stderr)
+        return
     system = platform.system()
     try:
         if system == "Darwin":
@@ -342,7 +354,7 @@ def cmd_quality(args: argparse.Namespace) -> int:
         }
 
     _emit(report, as_json=as_json, quiet=quiet)
-    return 0 if report.get("passed", True) else 1
+    return 0 if report.get("passed", False) else 1
 
 
 def cmd_selftest(args: argparse.Namespace) -> int:

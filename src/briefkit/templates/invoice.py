@@ -19,9 +19,10 @@ Key differences:
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
-from reportlab.lib.colors import HexColor, white
+from reportlab.lib.colors import HexColor, black, white
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.platypus import (
@@ -42,8 +43,24 @@ from briefkit.styles import (
     _ps,
     _safe_para,
     _safe_text,
-    build_styles,
 )
+
+# Canonical 5-column schema for invoice line items
+_CANONICAL_HEADERS = ["Qty", "Description", "Rate", "Adjust", "Sub Total"]
+
+# Header-matching patterns for column mapping
+_COL_PATTERNS = {
+    "qty": re.compile(r"(?i)\b(qty|quantity|hours|hrs|units)\b"),
+    "description": re.compile(r"(?i)\b(description|service|item|name|detail)\b"),
+    "rate": re.compile(r"(?i)\b(rate|price|cost|unit[\s_-]?price)\b"),
+    "adjust": re.compile(r"(?i)\b(adjust|adjustment|discount|disc)\b"),
+    "subtotal": re.compile(r"(?i)\b(total|amount|subtotal|sub[\s_-]?total|sum)\b"),
+}
+
+# Neutral colours for invoice body (no brand colours)
+_HEADER_BG = HexColor("#f2f2f2")
+_GRID_COLOR = HexColor("#CCCCCC")
+_ROW_ALT = HexColor("#f8f9fa")
 
 
 class InvoiceTemplate(BaseBriefingTemplate):
@@ -76,7 +93,7 @@ class InvoiceTemplate(BaseBriefingTemplate):
         story.append(Spacer(1, 3 * mm))
         divider = Table([[""]], colWidths=[self.content_width], rowHeights=[1.5])
         divider.setStyle(TableStyle([
-            ("LINEABOVE", (0, 0), (-1, -1), 1.5, HexColor(b.get("primary", "#1B2A4A"))),
+            ("LINEABOVE", (0, 0), (-1, -1), 1.5, _GRID_COLOR),
         ]))
         story.append(divider)
         story.append(Spacer(1, 6 * mm))
@@ -107,8 +124,13 @@ class InvoiceTemplate(BaseBriefingTemplate):
             story.extend(self._build_line_items_from_subsystems(content))
 
         # --- Totals ---
-        story.extend(self._build_totals_block(all_tables, body_c, primary))
+        story.extend(
+            self._build_totals_block(all_tables, body_c, primary, content),
+        )
         story.append(Spacer(1, 10 * mm))
+
+        # --- Payment details ---
+        story.extend(self._build_payment_details(content, b, caption_c, body_c))
 
         # --- Payment terms ---
         guide = content.get("guide_content", "")
@@ -122,7 +144,7 @@ class InvoiceTemplate(BaseBriefingTemplate):
 
             terms_style = _ps(
                 "InvoiceTerms", brand=b, fontSize=9,
-                textColor=body_c, leading=13,
+                textColor=black, leading=13,
             )
             for block in parse_markdown(guide)[:10]:
                 if block.get("type") == "paragraph":
@@ -132,15 +154,6 @@ class InvoiceTemplate(BaseBriefingTemplate):
                 else:
                     story.extend(self.render_blocks([block]))
             story.append(Spacer(1, 6 * mm))
-
-        # --- Footer ---
-        if org:
-            footer_style = _ps(
-                "InvoiceFooter", brand=b, fontSize=8,
-                textColor=caption_c, alignment=1,
-            )
-            story.append(Spacer(1, 10 * mm))
-            story.append(Paragraph(org, footer_style))
 
         return story
 
@@ -160,7 +173,7 @@ class InvoiceTemplate(BaseBriefingTemplate):
         if org:
             org_style = _ps(
                 "InvoiceOrg", brand=b, fontSize=14,
-                textColor=primary, fontName="Helvetica-Bold",
+                textColor=black, fontName="Helvetica-Bold",
             )
             left_parts.append(Paragraph(org, org_style))
 
@@ -224,18 +237,18 @@ class InvoiceTemplate(BaseBriefingTemplate):
     # Invoice metadata
     # ------------------------------------------------------------------
 
-    def _build_metadata_block(self, primary: HexColor, body_c: HexColor) -> list:
+    def _build_metadata_block(self, _primary: HexColor, _body_c: HexColor) -> list:
         """Build invoice number, date, and due date metadata."""
         flowables: list = []
         b = self.brand
 
         label_style = _ps(
             "InvoiceMetaLabel", brand=b, fontSize=9,
-            textColor=primary, fontName="Helvetica-Bold",
+            textColor=black, fontName="Helvetica-Bold",
         )
         value_style = _ps(
             "InvoiceMetaValue", brand=b, fontSize=9,
-            textColor=body_c,
+            textColor=black,
         )
 
         meta_rows = []
@@ -287,59 +300,140 @@ class InvoiceTemplate(BaseBriefingTemplate):
     # Line items table from markdown tables
     # ------------------------------------------------------------------
 
-    def _build_line_items_table(self, tables: list[dict]) -> list:
-        """Render extracted tables as a professional invoice line-items table."""
-        flowables: list = []
-        b = self.brand
-        styles = build_styles(b)
-        primary = _hex(b, "primary")
-        rule_c = _hex(b, "rule")
-        table_alt = HexColor("#f8f9fa")
+    # ------------------------------------------------------------------
+    # 5-column mapping helpers
+    # ------------------------------------------------------------------
 
+    @staticmethod
+    def _map_columns(headers: list[str]) -> dict[str, int] | None:
+        """Map source headers to canonical column indices.
+
+        Returns a dict {canonical_key: source_index} or None if mapping
+        is impossible.
+        """
+        mapping: dict[str, int] = {}
+        used: set[int] = set()
+        for key, pattern in _COL_PATTERNS.items():
+            for idx, h in enumerate(headers):
+                if idx not in used and pattern.search(str(h)):
+                    mapping[key] = idx
+                    used.add(idx)
+                    break
+        return mapping if mapping else None
+
+    @staticmethod
+    def _row_to_canonical(row: list, mapping: dict[str, int]) -> list[str]:
+        """Convert a source row to the 5-column canonical order."""
+        keys = ["qty", "description", "rate", "adjust", "subtotal"]
+        result: list[str] = []
+        for k in keys:
+            idx = mapping.get(k)
+            if idx is not None and idx < len(row):
+                result.append(str(row[idx]) if row[idx] is not None else "")
+            else:
+                result.append("\u2014")
+        return result
+
+    def _build_line_items(self, tables: list[dict]) -> tuple[list[list[str]], bool]:
+        """Normalise tables into canonical 5-column rows.
+
+        Returns (data_rows_without_header, has_numeric_subtotal).
+        """
+        rows: list[list[str]] = []
         for tbl in tables:
             headers = tbl["headers"]
             col_count = len(headers)
-            col_width = self.content_width / col_count
 
-            header_row = [
-                _safe_para(
-                    f"<b>{_safe_text(str(h))}</b>",
-                    styles["STYLE_TABLE_HEADER"],
-                )
-                for h in headers
-            ]
+            if col_count == 5:
+                # Use directly
+                for row in tbl.get("rows", []):
+                    sanitised = [
+                        str(c) if c is not None else "" for c in row
+                    ]
+                    padded = (sanitised + [""] * 5)[:5]
+                    rows.append(padded)
+            else:
+                mapping = self._map_columns(headers)
+                if mapping:
+                    for row in tbl.get("rows", []):
+                        rows.append(self._row_to_canonical(row, mapping))
+                else:
+                    # Unmappable — flatten all rows as description lines
+                    for row in tbl.get("rows", []):
+                        desc = " | ".join(
+                            str(c) for c in row if c is not None
+                        )
+                        rows.append(["1", desc, "\u2014", "\u2014", "\u2014"])
 
-            table_data = [header_row]
-            for row in tbl.get("rows", []):
-                sanitised = [("" if cell is None else cell) for cell in row]
-                padded = list(sanitised) + [""] * max(0, col_count - len(sanitised))
-                padded = padded[:col_count]
-                table_data.append([
-                    _safe_para(str(cell), styles["STYLE_TABLE_BODY"])
-                    for cell in padded
-                ])
+        return rows
 
-            line_table = Table(
-                table_data,
-                colWidths=[col_width] * col_count,
-                repeatRows=1,
-            )
-            line_table.setStyle(TableStyle([
-                ("BACKGROUND", (0, 0), (-1, 0), primary),
-                ("TEXTCOLOR", (0, 0), (-1, 0), white),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, 0), 9),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("TOPPADDING", (0, 0), (-1, -1), 4),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-                ("LEFTPADDING", (0, 0), (-1, -1), 5),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 5),
-                ("GRID", (0, 0), (-1, -1), 0.4, rule_c),
-                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [white, table_alt]),
-            ]))
+    def _build_line_items_table(self, tables: list[dict]) -> list:
+        """Render extracted tables as a professional 5-column invoice table.
 
-            flowables.append(line_table)
-            flowables.append(Spacer(1, 4 * mm))
+        Columns: Qty | Description | Rate | Adjust | Sub Total
+        Header: light grey background, black text, Helvetica-Bold 9pt.
+        Body: black text on white, light grey grid.
+        """
+        flowables: list = []
+        b = self.brand
+
+        header_style = _ps(
+            "InvTblHeader", brand=b, fontSize=9,
+            textColor=black, fontName="Helvetica-Bold",
+        )
+        body_style = _ps(
+            "InvTblBody", brand=b, fontSize=9,
+            textColor=black, fontName="Helvetica",
+        )
+
+        data_rows = self._build_line_items(tables)
+
+        # Build header row
+        header_row = [
+            Paragraph(f"<b>{h}</b>", header_style)
+            for h in _CANONICAL_HEADERS
+        ]
+        table_data = [header_row]
+
+        for row in data_rows:
+            table_data.append([
+                _safe_para(_safe_text(str(cell)), body_style)
+                for cell in row
+            ])
+
+        # Column widths: Qty 10%, Description 40%, Rate 15%, Adjust 15%, Sub Total 20%
+        col_widths = [
+            self.content_width * 0.10,
+            self.content_width * 0.40,
+            self.content_width * 0.15,
+            self.content_width * 0.15,
+            self.content_width * 0.20,
+        ]
+
+        line_table = Table(
+            table_data,
+            colWidths=col_widths,
+            repeatRows=1,
+        )
+        line_table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), _HEADER_BG),
+            ("TEXTCOLOR", (0, 0), (-1, 0), black),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, 0), 9),
+            ("TEXTCOLOR", (0, 1), (-1, -1), black),
+            ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+            ("FONTSIZE", (0, 1), (-1, -1), 9),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("TOPPADDING", (0, 0), (-1, -1), 4),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ("LEFTPADDING", (0, 0), (-1, -1), 5),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+            ("GRID", (0, 0), (-1, -1), 0.4, _GRID_COLOR),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [white, _ROW_ALT]),
+        ]))
+
+        flowables.append(line_table)
+        flowables.append(Spacer(1, 4 * mm))
 
         return flowables
 
@@ -348,60 +442,70 @@ class InvoiceTemplate(BaseBriefingTemplate):
     # ------------------------------------------------------------------
 
     def _build_line_items_from_subsystems(self, content: dict) -> list:
-        """Render subsystem content as line items when no tables found."""
+        """Render subsystem names as 5-column line items when no tables found.
+
+        Each subsystem becomes: Qty=1, Description=name, Rate/Adjust/Sub Total = em-dash.
+        """
         flowables: list = []
         b = self.brand
-        primary = _hex(b, "primary")
-        body_c = _hex(b, "body_text")
 
         subsystems = content.get("subsystems", [])
         if not subsystems:
             return flowables
 
-        # Build a simple description table from subsystem names
-        label_style = _ps(
-            "InvoiceItemLabel", brand=b, fontSize=9,
-            textColor=body_c,
-        )
         header_style = _ps(
-            "InvoiceItemHeader", brand=b, fontSize=9,
-            textColor=white, fontName="Helvetica-Bold",
+            "InvTblHeader", brand=b, fontSize=9,
+            textColor=black, fontName="Helvetica-Bold",
+        )
+        body_style = _ps(
+            "InvTblBody", brand=b, fontSize=9,
+            textColor=black, fontName="Helvetica",
         )
 
-        table_data = [[
-            Paragraph("Description", header_style),
-            Paragraph("Details", header_style),
-        ]]
+        header_row = [
+            Paragraph(f"<b>{h}</b>", header_style)
+            for h in _CANONICAL_HEADERS
+        ]
+        table_data = [header_row]
 
         for sub in subsystems[:30]:
             name = sub.get("name", "Item")
-            blocks = sub.get("blocks") or parse_markdown(sub.get("content", ""))
-            detail = ""
-            for block in blocks[:3]:
-                if block.get("type") == "paragraph":
-                    detail = block.get("text", "")
-                    break
-
             table_data.append([
-                _safe_para(_safe_text(name), label_style),
-                _safe_para(_safe_text(detail)[:200], label_style),
+                _safe_para("1", body_style),
+                _safe_para(_safe_text(name), body_style),
+                _safe_para("\u2014", body_style),
+                _safe_para("\u2014", body_style),
+                _safe_para("\u2014", body_style),
             ])
+
+        col_widths = [
+            self.content_width * 0.10,
+            self.content_width * 0.40,
+            self.content_width * 0.15,
+            self.content_width * 0.15,
+            self.content_width * 0.20,
+        ]
 
         item_table = Table(
             table_data,
-            colWidths=[self.content_width * 0.35, self.content_width * 0.65],
+            colWidths=col_widths,
             repeatRows=1,
         )
-        rule_c = _hex(b, "rule")
         item_table.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), primary),
-            ("TEXTCOLOR", (0, 0), (-1, 0), white),
+            ("BACKGROUND", (0, 0), (-1, 0), _HEADER_BG),
+            ("TEXTCOLOR", (0, 0), (-1, 0), black),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, 0), 9),
+            ("TEXTCOLOR", (0, 1), (-1, -1), black),
+            ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+            ("FONTSIZE", (0, 1), (-1, -1), 9),
             ("VALIGN", (0, 0), (-1, -1), "TOP"),
             ("TOPPADDING", (0, 0), (-1, -1), 4),
             ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
             ("LEFTPADDING", (0, 0), (-1, -1), 5),
             ("RIGHTPADDING", (0, 0), (-1, -1), 5),
-            ("GRID", (0, 0), (-1, -1), 0.4, rule_c),
+            ("GRID", (0, 0), (-1, -1), 0.4, _GRID_COLOR),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [white, _ROW_ALT]),
         ]))
 
         flowables.append(item_table)
@@ -413,63 +517,102 @@ class InvoiceTemplate(BaseBriefingTemplate):
     # Totals block
     # ------------------------------------------------------------------
 
-    def _build_totals_block(
-        self, tables: list[dict], body_c: HexColor, primary: HexColor,
-    ) -> list:
-        """Build subtotal, tax, and total lines right-aligned below the table."""
-        flowables: list = []
-        b = self.brand
+    @staticmethod
+    def _parse_currency(value: str) -> float | None:
+        """Try to extract a numeric amount from a string like '$1,234.56'."""
+        cleaned = str(value).strip().replace(",", "").replace("$", "")
+        try:
+            return float(cleaned)
+        except (ValueError, TypeError):
+            return None
 
-        label_style = _ps(
-            "InvoiceTotalLabel", brand=b, fontSize=10,
-            textColor=body_c,
-        )
-        total_label_style = _ps(
-            "InvoiceTotalBold", brand=b, fontSize=11,
-            textColor=primary, fontName="Helvetica-Bold",
-        )
-        value_style = _ps(
-            "InvoiceTotalValue", brand=b, fontSize=10,
-            textColor=body_c, alignment=2,
-        )
-        total_value_style = _ps(
-            "InvoiceTotalValueBold", brand=b, fontSize=11,
-            textColor=primary, fontName="Helvetica-Bold",
-            alignment=2,
-        )
+    def _compute_totals(
+        self, tables: list[dict], content: dict | None = None,
+    ) -> tuple[str, str, str]:
+        """Compute Sub Total, Tax, and Total from the rightmost column.
 
-        # Attempt to compute totals from numeric last-column values
+        Tax rate defaults to 10 % but can be overridden via
+        content['metadata']['tax_rate'] (as a decimal, e.g. 0.15 for 15 %).
+        """
         row_total = 0.0
         has_numeric = False
         for tbl in tables:
             for row in tbl.get("rows", []):
                 if row:
-                    last_cell = str(row[-1]).strip().replace(",", "").replace("$", "")
-                    try:
-                        row_total += float(last_cell)
+                    amount = self._parse_currency(str(row[-1]))
+                    if amount is not None:
+                        row_total += amount
                         has_numeric = True
-                    except (ValueError, TypeError):
-                        pass
 
         if has_numeric:
-            subtotal_str = f"${row_total:,.2f}"
-            tax_str = "—"
-            total_str = subtotal_str
-        else:
-            subtotal_str = "—"
-            tax_str = "—"
-            total_str = "See line items"
+            # Determine tax rate
+            tax_rate = 0.10
+            if content:
+                meta = content.get("metadata", {})
+                if isinstance(meta, dict):
+                    custom_rate = meta.get("tax_rate")
+                    if custom_rate is not None:
+                        try:
+                            tax_rate = float(custom_rate)
+                        except (ValueError, TypeError):
+                            pass
+
+            tax_amount = row_total * tax_rate
+            total_amount = row_total + tax_amount
+            return (
+                f"${row_total:,.2f}",
+                f"${tax_amount:,.2f}",
+                f"${total_amount:,.2f}",
+            )
+
+        return ("See line items", "\u2014", "See line items")
+
+    def _build_totals_block(
+        self, tables: list[dict], body_c: HexColor, primary: HexColor,
+        content: dict | None = None,
+    ) -> list:
+        """Build Sub Total -> Tax -> Total right-aligned below the table.
+
+        All text is black; only the Total row is bold with a top border.
+        """
+        flowables: list = []
+        b = self.brand
+
+        label_style = _ps(
+            "InvoiceTotalLabel", brand=b, fontSize=10,
+            textColor=black,
+        )
+        total_label_style = _ps(
+            "InvoiceTotalBold", brand=b, fontSize=11,
+            textColor=black, fontName="Helvetica-Bold",
+        )
+        value_style = _ps(
+            "InvoiceTotalValue", brand=b, fontSize=10,
+            textColor=black, alignment=2,
+        )
+        total_value_style = _ps(
+            "InvoiceTotalValueBold", brand=b, fontSize=11,
+            textColor=black, fontName="Helvetica-Bold",
+            alignment=2,
+        )
+
+        subtotal_str, tax_str, total_str = self._compute_totals(tables, content)
 
         totals_data = [
-            [Paragraph("Subtotal:", label_style), Paragraph(subtotal_str, value_style)],
-            [Paragraph("Tax:", label_style), Paragraph(tax_str, value_style)],
+            [
+                Paragraph("Sub Total:", label_style),
+                Paragraph(subtotal_str, value_style),
+            ],
+            [
+                Paragraph("Tax:", label_style),
+                Paragraph(tax_str, value_style),
+            ],
             [
                 Paragraph("TOTAL:", total_label_style),
                 Paragraph(total_str, total_value_style),
             ],
         ]
 
-        rule_c = _hex(b, "rule")
         totals_table = Table(
             totals_data,
             colWidths=[self.content_width * 0.15, self.content_width * 0.2],
@@ -480,13 +623,53 @@ class InvoiceTemplate(BaseBriefingTemplate):
             ("RIGHTPADDING", (0, 0), (-1, -1), 4),
             ("TOPPADDING", (0, 0), (-1, -1), 3),
             ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-            ("LINEABOVE", (0, 0), (-1, 0), 0.4, rule_c),
-            ("LINEABOVE", (0, -1), (-1, -1), 1, primary),
+            ("LINEABOVE", (0, 0), (-1, 0), 0.4, _GRID_COLOR),
+            ("LINEABOVE", (0, -1), (-1, -1), 1, black),
         ]))
 
         flowables.append(Spacer(1, 2 * mm))
         flowables.append(totals_table)
 
+        return flowables
+
+    # ------------------------------------------------------------------
+    # Payment details block
+    # ------------------------------------------------------------------
+
+    def _build_payment_details(
+        self, content: dict, brand: dict,
+        caption_c: HexColor, body_c: HexColor,
+    ) -> list:
+        """Build a PAYMENT DETAILS section from guide_content or placeholder."""
+        flowables: list = []
+
+        label_style = _ps(
+            "InvoicePayLabel", brand=brand, fontSize=9,
+            textColor=caption_c, fontName="Helvetica-Bold",
+            spaceAfter=3,
+        )
+        detail_style = _ps(
+            "InvoicePayDetail", brand=brand, fontSize=9,
+            textColor=black, leading=13,
+        )
+
+        flowables.append(Paragraph("PAYMENT DETAILS", label_style))
+
+        guide = content.get("guide_content", "")
+        if guide:
+            for block in parse_markdown(guide)[:10]:
+                if block.get("type") == "paragraph":
+                    flowables.append(_safe_para(
+                        _safe_text(block.get("text", "")), detail_style,
+                    ))
+                else:
+                    flowables.extend(self.render_blocks([block]))
+        else:
+            flowables.append(
+                Paragraph("Payment details available upon request.", detail_style),
+            )
+
+        flowables.append(Spacer(1, 6 * mm))
         return flowables
 
     # ------------------------------------------------------------------
@@ -541,16 +724,26 @@ class InvoiceTemplate(BaseBriefingTemplate):
         org = self.brand.get("org", "")
 
         def _invoice_footer(canvas, doc_inner):
-            """Minimal footer: org name left, page number right."""
+            """Footer: payment terms left, page number right."""
             canvas.saveState()
-            canvas.setFont("Helvetica", 7)
+            canvas.setFont("Helvetica", 8)
             canvas.setFillColor(caption_color)
+
+            # Payment terms line
+            terms_y = 14 * mm
+            canvas.drawString(
+                doc_inner.leftMargin, terms_y,
+                "Payment is due within 30 days from date of invoice.",
+            )
+
+            # Org name and page number
+            footer_y = 10 * mm
             if org:
                 canvas.drawString(
-                    doc_inner.leftMargin, 10 * mm, org,
+                    doc_inner.leftMargin, footer_y, org,
                 )
             canvas.drawRightString(
-                doc_inner.pagesize[0] - doc_inner.rightMargin, 10 * mm,
+                doc_inner.pagesize[0] - doc_inner.rightMargin, footer_y,
                 f"Page {doc_inner.page}",
             )
             canvas.restoreState()

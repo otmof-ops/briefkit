@@ -31,6 +31,10 @@ Available templates
                                    compliance matrices)
   minutes    MinutesTemplate    — meeting minutes (header, attendees, agenda items,
                                    action items, resolutions, closing)
+  invoice    InvoiceTemplate    — professional invoice (header, metadata, bill-to,
+                                   line items table, totals, payment terms)
+  quote      QuoteTemplate      — quote/estimate (header, metadata, client info,
+                                   scope of work, pricing table, terms, acceptance)
 """
 from __future__ import annotations
 
@@ -38,11 +42,13 @@ from briefkit.templates.academic import AcademicTemplate
 from briefkit.templates.book import BookTemplate
 from briefkit.templates.briefing import BriefingTemplate
 from briefkit.templates.contract import ContractTemplate
+from briefkit.templates.invoice import InvoiceTemplate
 from briefkit.templates.letter import LetterTemplate
 from briefkit.templates.manual import ManualTemplate
 from briefkit.templates.minimal import MinimalTemplate
 from briefkit.templates.minutes import MinutesTemplate
 from briefkit.templates.novel import NovelTemplate
+from briefkit.templates.quote import QuoteTemplate
 from briefkit.templates.register import RegisterTemplate
 from briefkit.templates.report import ReportTemplate
 
@@ -58,6 +64,8 @@ _REGISTRY: dict[str, type] = {
     "register":  RegisterTemplate,
     "minutes":   MinutesTemplate,
     "novel":     NovelTemplate,
+    "invoice":   InvoiceTemplate,
+    "quote":     QuoteTemplate,
 }
 
 
@@ -70,7 +78,7 @@ def get_template(name: str) -> type:
     name : str
         Template name, case-insensitive.  One of:
         briefing, report, book, manual, academic, minimal, letter, contract,
-        register, minutes.
+        register, minutes, invoice, quote.
 
     Returns
     -------
@@ -108,6 +116,8 @@ __all__ = [
     "RegisterTemplate",
     "MinutesTemplate",
     "NovelTemplate",
+    "InvoiceTemplate",
+    "QuoteTemplate",
     "get_template",
     "list_templates",
 ]

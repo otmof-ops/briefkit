@@ -12,26 +12,22 @@ Build order:
 from __future__ import annotations
 
 import re
-from pathlib import Path
 
-from reportlab.platypus import Paragraph, Spacer, PageBreak, KeepTogether
+from reportlab.lib.units import mm
+from reportlab.platypus import PageBreak, Paragraph, Spacer
 
+from briefkit.extractor import parse_markdown
 from briefkit.generator import (
     BaseBriefingTemplate,
+    HierarchyTreeFlowable,
+    build_bar_chart,
     build_callout_box,
-    build_classification_banner,
-    build_cover_page,
     build_data_table,
     build_metric_dashboard,
-    build_toc,
-    build_timeline,
-    build_bar_chart,
     build_pull_quote,
-    HierarchyTreeFlowable,
+    build_timeline,
 )
-from reportlab.lib.units import mm
-from briefkit.styles import _safe_para, _ps, _hex, CONTENT_WIDTH
-from briefkit.extractor import parse_markdown
+from briefkit.styles import _hex, _ps, _safe_para
 
 
 class BriefingTemplate(BaseBriefingTemplate):

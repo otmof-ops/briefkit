@@ -1,8 +1,10 @@
 """Tests for the document ID system."""
-import pytest
 import json
 from pathlib import Path
-from briefkit.doc_ids import get_or_assign_doc_id, load_registry
+
+import pytest
+
+from briefkit.doc_ids import get_or_assign_doc_id
 
 
 @pytest.fixture

@@ -1,5 +1,4 @@
 """Tests for the content extractor."""
-import pytest
 from briefkit.extractor import extract_content
 
 

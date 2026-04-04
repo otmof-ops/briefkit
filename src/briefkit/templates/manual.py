@@ -20,9 +20,10 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from reportlab.platypus import Paragraph, Spacer, PageBreak
 from reportlab.lib.units import mm
+from reportlab.platypus import PageBreak, Paragraph, Spacer
 
+from briefkit.extractor import parse_markdown
 from briefkit.generator import (
     BaseBriefingTemplate,
     build_callout_box,
@@ -31,9 +32,7 @@ from briefkit.generator import (
     build_data_table,
     build_toc,
 )
-from briefkit.styles import _safe_para, _ps, _hex
-from briefkit.extractor import parse_markdown
-
+from briefkit.styles import _hex, _ps, _safe_para
 
 # Regex patterns for safety extractions
 _WARNING_PATTERN = re.compile(
@@ -340,7 +339,7 @@ class ManualTemplate(BaseBriefingTemplate):
             fontSize=10, textColor=_hex(self.brand, "body_text"),
             leading=15, leftIndent=16, spaceBefore=2, spaceAfter=2,
         )
-        note_style = _ps(
+        _ps(
             "ProcedureNote", brand=self.brand,
             fontSize=9, textColor=_hex(self.brand, "caption"),
             fontName="Helvetica-Oblique", leftIndent=16,

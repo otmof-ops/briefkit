@@ -7,24 +7,37 @@ Templates should import from this module rather than reaching into
 generator.py internals. This decouples template implementations from
 the generator's internal organization.
 """
+from briefkit.elements.callout import build_callout_box, build_pull_quote
+from briefkit.elements.charts import build_bar_chart, build_timeline
+from briefkit.elements.cover import build_cover_page
+from briefkit.elements.dashboard import build_metric_dashboard
+from briefkit.elements.header_footer import build_classification_banner, make_header_footer
+from briefkit.elements.tables import build_data_table
+from briefkit.elements.toc import build_toc
 from briefkit.generator import (
     BaseBriefingTemplate,
     HierarchyTreeFlowable,
     detect_level,
 )
 from briefkit.styles import (
-    _get_brand, _hex, _ps, _safe_para, _safe_text,
-    get_brand, hex_color, make_style, safe_para, safe_text,
-    CONTENT_WIDTH, GUTTER, MARGIN_TOP, MARGIN_BOTTOM, MARGIN_LEFT, MARGIN_RIGHT,
+    CONTENT_WIDTH,
+    GUTTER,
+    MARGIN_BOTTOM,
+    MARGIN_LEFT,
+    MARGIN_RIGHT,
+    MARGIN_TOP,
+    _get_brand,
+    _hex,
+    _ps,
+    _safe_para,
+    _safe_text,
     build_styles,
+    get_brand,
+    hex_color,
+    make_style,
+    safe_para,
+    safe_text,
 )
-from briefkit.elements.cover import build_cover_page
-from briefkit.elements.header_footer import build_classification_banner, make_header_footer
-from briefkit.elements.toc import build_toc
-from briefkit.elements.callout import build_callout_box, build_pull_quote
-from briefkit.elements.dashboard import build_metric_dashboard
-from briefkit.elements.tables import build_data_table
-from briefkit.elements.charts import build_bar_chart, build_timeline
 
 __all__ = [
     "BaseBriefingTemplate",

@@ -5,11 +5,12 @@ Extracted and generalized from generate-briefing-v2.py build_callout_box()
 (original lines 1426-1494).
 """
 
-from reportlab.platypus import Paragraph, Table, TableStyle, Spacer
-from reportlab.lib.colors import HexColor, white
+from reportlab.lib.colors import HexColor
 from reportlab.lib.units import mm
+from reportlab.platypus import Paragraph, Spacer, Table, TableStyle
 
-from briefkit.styles import _get_brand, _hex, _ps, _safe_para, CONTENT_WIDTH, build_styles
+from briefkit.styles import CONTENT_WIDTH, _get_brand, _hex, _ps, build_styles
+
 
 def build_callout_box(text, box_type="insight", brand=None, content_width=None):
     """
@@ -46,7 +47,7 @@ def build_callout_box(text, box_type="insight", brand=None, content_width=None):
 
     # Brand-derived semantic colors
     success_c = HexColor(b.get("success", "#00b894"))
-    warning_c = HexColor(b.get("warning", "#fdcb6e"))
+    HexColor(b.get("warning", "#fdcb6e"))
     danger_c  = HexColor(b.get("danger", "#d63031"))
     code_bg   = HexColor(b.get("code_bg", "#f5f6fa"))
 

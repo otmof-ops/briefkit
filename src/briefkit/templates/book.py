@@ -21,33 +21,24 @@ Key differences:
 
 from __future__ import annotations
 
-import re
-from pathlib import Path
-
-from reportlab.platypus import Paragraph, Spacer, PageBreak, KeepTogether, Table, TableStyle
-from reportlab.lib.colors import white
+from reportlab.lib.pagesizes import A3, A4, legal, letter
 from reportlab.lib.units import mm
-
-from reportlab.platypus import SimpleDocTemplate
-from reportlab.lib.pagesizes import A4, A3, letter, legal
-from reportlab.lib.colors import HexColor
 from reportlab.pdfbase.pdfmetrics import stringWidth
+from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer
 
+from briefkit.elements.header_footer import make_header_footer
+from briefkit.extractor import parse_markdown
 from briefkit.generator import (
     BaseBriefingTemplate,
-    build_callout_box,
-    build_cover_page,
-    build_data_table,
-    build_toc,
-    build_pull_quote,
     _hf_state,
+    build_toc,
 )
 from briefkit.styles import (
-    _safe_para, _ps, _hex, _get_brand, CONTENT_WIDTH,
-    compute_content_width, truncate_to_width,
+    CONTENT_WIDTH,
+    _hex,
+    _ps,
+    _safe_para,
 )
-from briefkit.extractor import parse_markdown
-from briefkit.elements.header_footer import make_header_footer
 
 
 class BookTemplate(BaseBriefingTemplate):
@@ -271,7 +262,6 @@ class BookTemplate(BaseBriefingTemplate):
 
             blocks = sub.get("blocks") or parse_markdown(sub.get("content", ""))
             rendered = 0
-            pull_count = 0
 
             # Use the first H1 heading from content as the chapter title
             # (preserves special characters and original formatting)
@@ -421,8 +411,9 @@ class BookTemplate(BaseBriefingTemplate):
     def generate(self):
         """Generate the book PDF with clean front matter (no headers/footers)."""
         import sys
-        from briefkit.extractor import extract_content
+
         from briefkit.doc_ids import get_or_assign_doc_id
+        from briefkit.extractor import extract_content
 
         verbose = self.config.get("_cli", {}).get("verbose", False)
 

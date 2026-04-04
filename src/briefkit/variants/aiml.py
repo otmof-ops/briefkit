@@ -11,16 +11,16 @@ import sys
 
 from reportlab.platypus import PageBreak, Spacer
 
-from briefkit.styles import _safe_para, _ps, build_styles
 from briefkit.elements.tables import build_data_table
-from briefkit.elements.callout import build_callout_box
-from briefkit.variants import DocSetVariant, _register, collect_text
+from briefkit.styles import _safe_para, build_styles
+from briefkit.variants import DocSetVariant, _register
 
 try:
-    from reportlab.graphics.shapes import Drawing, Rect, String, Line
-    from reportlab.lib.colors import HexColor, white
-    from reportlab.lib.units import mm
-    from briefkit.styles import CONTENT_WIDTH
+    from reportlab.graphics.shapes import Drawing, Line, Rect, String  # noqa: F401
+    from reportlab.lib.colors import HexColor, white  # noqa: F401
+    from reportlab.lib.units import mm  # noqa: F401
+
+    from briefkit.styles import CONTENT_WIDTH  # noqa: F401
     _HAS_DRAWING = True
 except ImportError:
     _HAS_DRAWING = False
@@ -182,8 +182,9 @@ class AIMLVariant(DocSetVariant):
 
 def _build_bar_chart(data, title="", brand=None):
     """Horizontal bar chart as a ReportLab Drawing, or fallback table."""
-    from briefkit.styles import _get_brand, _hex, build_styles, CONTENT_WIDTH
     from reportlab.lib.units import mm
+
+    from briefkit.styles import CONTENT_WIDTH, _get_brand, _hex
 
     b = _get_brand(brand)
     styles = build_styles(b)
@@ -198,7 +199,6 @@ def _build_bar_chart(data, title="", brand=None):
 
     try:
         from reportlab.graphics.shapes import Drawing, Rect, String
-        from reportlab.lib.colors import HexColor, white
 
         chart_width  = float(CONTENT_WIDTH)
         bar_height   = 10 * mm
@@ -212,7 +212,7 @@ def _build_bar_chart(data, title="", brand=None):
         bg = Rect(0, 0, chart_width, chart_height, fillColor=bg_grey, strokeColor=None)
         d.add(bg)
 
-        primary   = _hex(b, "primary")
+        _hex(b, "primary")
         secondary = _hex(b, "secondary")
         body_text = _hex(b, "body_text")
 

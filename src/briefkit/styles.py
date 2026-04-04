@@ -8,12 +8,11 @@ All styles accept a brand dict; a DEFAULT_BRAND fallback is provided.
 import functools
 import re
 import unicodedata
-import datetime
 import xml.sax.saxutils
 
+from reportlab.lib.colors import HexColor, white
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.colors import HexColor, white, black
+from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.platypus import Paragraph
 
@@ -263,8 +262,8 @@ def _build_styles_cached(brand_key):
     secondary = _hex(b, "secondary")
     body_text = _hex(b, "body_text")
     caption   = _hex(b, "caption")
-    bg        = _hex(b, "background")
-    rule      = _hex(b, "rule")
+    _hex(b, "background")
+    _hex(b, "rule")
 
     # Derived semantic aliases matching source conventions
     otm_navy  = primary

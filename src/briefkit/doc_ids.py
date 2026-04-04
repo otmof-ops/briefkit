@@ -21,8 +21,6 @@ import datetime
 import json
 import re as _re
 from pathlib import Path
-from typing import Any
-
 
 # ---------------------------------------------------------------------------
 # Registry I/O
@@ -43,8 +41,8 @@ def load_registry(registry_path: Path) -> dict:
 
 def save_registry(registry: dict, registry_path: Path) -> None:
     """Write the registry atomically to *registry_path*."""
-    import tempfile
     import os
+    import tempfile
 
     registry_path.parent.mkdir(parents=True, exist_ok=True)
     # Strip internal index before persisting

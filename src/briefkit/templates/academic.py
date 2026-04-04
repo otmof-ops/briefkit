@@ -20,19 +20,16 @@ Key differences:
 from __future__ import annotations
 
 import re
-from pathlib import Path
 
-from reportlab.platypus import Paragraph, Spacer, PageBreak, HRFlowable
-from reportlab.lib.colors import HexColor
 from reportlab.lib.units import mm
+from reportlab.platypus import PageBreak, Paragraph, Spacer
 
-from briefkit.generator import BaseBriefingTemplate
-from briefkit.elements.header_footer import make_header_footer, _hf_state
-from briefkit.elements.toc import build_toc
+from briefkit.elements.header_footer import _hf_state
 from briefkit.elements.tables import build_data_table
-from briefkit.styles import _safe_para, _ps, _hex, CONTENT_WIDTH
+from briefkit.elements.toc import build_toc
 from briefkit.extractor import parse_markdown
-from briefkit.elements.cover import build_cover_page
+from briefkit.generator import BaseBriefingTemplate
+from briefkit.styles import _hex, _ps, _safe_para
 
 
 class AcademicTemplate(BaseBriefingTemplate):
@@ -304,7 +301,7 @@ class AcademicTemplate(BaseBriefingTemplate):
         specs  = [s for s in bibliography if s.get("type") == "specification"]
         other  = [s for s in bibliography if s.get("type") not in ("paper", "book", "specification")]
 
-        caption_c = _hex(self.brand, "caption")
+        _hex(self.brand, "caption")
         body_c    = _hex(self.brand, "body_text")
 
         def _render_group(label: str, sources: list) -> None:

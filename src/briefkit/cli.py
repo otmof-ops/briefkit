@@ -18,7 +18,6 @@ import textwrap
 from pathlib import Path
 from typing import Any
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -104,7 +103,7 @@ def _emit(data: Any, as_json: bool, quiet: bool = False) -> None:
 
 def cmd_generate(args: argparse.Namespace) -> int:
     """Generate a briefing PDF for a single directory."""
-    from briefkit.batch import _generate_one, _output_path as batch_output  # noqa: PLC0415
+    from briefkit.batch import _generate_one  # noqa: PLC0415
 
     path = Path(args.path).resolve()
     if not path.is_dir():
@@ -248,7 +247,8 @@ def cmd_preview(args: argparse.Namespace) -> int:
 
 def cmd_status(args: argparse.Namespace) -> int:
     """Show whether briefings under a path are current, stale, or missing."""
-    from briefkit.batch import find_targets, _output_path as batch_output, _is_current  # noqa: PLC0415
+    from briefkit.batch import _is_current, find_targets  # noqa: PLC0415
+    from briefkit.batch import _output_path as batch_output
 
     root = Path(args.path).resolve()
     cfg = _load_config(args)
@@ -480,7 +480,7 @@ def cmd_templates(args: argparse.Namespace) -> int:
 
 def cmd_presets(args: argparse.Namespace) -> int:
     """List all color presets with their hex values."""
-    from briefkit.presets import list_presets, get_preset  # noqa: PLC0415
+    from briefkit.presets import get_preset, list_presets  # noqa: PLC0415
 
     as_json = getattr(args, "json", False)
     quiet = getattr(args, "quiet", False)

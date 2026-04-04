@@ -5,12 +5,12 @@ Extracted and generalized from generate-briefing-v2.py build_metric_dashboard()
 (original lines 1497-1556).
 """
 
-from reportlab.platypus import Spacer
-from reportlab.graphics.shapes import Drawing, Rect, Line, String
+from reportlab.graphics.shapes import Drawing, Line, Rect, String
 from reportlab.lib.colors import HexColor, white
 from reportlab.lib.units import mm
+from reportlab.platypus import Spacer
 
-from briefkit.styles import _get_brand, _hex, CONTENT_WIDTH
+from briefkit.styles import CONTENT_WIDTH, _get_brand, _hex
 
 
 def build_metric_dashboard(metrics, brand=None, content_width=None):

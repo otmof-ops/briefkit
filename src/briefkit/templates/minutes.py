@@ -23,41 +23,31 @@ Key differences:
 from __future__ import annotations
 
 import re
-import datetime
 from pathlib import Path
 
+from reportlab.lib.colors import HexColor
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import mm
 from reportlab.platypus import (
-    SimpleDocTemplate,
     Paragraph,
+    SimpleDocTemplate,
+    Spacer,
     Table,
     TableStyle,
-    Spacer,
-    PageBreak,
 )
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.colors import HexColor, white
-from reportlab.lib.units import mm
 
+from briefkit.extractor import parse_markdown
 from briefkit.generator import (
     BaseBriefingTemplate,
-    build_data_table,
     _hf_state,
+    build_data_table,
 )
 from briefkit.styles import (
     _get_brand,
-    _safe_para,
-    _safe_text,
-    _ps,
     _hex,
+    _ps,
     build_styles,
-    CONTENT_WIDTH,
-    MARGIN_TOP,
-    MARGIN_BOTTOM,
-    MARGIN_LEFT,
-    MARGIN_RIGHT,
 )
-from briefkit.extractor import parse_markdown
-
 
 # ---------------------------------------------------------------------------
 # Regex patterns for extraction
@@ -260,7 +250,7 @@ class MinutesTemplate(BaseBriefingTemplate):
             meta_rows.append(["Secretary", secretary])
 
         if meta_rows:
-            styles = build_styles(self.brand)
+            build_styles(self.brand)
             label_style = _ps(
                 "MinutesMetaLabel", brand=self.brand,
                 fontSize=10, fontName="Helvetica-Bold",

@@ -1,5 +1,4 @@
 """Tests for the CLI interface."""
-import pytest
 import subprocess
 import sys
 

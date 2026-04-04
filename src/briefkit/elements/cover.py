@@ -6,18 +6,14 @@ Extracted and generalized from generate-briefing-v2.py build_cover_page()
 brand dict lookups.
 """
 
-import datetime
 from pathlib import Path
 
-from reportlab.platypus import Paragraph, Table, TableStyle, Spacer, PageBreak
-from reportlab.lib.colors import HexColor, white
+from reportlab.lib.colors import white
 from reportlab.lib.units import mm
-
 from reportlab.pdfbase.pdfmetrics import stringWidth
+from reportlab.platypus import PageBreak, Paragraph, Spacer, Table, TableStyle
 
-from briefkit.styles import (
-    _get_brand, _hex, _ps, _safe_para, CONTENT_WIDTH, build_styles
-)
+from briefkit.styles import CONTENT_WIDTH, _get_brand, _hex, _ps, build_styles
 
 
 def build_cover_page(title, subtitle, path, level, date, doc_id="", brand=None, content_width=None):

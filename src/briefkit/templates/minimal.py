@@ -20,28 +20,28 @@ Key differences:
 
 from __future__ import annotations
 
-import datetime
 from pathlib import Path
 
-from reportlab.platypus import (
-    SimpleDocTemplate,
-    Paragraph,
-    Spacer,
-    PageBreak,
-)
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
+from reportlab.platypus import (
+    PageBreak,
+    Paragraph,
+    SimpleDocTemplate,
+    Spacer,
+)
 
+from briefkit.extractor import parse_markdown
 from briefkit.generator import (
     BaseBriefingTemplate,
-    build_toc,
     _hf_state,
+    build_toc,
 )
 from briefkit.styles import (
-    _safe_para, _ps, _hex, build_styles,
-    MARGIN_TOP, MARGIN_BOTTOM, MARGIN_LEFT, MARGIN_RIGHT,
+    _hex,
+    _ps,
+    _safe_para,
 )
-from briefkit.extractor import parse_markdown
 
 
 def _minimal_header_footer(canvas, doc):

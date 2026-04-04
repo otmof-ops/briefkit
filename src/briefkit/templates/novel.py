@@ -22,16 +22,13 @@ from __future__ import annotations
 
 import re
 
-from reportlab.platypus import Paragraph, Spacer, PageBreak, CondPageBreak
 from reportlab.lib.units import mm
-from reportlab.lib.colors import HexColor
+from reportlab.platypus import CondPageBreak, PageBreak, Paragraph, Spacer
 
-from briefkit.templates.book import BookTemplate
-from briefkit.generator import _hf_state, build_toc
-from briefkit.styles import _safe_para, _ps, _hex, CONTENT_WIDTH
 from briefkit.extractor import parse_markdown
-from briefkit.elements.header_footer import make_header_footer
-
+from briefkit.generator import _hf_state, build_toc
+from briefkit.styles import CONTENT_WIDTH, _hex, _ps, _safe_para
+from briefkit.templates.book import BookTemplate
 
 # Pattern categories
 _CAT_SYSTEM_COMMAND = "system_command"

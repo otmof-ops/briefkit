@@ -11,6 +11,7 @@ Extracts citations from text using multiple patterns:
   - Case law: Name v Name
 """
 from __future__ import annotations
+
 import re
 from pathlib import Path
 
@@ -127,7 +128,6 @@ def extract_bibliography(text, pdf_dir=None):
     if pdf_dir:
         pdf_path = Path(pdf_dir)
         if pdf_path.is_dir():
-            pdf_years = []
             for pdf in sorted(pdf_path.glob("*.pdf")):
                 if pdf.name == "executive-briefing.pdf":
                     continue

@@ -2,8 +2,11 @@
 from __future__ import annotations
 
 from briefkit.styles import (
-    _safe_text, _safe_para, _ps, _get_brand, build_styles,
-    DEFAULT_BRAND, truncate_to_width,
+    DEFAULT_BRAND,
+    _get_brand,
+    _safe_text,
+    build_styles,
+    truncate_to_width,
 )
 
 

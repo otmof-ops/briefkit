@@ -1,6 +1,7 @@
 """Shared test fixtures for BriefKit tests."""
-import pytest
 from pathlib import Path
+
+import pytest
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
@@ -32,8 +33,9 @@ def empty_fixture():
 @pytest.fixture
 def default_config():
     """Default BriefKit configuration dict."""
-    from briefkit.config import DEFAULTS
     import copy
+
+    from briefkit.config import DEFAULTS
     return copy.deepcopy(DEFAULTS)
 
 

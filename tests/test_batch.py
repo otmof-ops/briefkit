@@ -1,9 +1,7 @@
 """Tests for briefkit batch processing."""
 from __future__ import annotations
 
-from pathlib import Path
-
-from briefkit.batch import find_targets, _is_current
+from briefkit.batch import _is_current, find_targets
 
 
 class TestFindTargets:

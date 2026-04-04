@@ -8,13 +8,11 @@ Extracted and generalized from generate-briefing-v2.py:
 
 import re
 
-from reportlab.platypus import Paragraph, Table, TableStyle, Spacer
 from reportlab.lib.colors import HexColor, white
 from reportlab.lib.units import mm
+from reportlab.platypus import Paragraph, Spacer, Table, TableStyle
 
-from briefkit.styles import (
-    _get_brand, _hex, _ps, _safe_para, _safe_text, CONTENT_WIDTH, build_styles
-)
+from briefkit.styles import CONTENT_WIDTH, _get_brand, _hex, _safe_para, _safe_text, build_styles
 
 # Semantic tint colors for comparison table cell coding
 _GREEN_BG = HexColor("#eafaf1")

@@ -12,17 +12,17 @@ factory returns a configured callback bound to a specific brand and state.
 import datetime
 from pathlib import Path
 
-from reportlab.platypus import Paragraph, Table, TableStyle, Spacer
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.colors import HexColor, white
+from reportlab.lib.colors import white
 from reportlab.lib.units import mm
+from reportlab.platypus import Paragraph, Table, TableStyle
 
 from briefkit.styles import (
-    _get_brand, _hex, _ps, CONTENT_WIDTH,
-    MARGIN_TOP, MARGIN_BOTTOM, MARGIN_LEFT, MARGIN_RIGHT,
+    CONTENT_WIDTH,
+    _get_brand,
+    _hex,
+    _ps,
     truncate_to_width,
 )
-
 
 # =============================================================================
 # MODULE-LEVEL STATE (mirrors the original _hf_state pattern)

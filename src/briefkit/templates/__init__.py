@@ -34,17 +34,17 @@ Available templates
 """
 from __future__ import annotations
 
-from briefkit.templates.briefing  import BriefingTemplate
-from briefkit.templates.report    import ReportTemplate
-from briefkit.templates.book      import BookTemplate
-from briefkit.templates.manual    import ManualTemplate
-from briefkit.templates.academic  import AcademicTemplate
-from briefkit.templates.minimal   import MinimalTemplate
-from briefkit.templates.letter    import LetterTemplate
-from briefkit.templates.contract  import ContractTemplate
+from briefkit.templates.academic import AcademicTemplate
+from briefkit.templates.book import BookTemplate
+from briefkit.templates.briefing import BriefingTemplate
+from briefkit.templates.contract import ContractTemplate
+from briefkit.templates.letter import LetterTemplate
+from briefkit.templates.manual import ManualTemplate
+from briefkit.templates.minimal import MinimalTemplate
+from briefkit.templates.minutes import MinutesTemplate
+from briefkit.templates.novel import NovelTemplate
 from briefkit.templates.register import RegisterTemplate
-from briefkit.templates.minutes  import MinutesTemplate
-from briefkit.templates.novel    import NovelTemplate
+from briefkit.templates.report import ReportTemplate
 
 _REGISTRY: dict[str, type] = {
     "briefing":  BriefingTemplate,

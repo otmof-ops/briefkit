@@ -6,15 +6,12 @@ Extracted and generalized from generate-briefing-v2.py _build_back_cover()
 """
 
 import datetime
-from pathlib import Path
 
-from reportlab.platypus import Paragraph, Table, TableStyle, Spacer, PageBreak
-from reportlab.lib.colors import HexColor, white
+from reportlab.lib.colors import white
 from reportlab.lib.units import mm
+from reportlab.platypus import PageBreak, Paragraph, Spacer, Table, TableStyle
 
-from briefkit.styles import (
-    _get_brand, _hex, _ps, CONTENT_WIDTH, build_styles
-)
+from briefkit.styles import CONTENT_WIDTH, _get_brand, _hex, _ps, build_styles
 
 
 def build_back_cover(date=None, generator_note="", brand=None, content_width=None):
@@ -46,7 +43,7 @@ def build_back_cover(date=None, generator_note="", brand=None, content_width=Non
     """
     b = _get_brand(brand)
     cw = content_width or CONTENT_WIDTH
-    styles = build_styles(b)
+    build_styles(b)
 
     primary   = _hex(b, "primary")
     secondary = _hex(b, "secondary")

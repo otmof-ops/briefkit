@@ -19,29 +19,27 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from reportlab.lib.colors import HexColor
+from reportlab.lib.pagesizes import A3, A4, legal, letter
+from reportlab.lib.units import mm
 from reportlab.platypus import (
-    SimpleDocTemplate,
     Paragraph,
+    SimpleDocTemplate,
     Spacer,
     Table,
     TableStyle,
 )
-from reportlab.lib.pagesizes import A4, A3, letter, legal
-from reportlab.lib.units import mm
-from reportlab.lib.colors import HexColor
 
+from briefkit.extractor import parse_markdown
 from briefkit.generator import (
     BaseBriefingTemplate,
     _hf_state,
 )
 from briefkit.styles import (
-    _safe_para,
-    _ps,
     _hex,
-    CONTENT_WIDTH,
-    MARGIN_BOTTOM,
+    _ps,
+    _safe_para,
 )
-from briefkit.extractor import parse_markdown
 
 _PAGE_SIZES = {"A4": A4, "A3": A3, "Letter": letter, "Legal": legal}
 
@@ -114,7 +112,7 @@ class LetterTemplate(BaseBriefingTemplate):
             story.append(Spacer(1, 6 * mm))
 
         # --- Body ---
-        body_style = self.styles.get(
+        self.styles.get(
             "STYLE_BODY",
             _ps("LetterBody", brand=b, fontSize=10),
         )

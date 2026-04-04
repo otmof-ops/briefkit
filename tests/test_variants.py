@@ -1,7 +1,7 @@
 """Tests for briefkit variant system."""
 from __future__ import annotations
 
-from briefkit.variants import list_variants, get_variant, auto_detect_variant
+from briefkit.variants import auto_detect_variant, get_variant, list_variants
 
 
 class TestVariantRegistry:

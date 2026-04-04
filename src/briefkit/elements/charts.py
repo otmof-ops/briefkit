@@ -10,15 +10,14 @@ Note: build_pull_quote is also available via briefkit.elements.callouts
 re-exports it for convenience so callers can import either way.
 """
 
-from reportlab.platypus import Paragraph, Table, TableStyle, Spacer
-from reportlab.graphics.shapes import Drawing, Rect, Line, String
-from reportlab.lib.colors import HexColor, white
+from reportlab.graphics.shapes import Drawing, Line, Rect, String
+from reportlab.lib.colors import HexColor
 from reportlab.lib.units import mm
+from reportlab.platypus import Paragraph
 
-from briefkit.styles import (
-    _get_brand, _hex, _ps, CONTENT_WIDTH, build_styles
-)
 from briefkit.elements.callout import build_pull_quote  # canonical location
+from briefkit.styles import CONTENT_WIDTH, _get_brand, _hex, build_styles
+
 
 def build_bar_chart(data, title="", brand=None, content_width=None):
     """

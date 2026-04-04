@@ -15,44 +15,56 @@ import datetime
 import re
 import sys
 from pathlib import Path
-from typing import Any
 
+from reportlab.lib.colors import HexColor
+from reportlab.lib.pagesizes import A3, A4, legal, letter
+from reportlab.lib.units import mm
 from reportlab.platypus import (
-    SimpleDocTemplate,
+    Flowable,
+    KeepTogether,
+    PageBreak,
     Paragraph,
+    SimpleDocTemplate,
+    Spacer,
     Table,
     TableStyle,
-    Spacer,
-    PageBreak,
-    KeepTogether,
-    Flowable,
 )
-from reportlab.lib.pagesizes import A4, A3, letter, legal
-from reportlab.lib.colors import HexColor, white, black
-from reportlab.lib.units import mm
-from reportlab.graphics.shapes import Drawing, Rect, String, Line
 
-from briefkit.styles import (
-    _get_brand, _hex, _ps, _safe_para, _safe_text,
-    CONTENT_WIDTH, GUTTER, MARGIN_TOP, MARGIN_BOTTOM, MARGIN_LEFT, MARGIN_RIGHT,
-    build_styles, compute_content_width,
-)
-from briefkit.elements.cover import build_cover_page
-from briefkit.elements.header_footer import build_classification_banner, make_header_footer
-from briefkit.elements.toc import build_toc
-from briefkit.elements.callout import build_callout_box, build_pull_quote
-from briefkit.elements.dashboard import build_metric_dashboard
-from briefkit.elements.tables import build_data_table
-from briefkit.elements.charts import build_bar_chart, build_timeline
-from briefkit.extractor import extract_content as _extract_content
-from briefkit.extractor import parse_markdown
 from briefkit.doc_ids import get_or_assign_doc_id
-from briefkit.variants import auto_detect_variant, get_variant
-
+from briefkit.elements.callout import build_callout_box, build_pull_quote  # noqa: F401 — re-exported
+from briefkit.elements.charts import build_bar_chart, build_timeline  # noqa: F401 — re-exported
+from briefkit.elements.cover import build_cover_page  # noqa: F401 — re-exported
+from briefkit.elements.dashboard import build_metric_dashboard  # noqa: F401 — re-exported
 
 # ---------------------------------------------------------------------------
 # Page size lookup
 # ---------------------------------------------------------------------------
+# Re-export _hf_state for templates that mutate section headers directly
+from briefkit.elements.header_footer import (  # noqa: F401 — re-exported
+    _hf_state,  # noqa: F401, E402
+    build_classification_banner,
+    make_header_footer,
+)
+from briefkit.elements.tables import build_data_table  # noqa: F401 — re-exported
+from briefkit.elements.toc import build_toc  # noqa: F401 — re-exported
+from briefkit.extractor import extract_content as _extract_content
+from briefkit.extractor import parse_markdown
+from briefkit.styles import (
+    CONTENT_WIDTH,  # noqa: F401 — re-exported
+    GUTTER,  # noqa: F401 — re-exported
+    MARGIN_BOTTOM,  # noqa: F401 — re-exported
+    MARGIN_LEFT,  # noqa: F401 — re-exported
+    MARGIN_RIGHT,  # noqa: F401 — re-exported
+    MARGIN_TOP,  # noqa: F401 — re-exported
+    _get_brand,
+    _hex,
+    _ps,
+    _safe_para,
+    _safe_text,
+    build_styles,
+    compute_content_width,
+)
+from briefkit.variants import auto_detect_variant, get_variant
 
 _PAGE_SIZES = {
     "A4": A4,
@@ -60,10 +72,6 @@ _PAGE_SIZES = {
     "Letter": letter,
     "Legal": legal,
 }
-
-# Re-export _hf_state for templates that mutate section headers directly
-from briefkit.elements.header_footer import _hf_state  # noqa: F401, E402
-
 
 # ---------------------------------------------------------------------------
 # Helper flowables
@@ -536,7 +544,7 @@ class BaseBriefingTemplate:
                     key_numbers.append((parts[0], ""))
 
         if key_numbers and len(key_numbers) >= 2:
-            metric_data = [(str(n), str(l)) for n, l in key_numbers[:4]]
+            metric_data = [(str(n), str(lbl)) for n, lbl in key_numbers[:4]]
         else:
             word_count = metrics.get("word_count", 0)
             chapters   = len(content.get("subsystems", []))
@@ -1020,7 +1028,7 @@ class BaseBriefingTemplate:
 
         b       = self.brand
         org     = b.get("org", "briefkit")
-        project = self.config.get("project", {})
+        self.config.get("project", {})
 
         doc = SimpleDocTemplate(
             str(self.output_path),

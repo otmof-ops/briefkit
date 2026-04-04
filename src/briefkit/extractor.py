@@ -22,9 +22,9 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from briefkit.bibliography import extract_bibliography, _parse_kebab_bibliography
+from briefkit.bibliography import _parse_kebab_bibliography, extract_bibliography
 from briefkit.cross_refs import extract_cross_refs
-from briefkit.terms import extract_terms, _GENERIC_TERMS
+from briefkit.terms import _GENERIC_TERMS, extract_terms
 
 # ---------------------------------------------------------------------------
 # Pre-compiled parse patterns
@@ -93,12 +93,11 @@ def parse_markdown(text: str) -> list[dict]:
     table_headers: list[str] = []
     table_rows: list[list[str]] = []
     pending_paragraph_lines: list[str] = []
-    last_was_list = False
 
     def _flush_paragraph():
         nonlocal pending_paragraph_lines
         if pending_paragraph_lines:
-            combined = " ".join(l.strip() for l in pending_paragraph_lines if l.strip())
+            combined = " ".join(ln.strip() for ln in pending_paragraph_lines if ln.strip())
             if combined:
                 blocks.append({"type": "paragraph", "text": _strip_inline(combined)})
             pending_paragraph_lines = []
@@ -175,7 +174,6 @@ def parse_markdown(text: str) -> list[dict]:
             level = len(m.group(1))
             text  = _strip_inline(m.group(2).strip())
             blocks.append({"type": "heading", "level": level, "text": text})
-            last_was_list = False
             i += 1
             continue
 
@@ -186,7 +184,7 @@ def parse_markdown(text: str) -> list[dict]:
             while i < len(lines) and (lines[i].startswith("> ") or lines[i] == ">"):
                 quote_lines.append(lines[i][2:] if lines[i].startswith("> ") else "")
                 i += 1
-            text = " ".join(l for l in quote_lines)
+            text = " ".join(ln for ln in quote_lines)
             blocks.append({"type": "blockquote", "text": _strip_inline(text)})
             continue
 
@@ -200,7 +198,6 @@ def parse_markdown(text: str) -> list[dict]:
                 "index": int(m.group(1)),
                 "text": _strip_inline(m.group(2).strip()),
             })
-            last_was_list = True
             i += 1
             continue
 
@@ -214,19 +211,16 @@ def parse_markdown(text: str) -> list[dict]:
                 "index": 0,
                 "text": _strip_inline(m.group(1).strip()),
             })
-            last_was_list = True
             i += 1
             continue
 
         # Blank line
         if line.strip() == "":
             _flush_paragraph()
-            last_was_list = False
             i += 1
             continue
 
         # Regular text
-        last_was_list = False
         pending_paragraph_lines.append(line)
         i += 1
 

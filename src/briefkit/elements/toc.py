@@ -5,7 +5,7 @@ Extracted and generalized from generate-briefing-v2.py build_toc()
 (original lines 1408-1423).
 """
 
-from briefkit.styles import _get_brand, _hex, _ps, _safe_para, CONTENT_WIDTH
+from briefkit.styles import CONTENT_WIDTH, _get_brand, _hex, _ps, _safe_para
 
 
 def build_toc(sections, brand=None, content_width=None):

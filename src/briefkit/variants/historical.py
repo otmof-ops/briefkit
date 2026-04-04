@@ -10,13 +10,12 @@ from __future__ import annotations
 import re
 import sys
 
+from reportlab.lib.units import mm
 from reportlab.platypus import PageBreak, Spacer
 
-from briefkit.styles import _safe_para, build_styles, CONTENT_WIDTH
 from briefkit.elements.tables import build_data_table
+from briefkit.styles import _safe_para
 from briefkit.variants import DocSetVariant, _register, collect_text
-
-from reportlab.lib.units import mm
 
 # Title patterns that indicate historical figures of authority
 _RULER_TITLE_PAT = re.compile(
@@ -240,8 +239,9 @@ class HistoricalVariant(DocSetVariant):
 def _build_timeline_drawing(events):
     """Attempt to build a visual horizontal timeline; returns None on failure."""
     try:
-        from reportlab.graphics.shapes import Drawing, Line, String, Circle
-        from reportlab.lib.colors import HexColor, white
+        from reportlab.graphics.shapes import Drawing, Line, String
+        from reportlab.lib.colors import HexColor
+
         from briefkit.styles import CONTENT_WIDTH
 
         chart_width  = float(CONTENT_WIDTH)

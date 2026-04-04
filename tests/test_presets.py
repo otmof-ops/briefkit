@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from briefkit.presets import list_presets, get_preset
+from briefkit.presets import get_preset, list_presets
 
 
 class TestPresets:

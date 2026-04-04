@@ -9,13 +9,12 @@ from __future__ import annotations
 
 import re
 
+from reportlab.lib.units import mm
 from reportlab.platypus import PageBreak, Spacer
 
-from briefkit.styles import _safe_para, build_styles
 from briefkit.elements.tables import build_data_table
+from briefkit.styles import _safe_para
 from briefkit.variants import DocSetVariant, _register, collect_text
-
-from reportlab.lib.units import mm
 
 
 @_register

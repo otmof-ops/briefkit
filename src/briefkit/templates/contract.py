@@ -24,33 +24,25 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from reportlab.lib.colors import HexColor
+from reportlab.lib.pagesizes import A3, A4, legal, letter
+from reportlab.lib.units import mm
 from reportlab.platypus import (
-    SimpleDocTemplate,
-    Paragraph,
-    Spacer,
     PageBreak,
+    Paragraph,
+    SimpleDocTemplate,
+    Spacer,
     Table,
     TableStyle,
 )
-from reportlab.lib.pagesizes import A4, A3, letter, legal
-from reportlab.lib.units import mm
-from reportlab.lib.colors import HexColor
 
+from briefkit.extractor import parse_markdown
 from briefkit.generator import BaseBriefingTemplate, _hf_state
 from briefkit.styles import (
-    _safe_para,
-    _ps,
     _hex,
-    _get_brand,
-    build_styles,
-    CONTENT_WIDTH,
-    MARGIN_TOP,
-    MARGIN_BOTTOM,
-    MARGIN_LEFT,
-    MARGIN_RIGHT,
+    _ps,
+    _safe_para,
 )
-from briefkit.extractor import parse_markdown
-
 
 # ---------------------------------------------------------------------------
 # Page sizes
@@ -125,10 +117,10 @@ class ContractTemplate(BaseBriefingTemplate):
         """
         story = []
         b = self.brand
-        primary = _hex(b, "primary")
-        body_c = _hex(b, "body_text")
-        caption_c = _hex(b, "caption")
-        org = b.get("org", "")
+        _hex(b, "primary")
+        _hex(b, "body_text")
+        _hex(b, "caption")
+        b.get("org", "")
         title = content.get("title", self.target_path.name.replace("-", " ").title())
 
         # ============================================================
@@ -517,11 +509,11 @@ class ContractTemplate(BaseBriefingTemplate):
         flowables.append(Spacer(1, 8 * mm))
 
         # Signature block helper
-        label_style = _ps(
+        _ps(
             "ContractSigLabel", brand=b, fontSize=9, textColor=caption_c,
             spaceBefore=2, spaceAfter=1,
         )
-        line_style = _ps(
+        _ps(
             "ContractSigLine", brand=b, fontSize=10, textColor=body_c,
         )
 

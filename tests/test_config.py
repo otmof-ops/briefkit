@@ -1,7 +1,8 @@
 """Tests for the configuration system."""
+
 import pytest
-from pathlib import Path
-from briefkit.config import load_config, DEFAULTS, find_project_root, resolve_brand
+
+from briefkit.config import DEFAULTS, find_project_root, load_config, resolve_brand
 
 
 class TestDefaults:

@@ -18,11 +18,11 @@ Key differences from BriefingTemplate:
 from __future__ import annotations
 
 import re
-from pathlib import Path
 
-from reportlab.platypus import Paragraph, Spacer, PageBreak, KeepTogether
 from reportlab.lib.units import mm
+from reportlab.platypus import PageBreak, Paragraph, Spacer
 
+from briefkit.extractor import parse_markdown
 from briefkit.generator import (
     BaseBriefingTemplate,
     build_callout_box,
@@ -30,8 +30,7 @@ from briefkit.generator import (
     build_data_table,
     build_toc,
 )
-from briefkit.styles import _safe_para, _ps, _hex
-from briefkit.extractor import parse_markdown
+from briefkit.styles import _hex, _ps, _safe_para
 
 
 class ReportTemplate(BaseBriefingTemplate):

@@ -1,9 +1,6 @@
 """Tests for briefkit cross-reference extraction."""
 from __future__ import annotations
 
-import tempfile
-from pathlib import Path
-
 from briefkit.cross_refs import extract_cross_refs
 
 

@@ -22,40 +22,33 @@ asset registers, audit logs.
 
 from __future__ import annotations
 
-import datetime
 from pathlib import Path
 
+from reportlab.lib.colors import HexColor, white
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import mm
 from reportlab.platypus import (
-    SimpleDocTemplate,
+    PageBreak,
     Paragraph,
+    SimpleDocTemplate,
+    Spacer,
     Table,
     TableStyle,
-    Spacer,
-    PageBreak,
 )
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.colors import HexColor, white
-from reportlab.lib.units import mm
 
+from briefkit.extractor import parse_markdown
 from briefkit.generator import (
     BaseBriefingTemplate,
     _hf_state,
 )
 from briefkit.styles import (
     _get_brand,
+    _hex,
+    _ps,
     _safe_para,
     _safe_text,
-    _ps,
-    _hex,
     build_styles,
-    CONTENT_WIDTH,
-    MARGIN_TOP,
-    MARGIN_BOTTOM,
-    MARGIN_LEFT,
-    MARGIN_RIGHT,
 )
-from briefkit.extractor import parse_markdown
-
 
 # ---------------------------------------------------------------------------
 # Custom header / footer
@@ -317,7 +310,7 @@ class RegisterTemplate(BaseBriefingTemplate):
         """Render a small summary block: total rows and generation date."""
         flowables: list = []
 
-        rule_style = _ps(
+        _ps(
             "RegisterRule", brand=self.brand,
             fontSize=1, spaceAfter=4,
         )

@@ -14,9 +14,6 @@ Use ``auto_detect_variant(text)`` to pick a variant based on content keywords.
 
 from __future__ import annotations
 
-from typing import Optional
-
-
 # ---------------------------------------------------------------------------
 # Shared utilities
 # ---------------------------------------------------------------------------
@@ -100,7 +97,7 @@ def _register(variant_cls):
     return variant_cls
 
 
-def get_variant(name: str) -> Optional[DocSetVariant]:
+def get_variant(name: str) -> DocSetVariant | None:
     """
     Return the registered variant with the given *name*, or None if unknown.
 
@@ -119,7 +116,7 @@ def list_variants() -> list[str]:
     return sorted(_REGISTRY.keys())
 
 
-def auto_detect_variant(text: str) -> Optional[DocSetVariant]:
+def auto_detect_variant(text: str) -> DocSetVariant | None:
     """
     Scan *text* against every registered variant's ``auto_detect_keywords``.
 
@@ -133,7 +130,7 @@ def auto_detect_variant(text: str) -> Optional[DocSetVariant]:
     """
     _ensure_registry_populated()
     text_lower = text.lower()
-    best: Optional[DocSetVariant] = None
+    best: DocSetVariant | None = None
     best_count = 1  # require at least 2 to beat this seed
 
     for variant in _REGISTRY.values():
@@ -162,15 +159,15 @@ def _ensure_registry_populated() -> None:
     # Import order is irrelevant; all end up in _REGISTRY.
     from briefkit.variants import (  # noqa: F401
         aiml,
+        api,
+        engineering,
+        finance,
+        gaming,
+        hardware,
+        historical,
         legal,
         medical,
-        engineering,
-        research,
-        api,
-        gaming,
-        finance,
-        species,
-        historical,
-        hardware,
         religion,
+        research,
+        species,
     )

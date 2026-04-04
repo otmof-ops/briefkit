@@ -1,6 +1,4 @@
 """Tests for quality gates."""
-import pytest
-from pathlib import Path
 from briefkit.quality import run_quality_gates
 
 

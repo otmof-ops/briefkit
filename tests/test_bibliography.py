@@ -1,5 +1,4 @@
 """Tests for bibliography extraction."""
-import pytest
 from briefkit.bibliography import extract_bibliography
 
 

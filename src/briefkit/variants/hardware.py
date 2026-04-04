@@ -9,14 +9,12 @@ from __future__ import annotations
 
 import re
 
+from reportlab.lib.units import mm
 from reportlab.platypus import PageBreak, Spacer
 
-from briefkit.styles import _safe_para, build_styles
 from briefkit.elements.tables import build_data_table
-from briefkit.elements.callout import build_callout_box
+from briefkit.styles import _safe_para
 from briefkit.variants import DocSetVariant, _register, collect_text
-
-from reportlab.lib.units import mm
 
 # Electrical unit pattern
 _ELEC_UNIT_PAT = re.compile(
@@ -193,7 +191,7 @@ class HardwareVariant(DocSetVariant):
             re.IGNORECASE,
         )
         for m in pin_pat.finditer(all_content):
-            pin_id = (m.group(1) or m.group(2) or "").strip()
+            (m.group(1) or m.group(2) or "").strip()
             matched = m.group(0).strip()
             if matched not in seen:
                 rows.append([matched, "—", "—", ""])

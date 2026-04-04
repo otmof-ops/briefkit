@@ -298,7 +298,7 @@ def _print_summary(stats: dict[str, Any]) -> None:
           f"{generated} generated, {skipped} skipped, {failed} failed")
 
     if failed:
-        print(f"\n  Failed directories:")
+        print("\n  Failed directories:")
         for r in stats["results"]:
             if r["status"] == "error":
                 print(f"    - {r['path']}")

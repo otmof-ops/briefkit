@@ -24,7 +24,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from reportlab.lib.colors import HexColor
+from reportlab.lib.colors import HexColor, white
 from reportlab.lib.pagesizes import A3, A4, legal, letter
 from reportlab.lib.units import mm
 from reportlab.platypus import (
@@ -122,8 +122,7 @@ class ProposalTemplate(BaseBriefingTemplate):
         # ============================================================
         # Table of Contents
         # ============================================================
-        story.append(_safe_para("Table of Contents", self.styles["STYLE_H1"]))
-        story.append(Spacer(1, 2 * mm))
+        story.extend(self._heading_with_rule("Table of Contents", "STYLE_H1"))
 
         toc_entries = [(1, "Executive Summary")]
         toc_entries.append((1, "Scope & Objectives"))
@@ -200,12 +199,12 @@ class ProposalTemplate(BaseBriefingTemplate):
             flowables.append(Paragraph(org, org_style))
             flowables.append(Spacer(1, 8 * mm))
 
-        # PROPOSAL subtitle
-        sub_style = _ps(
-            "ProposalCoverSub", brand=b, fontSize=12, textColor=caption_c,
-            fontName="Helvetica", alignment=1, spaceAfter=6,
+        # PROPOSAL — large prominent heading
+        proposal_style = _ps(
+            "ProposalCoverLabel", brand=b, fontSize=28, textColor=primary,
+            fontName="Helvetica-Bold", alignment=1, spaceAfter=6,
         )
-        flowables.append(Paragraph("PROPOSAL", sub_style))
+        flowables.append(Paragraph("PROPOSAL", proposal_style))
 
         # Divider
         flowables.append(Spacer(1, 4 * mm))
@@ -218,9 +217,9 @@ class ProposalTemplate(BaseBriefingTemplate):
         flowables.append(divider)
         flowables.append(Spacer(1, 8 * mm))
 
-        # Project title
+        # Project title — smaller, below PROPOSAL
         title_style = _ps(
-            "ProposalCoverTitle", brand=b, fontSize=24, textColor=primary,
+            "ProposalCoverTitle", brand=b, fontSize=16, textColor=primary,
             fontName="Helvetica-Bold", alignment=1, spaceAfter=8,
         )
         flowables.append(Paragraph(title, title_style))
@@ -244,6 +243,40 @@ class ProposalTemplate(BaseBriefingTemplate):
             )
             flowables.append(Paragraph(tagline, tag_style))
 
+        # -- Cover footer band (secondary/cyan) with contact info --
+        secondary = _hex(b, "secondary")
+        contact_parts = []
+        if org:
+            contact_parts.append(org)
+        email = b.get("email", "")
+        if email:
+            contact_parts.append(email)
+        phone = b.get("phone", "")
+        if phone:
+            contact_parts.append(phone)
+        contact_text = "  |  ".join(contact_parts) if contact_parts else ""
+
+        if contact_text:
+            flowables.append(Spacer(1, 30 * mm))
+            band_style = _ps(
+                "ProposalCoverBand", brand=b, fontSize=9, textColor=white,
+                fontName="Helvetica", alignment=1,
+            )
+            band_data = [[Paragraph(contact_text, band_style)]]
+            band = Table(
+                band_data,
+                colWidths=[self.content_width],
+                rowHeights=None,
+            )
+            band.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, -1), secondary),
+                ("TOPPADDING", (0, 0), (-1, -1), 8),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+            ]))
+            flowables.append(band)
+
         return flowables
 
     # ------------------------------------------------------------------
@@ -254,8 +287,7 @@ class ProposalTemplate(BaseBriefingTemplate):
         """Build executive summary from the overview content."""
         flowables: list = []
 
-        flowables.append(Paragraph("Executive Summary", self.styles["STYLE_H1"]))
-        flowables.append(Spacer(1, 2 * mm))
+        flowables.extend(self._heading_with_rule("Executive Summary", "STYLE_H1"))
 
         overview = content.get("overview", "")
         if overview:
@@ -281,8 +313,7 @@ class ProposalTemplate(BaseBriefingTemplate):
         flowables: list = []
         b = self.brand
 
-        flowables.append(Paragraph("Scope &amp; Objectives", self.styles["STYLE_H1"]))
-        flowables.append(Spacer(1, 2 * mm))
+        flowables.extend(self._heading_with_rule("Scope &amp; Objectives", "STYLE_H1"))
 
         orientation = content.get("orientation", "")
         subsystems = content.get("subsystems", [])
@@ -301,8 +332,7 @@ class ProposalTemplate(BaseBriefingTemplate):
         # Objectives as bullet list from subsystem names
         if subsystems:
             flowables.append(Spacer(1, 2 * mm))
-            flowables.append(Paragraph("Key Objectives", self.styles["STYLE_H2"]))
-            flowables.append(Spacer(1, 1.5 * mm))
+            flowables.extend(self._heading_with_rule("Key Objectives", "STYLE_H2"))
             obj_style = _ps(
                 "ProposalObjective", brand=b, fontSize=10,
                 textColor=_hex(b, "body_text"), leading=14, leftIndent=12,
@@ -322,8 +352,7 @@ class ProposalTemplate(BaseBriefingTemplate):
         """Build deliverables section — one subsection per subsystem."""
         flowables: list = []
 
-        flowables.append(Paragraph("Deliverables", self.styles["STYLE_H1"]))
-        flowables.append(Spacer(1, 2 * mm))
+        flowables.extend(self._heading_with_rule("Deliverables", "STYLE_H1"))
 
         subsystems = content.get("subsystems", [])
         if not subsystems:
@@ -333,8 +362,7 @@ class ProposalTemplate(BaseBriefingTemplate):
 
         for idx, sub in enumerate(subsystems, start=1):
             name = sub.get("name", f"Deliverable {idx}")
-            flowables.append(Paragraph(f"{idx}. {name}", self.styles["STYLE_H2"]))
-            flowables.append(Spacer(1, 1.5 * mm))
+            flowables.extend(self._heading_with_rule(f"{idx}. {name}", "STYLE_H2"))
 
             blocks = sub.get("blocks") or parse_markdown(sub.get("content", ""))
             rendered = 0
@@ -365,8 +393,7 @@ class ProposalTemplate(BaseBriefingTemplate):
             return []
 
         flowables: list = []
-        flowables.append(Paragraph("Timeline", self.styles["STYLE_H1"]))
-        flowables.append(Spacer(1, 2 * mm))
+        flowables.extend(self._heading_with_rule("Timeline", "STYLE_H1"))
         flowables.append(Paragraph(
             "The following timeline outlines the key milestones and phases.",
             self.styles["STYLE_BODY"],
@@ -375,12 +402,14 @@ class ProposalTemplate(BaseBriefingTemplate):
 
         from briefkit.elements.tables import build_data_table
 
+        secondary = _hex(self.brand, "secondary")
         for name, tbl in timeline_tables[:5]:
             if name:
                 flowables.append(Paragraph(name, self.styles["STYLE_H2"]))
             flowables.extend(build_data_table(
                 tbl["headers"], tbl["rows"],
                 brand=self.brand, content_width=self.content_width,
+                header_color=secondary,
             ))
             flowables.append(Spacer(1, 3 * mm))
 
@@ -397,8 +426,7 @@ class ProposalTemplate(BaseBriefingTemplate):
             return []
 
         flowables: list = []
-        flowables.append(Paragraph("Pricing &amp; Budget", self.styles["STYLE_H1"]))
-        flowables.append(Spacer(1, 2 * mm))
+        flowables.extend(self._heading_with_rule("Pricing &amp; Budget", "STYLE_H1"))
         flowables.append(Paragraph(
             "The following table(s) detail the proposed investment.",
             self.styles["STYLE_BODY"],
@@ -407,12 +435,14 @@ class ProposalTemplate(BaseBriefingTemplate):
 
         from briefkit.elements.tables import build_data_table
 
+        secondary = _hex(self.brand, "secondary")
         for name, tbl in pricing_tables[:5]:
             if name:
                 flowables.append(Paragraph(name, self.styles["STYLE_H2"]))
             flowables.extend(build_data_table(
                 tbl["headers"], tbl["rows"],
                 brand=self.brand, content_width=self.content_width,
+                header_color=secondary,
             ))
             flowables.append(Spacer(1, 3 * mm))
 
@@ -429,8 +459,7 @@ class ProposalTemplate(BaseBriefingTemplate):
             return []
 
         flowables: list = []
-        flowables.append(Paragraph("Terms &amp; Conditions", self.styles["STYLE_H1"]))
-        flowables.append(Spacer(1, 2 * mm))
+        flowables.extend(self._heading_with_rule("Terms &amp; Conditions", "STYLE_H1"))
 
         for block in parse_markdown(guide)[:40]:
             flowables.extend(self.render_blocks([block]))
@@ -450,8 +479,7 @@ class ProposalTemplate(BaseBriefingTemplate):
         org = b.get("org", "")
         rule_c = HexColor(b.get("rule", "#CCCCCC"))
 
-        flowables.append(Paragraph("Acceptance &amp; Sign-off", self.styles["STYLE_H1"]))
-        flowables.append(Spacer(1, 2 * mm))
+        flowables.extend(self._heading_with_rule("Acceptance &amp; Sign-off", "STYLE_H1"))
 
         intro_style = _ps(
             "ProposalAcceptIntro", brand=b, fontSize=10, textColor=body_c,
@@ -542,6 +570,27 @@ class ProposalTemplate(BaseBriefingTemplate):
             colophon_style,
         ))
 
+        return flowables
+
+    # ------------------------------------------------------------------
+    # Heading with underline rule
+    # ------------------------------------------------------------------
+
+    def _heading_with_rule(self, text: str, style_key: str = "STYLE_H1") -> list:
+        """Return a heading paragraph followed by a thin secondary-colored rule."""
+        secondary = _hex(self.brand, "secondary")
+        flowables = [
+            _safe_para(text, self.styles[style_key]),
+            Spacer(1, 1 * mm),
+        ]
+        rule = Table([[""]], colWidths=[self.content_width], rowHeights=[0.5])
+        rule.setStyle(TableStyle([
+            ("LINEABOVE", (0, 0), (-1, 0), 0.5, secondary),
+            ("TOPPADDING", (0, 0), (-1, -1), 0),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+        ]))
+        flowables.append(rule)
+        flowables.append(Spacer(1, 2 * mm))
         return flowables
 
     # ------------------------------------------------------------------

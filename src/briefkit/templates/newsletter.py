@@ -102,6 +102,19 @@ class NewsletterTemplate(BaseBriefingTemplate):
         story.extend(self._build_banner(title))
         story.append(Spacer(1, 3 * mm))
 
+        # -- Accent rule below banner (below-the-fold break) --
+        accent = _hex(self.brand, "accent")
+        fold_rule = Table(
+            [[""]], colWidths=[self.content_width], rowHeights=[2],
+        )
+        fold_rule.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, -1), accent),
+            ("TOPPADDING", (0, 0), (-1, -1), 0),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+        ]))
+        story.append(fold_rule)
+        story.append(Spacer(1, 3 * mm))
+
         # -- Date and issue line --
         story.extend(self._build_date_line())
         story.append(Spacer(1, 6 * mm))
@@ -148,32 +161,22 @@ class NewsletterTemplate(BaseBriefingTemplate):
         primary = _hex(self.brand, "primary")
 
         org = self.brand.get("org", "")
-        banner_text = f"<b>{_safe_text(org)}</b>" if org else ""
         title_text = _safe_text(title)
 
         # Banner table — single row, primary background, white text
         banner_style = _ps(
-            "NLBannerOrg", brand=self.brand,
+            "NLBannerText", brand=self.brand,
             fontSize=20, fontName="Helvetica-Bold",
             textColor=white, alignment=1,
             spaceAfter=2,
         )
-        title_style = _ps(
-            "NLBannerTitle", brand=self.brand,
-            fontSize=14, fontName="Helvetica",
-            textColor=white, alignment=1,
-            spaceBefore=2, spaceAfter=2,
-        )
 
-        cells = []
         if org:
-            cells.append(Paragraph(banner_text, banner_style))
-        cells.append(Paragraph(title_text, title_style))
+            banner_content = f"<b>{_safe_text(org)}</b><br/>{title_text}"
+        else:
+            banner_content = f"<b>{title_text}</b>"
 
-        # Use a table for the colored background
-        banner_data = [[cells[0] if cells else Paragraph("", banner_style)]]
-        if len(cells) > 1:
-            banner_data = [[c] for c in cells]
+        banner_data = [[Paragraph(banner_content, banner_style)]]
 
         t = Table(
             banner_data,
@@ -499,7 +502,11 @@ class NewsletterTemplate(BaseBriefingTemplate):
         )
 
         story = self.build_story(content)
-        doc.build(story, onFirstPage=hf, onLaterPages=hf)
+        doc.build(
+            story,
+            onFirstPage=lambda c, d: None,
+            onLaterPages=hf,
+        )
 
         return self.output_path
 

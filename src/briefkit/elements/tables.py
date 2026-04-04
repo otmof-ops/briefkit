@@ -20,9 +20,9 @@ _RED_BG   = HexColor("#fdeaea")
 _GOLD_BG  = HexColor("#fef9e7")
 
 
-def build_data_table(headers, rows, title=None, brand=None, content_width=None):
+def build_data_table(headers, rows, title=None, brand=None, content_width=None, header_color=None):
     """
-    Build a standard data table with primary-color header and alternating rows.
+    Build a standard data table with colored header and alternating rows.
 
     Parameters
     ----------
@@ -35,6 +35,9 @@ def build_data_table(headers, rows, title=None, brand=None, content_width=None):
         Caption shown above the table.
     brand : dict, optional
         Brand config dict.
+    header_color : color, optional
+        Override color for the header row background.  Defaults to brand
+        primary when *None*.
 
     Returns
     -------
@@ -46,7 +49,7 @@ def build_data_table(headers, rows, title=None, brand=None, content_width=None):
     b       = _get_brand(brand)
     cw      = content_width or CONTENT_WIDTH
     styles  = build_styles(b)
-    primary = _hex(b, "primary")
+    hdr_bg  = header_color if header_color is not None else _hex(b, "primary")
     rule    = _hex(b, "rule")
 
     table_alt = HexColor(b.get("table_alt", "#f8f9fa"))
@@ -91,7 +94,7 @@ def build_data_table(headers, rows, title=None, brand=None, content_width=None):
 
     t = Table(table_data, colWidths=col_widths, repeatRows=1)
     t.setStyle(TableStyle([
-        ("BACKGROUND",    (0, 0), (-1, 0),  primary),
+        ("BACKGROUND",    (0, 0), (-1, 0),  hdr_bg),
         ("TEXTCOLOR",     (0, 0), (-1, 0),  white),
         ("FONTNAME",      (0, 0), (-1, 0),  b.get("font_heading", "Helvetica-Bold")),
         ("FONTSIZE",      (0, 0), (-1, 0),  9),

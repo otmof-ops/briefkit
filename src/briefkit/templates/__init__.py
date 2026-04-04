@@ -113,6 +113,8 @@ _REGISTRY: dict[str, type] = {
     "memo":         MemoTemplate,
     "whitepaper":   WhitepaperTemplate,
     "datasheet":    DatasheetTemplate,
+    "playbook":     PlaybookTemplate,
+    "deck":         DeckTemplate,
 }
 
 
@@ -176,6 +178,8 @@ __all__ = [
     "MemoTemplate",
     "WhitepaperTemplate",
     "DatasheetTemplate",
+    "PlaybookTemplate",
+    "DeckTemplate",
     "get_template",
     "list_templates",
 ]

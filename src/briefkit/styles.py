@@ -5,6 +5,7 @@ Extracted and generalized from generate-briefing-v2.py.
 All styles accept a brand dict; a DEFAULT_BRAND fallback is provided.
 """
 
+import functools
 import re
 import unicodedata
 import datetime
@@ -46,11 +47,25 @@ DEFAULT_BRAND = {
 }
 
 
+_SAFE_FONTS = frozenset({
+    'Courier', 'Courier-Bold', 'Courier-Oblique', 'Courier-BoldOblique',
+    'Helvetica', 'Helvetica-Bold', 'Helvetica-Oblique', 'Helvetica-BoldOblique',
+    'Times-Roman', 'Times-Bold', 'Times-Italic', 'Times-BoldItalic',
+})
+
+
 def _get_brand(brand=None):
     """Return a fully populated brand dict, merging with DEFAULT_BRAND."""
+    if brand is None:
+        return dict(DEFAULT_BRAND)
+    key = tuple(sorted(brand.items()))
+    return _get_brand_cached(key)
+
+
+@functools.lru_cache(maxsize=32)
+def _get_brand_cached(brand_key):
     merged = dict(DEFAULT_BRAND)
-    if brand:
-        merged.update(brand)
+    merged.update(dict(brand_key))
     return merged
 
 
@@ -157,19 +172,24 @@ def _safe_text(text):
     text = text.replace('&lt;/font&gt;', '</font>')
 
     # After restoring font tags, sanitize attributes to allowlist
-    _safe_fonts = {
-        'Courier', 'Courier-Bold', 'Courier-Oblique', 'Courier-BoldOblique',
-        'Helvetica', 'Helvetica-Bold', 'Helvetica-Oblique', 'Helvetica-BoldOblique',
-        'Times-Roman', 'Times-Bold', 'Times-Italic', 'Times-BoldItalic',
-    }
-
     def _sanitize_font_attrs(match):
         tag_content = match.group(1)
+        parts = []
         # Only allow name= with safe font families
         name_match = re.search(r'name="([^"]*)"', tag_content)
-        if name_match and name_match.group(1) in _safe_fonts:
-            return f'<font name="{name_match.group(1)}">'
-        return '<font name="Courier">'  # safe default
+        if name_match and name_match.group(1) in _SAFE_FONTS:
+            parts.append(f'name="{name_match.group(1)}"')
+        else:
+            parts.append('name="Courier"')
+        # Allow size= with numeric values only
+        size_match = re.search(r'size="(\d+(?:\.\d+)?)"', tag_content)
+        if size_match:
+            parts.append(f'size="{size_match.group(1)}"')
+        # Allow color= with hex values only
+        color_match = re.search(r'color="(#[0-9A-Fa-f]{6})"', tag_content)
+        if color_match:
+            parts.append(f'color="{color_match.group(1)}"')
+        return f'<font {" ".join(parts)}>'
 
     text = re.sub(r'<font ([^>]+)>', _sanitize_font_attrs, text)
 
@@ -227,14 +247,17 @@ def _ps(name, brand=None, **kw):
 def build_styles(brand=None):
     """
     Return a dict of all named ParagraphStyle objects using brand colors.
-
-    Keys match the original OTM constant names for drop-in compatibility:
-      STYLE_TITLE, STYLE_H1, STYLE_H2, STYLE_H3, STYLE_BODY,
-      STYLE_TABLE_HEADER, STYLE_TABLE_BODY, STYLE_CAPTION, STYLE_FOOTER,
-      STYLE_CODE, STYLE_CALLOUT, STYLE_METRIC_NUMBER, STYLE_METRIC_LABEL,
-      STYLE_PULL_QUOTE, STYLE_INDEX_TERM
+    Results are cached per unique brand configuration.
     """
     b = _get_brand(brand)
+    key = tuple(sorted(b.items()))
+    return _build_styles_cached(key)
+
+
+@functools.lru_cache(maxsize=32)
+def _build_styles_cached(brand_key):
+    """Cached implementation of build_styles."""
+    b = dict(brand_key)
 
     primary   = _hex(b, "primary")
     secondary = _hex(b, "secondary")

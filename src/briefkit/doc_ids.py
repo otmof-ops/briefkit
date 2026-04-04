@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import re as _re
 from pathlib import Path
 from typing import Any
 
@@ -31,10 +32,13 @@ def load_registry(registry_path: Path) -> dict:
     """Load the document ID registry from *registry_path*. Returns empty registry if missing."""
     if registry_path.exists():
         try:
-            return json.loads(registry_path.read_text(encoding="utf-8"))
+            data = json.loads(registry_path.read_text(encoding="utf-8"))
+            # Build path index for O(1) lookups
+            data["_index"] = {e["path"]: e["doc_id"] for e in data.get("entries", [])}
+            return data
         except (json.JSONDecodeError, OSError):
             pass
-    return {"schema_version": 1, "counters": {}, "entries": []}
+    return {"schema_version": 1, "counters": {}, "entries": [], "_index": {}}
 
 
 def save_registry(registry: dict, registry_path: Path) -> None:
@@ -43,10 +47,12 @@ def save_registry(registry: dict, registry_path: Path) -> None:
     import os
 
     registry_path.parent.mkdir(parents=True, exist_ok=True)
+    # Strip internal index before persisting
+    to_save = {k: v for k, v in registry.items() if k != "_index"}
     fd, tmp_path = tempfile.mkstemp(dir=str(registry_path.parent), suffix=".tmp")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump(registry, f, indent=2)
+            json.dump(to_save, f, indent=2)
         os.replace(tmp_path, str(registry_path))
     except BaseException:
         os.unlink(tmp_path)
@@ -56,6 +62,20 @@ def save_registry(registry: dict, registry_path: Path) -> None:
 # ---------------------------------------------------------------------------
 # ID format helpers
 # ---------------------------------------------------------------------------
+
+_ALLOWED_FORMAT_FIELDS = frozenset({"prefix", "type", "group", "level", "seq", "year"})
+_FORMAT_FIELD_RE = _re.compile(r'\{(\w+)\}')
+
+def _validate_format_string(fmt: str, allowed: frozenset[str]) -> None:
+    """Raise ValueError if *fmt* contains field names outside *allowed*."""
+    for m in _FORMAT_FIELD_RE.finditer(fmt):
+        field = m.group(1)
+        if field not in allowed:
+            raise ValueError(
+                f"Invalid format field {{{field}}} in doc_ids.format. "
+                f"Allowed fields: {sorted(allowed)}"
+            )
+
 
 def _format_doc_id(
     level:    int,
@@ -89,6 +109,7 @@ def _format_doc_id(
 
     seq_str = str(seq).zfill(digits)
 
+    _validate_format_string(fmt, _ALLOWED_FORMAT_FIELDS)
     return fmt.format(
         prefix=prefix,
         type=type_,
@@ -169,10 +190,10 @@ def get_or_assign_doc_id(
 
     registry = load_registry(registry_path)
 
-    # Return existing ID if found
-    for entry in registry.get("entries", []):
-        if entry.get("path") == key:
-            return entry["doc_id"]
+    # Return existing ID if found (O(1) lookup via index)
+    existing = registry.get("_index", {}).get(key)
+    if existing:
+        return existing
 
     # Assign new ID
     group = _derive_group_code(target, config)
@@ -193,6 +214,7 @@ def get_or_assign_doc_id(
         "title":    title,
         "assigned": datetime.date.today().isoformat(),
     })
+    registry.setdefault("_index", {})[key] = doc_id
 
     save_registry(registry, registry_path)
     return doc_id
@@ -218,6 +240,8 @@ def assign(
     count = 0
 
     for pdf in sorted(root.rglob(out_filename)):
+        if pdf.is_symlink():
+            continue
         target = pdf.parent
         if dry_run:
             count += 1

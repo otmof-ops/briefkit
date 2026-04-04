@@ -366,33 +366,32 @@ def _extract_doc_set_content(path: Path, config: dict) -> dict:
         chapter_sizes.append(raw_size)
         total_words += _count_words(raw)
 
-        # Truncate to max_words, preserving tables and blockquotes
-        words = raw.split()
-        if len(words) > max_words:
-            truncated_lines: list[str] = []
-            word_count_so_far = 0
-            in_tbl = False
-            in_qt  = False
-            for ln in raw.splitlines():
-                lw = len(ln.split())
-                if ln.startswith("|"):
-                    in_tbl = True
-                    truncated_lines.append(ln)
-                    continue
-                elif in_tbl and not ln.startswith("|"):
-                    in_tbl = False
-                if ln.startswith("> "):
-                    in_qt = True
-                    truncated_lines.append(ln)
-                    continue
-                elif in_qt and not ln.startswith("> "):
-                    in_qt = False
-                if word_count_so_far < max_words:
-                    truncated_lines.append(ln)
-                    word_count_so_far += lw
-            raw_for_parse = "\n".join(truncated_lines)
-        else:
-            raw_for_parse = raw
+        # Truncate to max_words (single-pass), preserving tables and blockquotes
+        truncated_lines: list[str] = []
+        word_count_so_far = 0
+        needs_truncation = False
+        in_tbl = False
+        in_qt  = False
+        for ln in raw.splitlines():
+            if ln.startswith("|"):
+                in_tbl = True
+                truncated_lines.append(ln)
+                continue
+            elif in_tbl and not ln.startswith("|"):
+                in_tbl = False
+            if ln.startswith("> "):
+                in_qt = True
+                truncated_lines.append(ln)
+                continue
+            elif in_qt and not ln.startswith("> "):
+                in_qt = False
+            lw = len(ln.split())
+            word_count_so_far += lw
+            if word_count_so_far > max_words and not in_tbl and not in_qt:
+                needs_truncation = True
+                break
+            truncated_lines.append(ln)
+        raw_for_parse = "\n".join(truncated_lines) if needs_truncation else raw
 
         stem     = fp.stem
         name_part = re.sub(r'^\d+-', '', stem).replace("-", " ").title()
@@ -539,7 +538,7 @@ def _extract_doc_set_content(path: Path, config: dict) -> dict:
 
     # Metrics finalization
     result["metrics"]["word_count"] = total_words
-    result["metrics"]["file_count"] = sum(1 for f in path.rglob("*") if f.is_file())
+    result["metrics"]["file_count"] = sum(1 for e in path.iterdir() if e.is_file())
     result["metrics"]["pdf_count"]  = pdf_count
 
     if pdf_years:
@@ -592,7 +591,7 @@ def _aggregate_subject_content(path: Path, config: dict, date: datetime.date) ->
 
     cross_refs_seen: set = set()
     for child in sorted(path.iterdir()):
-        if child.is_dir() and not child.name.startswith("."):
+        if child.is_dir() and not child.is_symlink() and not child.name.startswith("."):
             numbered = list(child.glob("[0-9][0-9]-*.md"))
             if numbered or (child / "README.md").exists():
                 try:
@@ -647,7 +646,7 @@ def _aggregate_division_content(path: Path, config: dict, date: datetime.date) -
         agg["overview"] = raw[:2000]
 
     for child in sorted(path.iterdir()):
-        if child.is_dir() and not child.name.startswith(".") and child.name not in ("_tools",):
+        if child.is_dir() and not child.is_symlink() and not child.name.startswith(".") and child.name not in ("_tools",):
             subject_data: dict[str, Any] = {
                 "name":      child.name.replace("-", " ").title(),
                 "path":      str(child),
@@ -667,7 +666,7 @@ def _aggregate_division_content(path: Path, config: dict, date: datetime.date) -
 
             doc_sets = [
                 d for d in child.iterdir()
-                if d.is_dir() and not d.name.startswith(".")
+                if d.is_dir() and not d.is_symlink() and not d.name.startswith(".")
             ]
             subject_data["doc_count"] = len(doc_sets)
             agg["metrics"]["doc_count"] += len(doc_sets)

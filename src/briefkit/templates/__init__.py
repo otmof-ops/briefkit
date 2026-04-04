@@ -26,6 +26,10 @@ Available templates
   letter     LetterTemplate     — formal correspondence (letterhead, date, body, signature)
   contract   ContractTemplate   — legal agreement (title page, recitals, definitions, clauses,
                                    schedules, execution block)
+  proposal   ProposalTemplate   — business proposal (cover, TOC, exec summary, scope,
+                                   deliverables, timeline, pricing, terms, acceptance, back cover)
+  policy     PolicyTemplate     — policy document (cover, doc control, TOC, purpose, definitions,
+                                   policy statements, compliance, review, approvals, version history)
   register   RegisterTemplate   — table-dominant register (title, consolidated table,
                                    summary stats — risk registers, data dictionaries,
                                    compliance matrices)
@@ -42,12 +46,15 @@ from briefkit.templates.academic import AcademicTemplate
 from briefkit.templates.book import BookTemplate
 from briefkit.templates.briefing import BriefingTemplate
 from briefkit.templates.contract import ContractTemplate
+from briefkit.templates.evaluation import EvaluationTemplate
 from briefkit.templates.invoice import InvoiceTemplate
 from briefkit.templates.letter import LetterTemplate
 from briefkit.templates.manual import ManualTemplate
 from briefkit.templates.minimal import MinimalTemplate
 from briefkit.templates.minutes import MinutesTemplate
 from briefkit.templates.novel import NovelTemplate
+from briefkit.templates.policy import PolicyTemplate
+from briefkit.templates.proposal import ProposalTemplate
 from briefkit.templates.quote import QuoteTemplate
 from briefkit.templates.register import RegisterTemplate
 from briefkit.templates.report import ReportTemplate
@@ -64,6 +71,8 @@ _REGISTRY: dict[str, type] = {
     "register":  RegisterTemplate,
     "minutes":   MinutesTemplate,
     "novel":     NovelTemplate,
+    "proposal":  ProposalTemplate,
+    "policy":    PolicyTemplate,
     "invoice":   InvoiceTemplate,
     "quote":     QuoteTemplate,
 }
@@ -78,7 +87,7 @@ def get_template(name: str) -> type:
     name : str
         Template name, case-insensitive.  One of:
         briefing, report, book, manual, academic, minimal, letter, contract,
-        register, minutes, invoice, quote.
+        register, minutes, proposal, policy, invoice, quote.
 
     Returns
     -------
@@ -116,6 +125,8 @@ __all__ = [
     "RegisterTemplate",
     "MinutesTemplate",
     "NovelTemplate",
+    "ProposalTemplate",
+    "PolicyTemplate",
     "InvoiceTemplate",
     "QuoteTemplate",
     "get_template",

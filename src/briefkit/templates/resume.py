@@ -137,8 +137,10 @@ class ResumeTemplate(BaseBriefingTemplate):
         title = content.get("title", "")
         overview = content.get("overview", "")
         subsystems = content.get("subsystems", [])
-        terms = content.get("terms", [])
-        keywords = content.get("keywords", [])
+        _raw_terms = content.get("terms", [])
+        terms = list(_raw_terms.keys()) if isinstance(_raw_terms, dict) else (list(_raw_terms) if _raw_terms else [])
+        _raw_keywords = content.get("keywords") or []
+        keywords = list(_raw_keywords.keys()) if isinstance(_raw_keywords, dict) else list(_raw_keywords)
 
         # --- Header: Name (centered, 16pt bold black) ---
         name_style = _ps(

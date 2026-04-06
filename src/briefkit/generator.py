@@ -224,8 +224,7 @@ class BaseBriefingTemplate:
         # Compute dynamic content width
         layout = self.config.get("layout", {})
         margins = layout.get("margins", {})
-        page_sizes = {"A4": A4, "A3": A3, "Letter": letter, "Legal": legal}
-        page_size = page_sizes.get(layout.get("page_size", "A4"), A4)
+        page_size = _PAGE_SIZES.get(layout.get("page_size", "A4"), A4)
         self.content_width = compute_content_width(page_size, margins)
 
         # Pre-build styles dict for use by section builders
@@ -1029,7 +1028,6 @@ class BaseBriefingTemplate:
 
         b       = self.brand
         org     = b.get("org", "briefkit")
-        self.config.get("project", {})
 
         doc = SimpleDocTemplate(
             str(self.output_path),

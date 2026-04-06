@@ -589,8 +589,6 @@ class MinutesTemplate(BaseBriefingTemplate):
         _minutes_state["date"] = self.date_str
         _minutes_state["brand"] = self.brand
 
-        # Also populate base _hf_state
-
         layout = self.config.get("layout", {})
         margins = layout.get("margins", {})
         top_m = margins.get("top", 25) * mm

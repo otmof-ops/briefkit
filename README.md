@@ -78,7 +78,7 @@ Unlike general-purpose converters like Pandoc or WeasyPrint, BriefKit is purpose
 - **Quality gates** — two-tier thresholds (hard minimum + soft target)
 - **Custom templates and variants** — extend in ~100 lines of Python
 - **Fully offline** — two dependencies (ReportLab, PyYAML), no AI APIs, no telemetry
-- **73 tests passing** — CI on Python 3.10 and 3.12
+- **274 tests passing** — CI on Python 3.10 and 3.12
 
 ---
 

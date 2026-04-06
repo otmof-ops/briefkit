@@ -588,8 +588,6 @@ class DatasheetTemplate(BaseBriefingTemplate):
         _ds_state["title"] = title
         _ds_state["brand"] = self.brand
 
-        # Also populate base _hf_state for consistency
-
         # Recalculate content width for Letter
         layout = self.config.get("layout", {})
         margins = layout.get("margins", {})

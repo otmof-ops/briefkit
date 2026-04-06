@@ -354,8 +354,6 @@ class RegisterTemplate(BaseBriefingTemplate):
         _register_state["title"] = title
         _register_state["brand"] = self.brand
 
-        # Also populate base _hf_state for consistency
-
         layout = self.config.get("layout", {})
         margins = layout.get("margins", {})
         top_m = margins.get("top", 25) * mm

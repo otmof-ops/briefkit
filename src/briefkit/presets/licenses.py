@@ -262,11 +262,11 @@ LICENSE_CATEGORIES: list[tuple[str, list[str]]] = [
         "BUSL-1.1", "Elastic-2.0", "SSPL-1.0",
     ]),
     ("Creative Commons (content)", [
-        "CC0-1.0", "CC-BY-4.0", "CC-BY-SA-4.0",
+        "CC-BY-4.0", "CC-BY-SA-4.0",
         "CC-BY-NC-4.0", "CC-BY-NC-SA-4.0", "CC-BY-ND-4.0",
     ]),
     ("Public domain", [
-        "Unlicense", "CC0-1.0",
+        "CC0-1.0", "Unlicense",
     ]),
     ("Specialized", [
         "OFL-1.1", "ODbL-1.0",

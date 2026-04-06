@@ -369,8 +369,6 @@ class WhitepaperTemplate(BaseBriefingTemplate):
         # Populate module-level state for header/footer
         _wp_state["brand"] = self.brand
 
-        # Also populate base _hf_state for consistency
-
         # Recalculate content width for Letter
         layout = self.config.get("layout", {})
         margins = layout.get("margins", {})

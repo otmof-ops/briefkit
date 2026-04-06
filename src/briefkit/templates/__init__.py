@@ -140,9 +140,10 @@ def get_template(name: str) -> type:
     ----------
     name : str
         Template name, case-insensitive.  One of:
-        briefing, report, book, manual, academic, minimal, letter, contract,
-        register, minutes, evaluation, newsletter, proposal, policy, invoice, quote,
-        certificate, resume, sop, memo.
+        briefing, report, book, novel, manual, academic, minimal, letter,
+        contract, proposal, policy, register, minutes, evaluation, newsletter,
+        invoice, quote, certificate, resume, sop, memo, whitepaper, datasheet,
+        playbook, deck, guide, deep-research, magazine.
 
     Returns
     -------

@@ -212,8 +212,13 @@ def _validate_config(cfg: dict[str, Any]) -> list[str]:
                 f"brand.logo must have one of {sorted(_ALLOWED_LOGO_EXTS)} extension, "
                 f"got: {logo_path.suffix!r}"
             )
-        if logo_path.is_absolute() and logo_path.is_symlink():
-            errors.append("brand.logo must not be a symlink")
+        # Resolve relative paths before symlink check — prevents bypass
+        try:
+            resolved_logo = logo_path.resolve() if logo_path.is_absolute() else (Path.cwd() / logo_path)
+            if resolved_logo.is_symlink():
+                errors.append("brand.logo must not be a symlink")
+        except (OSError, ValueError):
+            pass
 
     # Validate output_dir is not an escape path
     output_dir = output.get("output_dir", "")

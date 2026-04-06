@@ -11,7 +11,7 @@ from reportlab.lib.colors import white
 from reportlab.lib.units import mm
 from reportlab.platypus import PageBreak, Paragraph, Spacer, Table, TableStyle
 
-from briefkit.styles import CONTENT_WIDTH, _get_brand, _hex, _ps, build_styles
+from briefkit.styles import CONTENT_WIDTH, _get_brand, _hex, _ps, _safe_text, build_styles
 
 
 def build_back_cover(date=None, generator_note="", brand=None, content_width=None):
@@ -64,7 +64,13 @@ def build_back_cover(date=None, generator_note="", brand=None, content_width=Non
         year     = date.year
 
     raw_cr    = b.get("copyright", "\u00a9 {year}")
-    copyright = raw_cr.replace("{year}", str(year))
+    copyright = _safe_text(raw_cr.replace("{year}", str(year)))
+
+    # Sanitize all YAML-sourced strings before PDF rendering
+    org      = _safe_text(org)
+    tagline  = _safe_text(tagline)
+    url      = _safe_text(url)
+    abn      = _safe_text(abn)
 
     flowables = []
     flowables.append(PageBreak())
@@ -141,7 +147,7 @@ def build_back_cover(date=None, generator_note="", brand=None, content_width=Non
         ))
 
     abn_part = f" | ABN {abn}" if abn else ""
-    license_notice = b.get("_license_notice", "")
+    license_notice = _safe_text(b.get("_license_notice", ""))
     rights = "All rights reserved." if not license_notice else ""
     flowables.append(Paragraph(
         f"{copyright}{abn_part}. {rights}",

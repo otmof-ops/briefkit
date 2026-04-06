@@ -130,6 +130,16 @@ def cmd_generate(args: argparse.Namespace) -> int:
         print(f"Generating briefing for: {path}")
         print(f"Output: {output}")
 
+    # License warning
+    license_preset = cfg.get("license", {}).get("preset", "")
+    if not license_preset or license_preset == "unlicensed":
+        if not getattr(args, "quiet", False):
+            print(
+                "WARNING: No license configured. Output defaults to 'All Rights Reserved'.\n"
+                "         Set license.preset in briefkit.yml or run 'briefkit licenses' for options.",
+                file=sys.stderr,
+            )
+
     if getattr(args, "dry_run", False):
         print("(dry-run — no file written)")
         return 0
@@ -201,6 +211,23 @@ def cmd_init(args: argparse.Namespace) -> int:
           # secondary: "#2E86AB"
           # accent: "#E8C547"
           # logo: "logo.png"
+
+        license:
+          preset: ""        # License for generated documents. Options:
+                            #
+                            # PERMISSIVE: MIT | Apache-2.0 | BSD-2-Clause | BSD-3-Clause
+                            #             ISC | Zlib | BSL-1.0
+                            # COPYLEFT:   GPL-2.0 | GPL-3.0 | LGPL-3.0 | AGPL-3.0
+                            #             MPL-2.0 | EUPL-1.2
+                            # SOURCE-AVAILABLE: BUSL-1.1 | Elastic-2.0 | SSPL-1.0
+                            # CREATIVE COMMONS: CC0-1.0 | CC-BY-4.0 | CC-BY-SA-4.0
+                            #                   CC-BY-NC-4.0 | CC-BY-NC-SA-4.0 | CC-BY-ND-4.0
+                            # PUBLIC DOMAIN: Unlicense | CC0-1.0
+                            # SPECIALIZED: OFL-1.1 | ODbL-1.0
+                            # OTHER: proprietary | unlicensed
+                            #
+                            # Run 'briefkit licenses' for full list with descriptions.
+                            # Leave blank or set to 'unlicensed' to skip (not recommended).
 
         doc_ids:
           enabled: true
@@ -509,6 +536,51 @@ def cmd_presets(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_licenses(args: argparse.Namespace) -> int:
+    """List all available license presets with descriptions."""
+    from briefkit.presets.licenses import LICENSE_CATEGORIES, LICENSE_PRESETS  # noqa: PLC0415
+
+    as_json = getattr(args, "json", False)
+    quiet = getattr(args, "quiet", False)
+
+    if as_json:
+        print(json.dumps(LICENSE_PRESETS, indent=2, default=str))
+        return 0
+
+    if quiet:
+        for name in sorted(LICENSE_PRESETS):
+            print(name)
+        return 0
+
+    print("\n  Available license presets for briefkit.yml (license.preset):\n")
+    for category_name, keys in LICENSE_CATEGORIES:
+        print(f"  ── {category_name} ──")
+        for key in keys:
+            preset = LICENSE_PRESETS.get(key)
+            if not preset:
+                continue
+            name = preset["name"]
+            spdx = preset.get("spdx", "")
+            commercial = preset.get("commercial")
+            comm_tag = ""
+            if commercial is True:
+                comm_tag = " [commercial OK]"
+            elif commercial is False:
+                comm_tag = " [non-commercial]"
+            spdx_tag = f"  (SPDX: {spdx})" if spdx else ""
+            print(f"    {key:<20} {name}{spdx_tag}{comm_tag}")
+        print()
+
+    print("  Set in briefkit.yml:")
+    print("    license:")
+    print('      preset: MIT       # or any preset name above')
+    print()
+    print("  WARNING: Projects without a license default to 'All Rights Reserved'")
+    print("  under copyright law. Always specify a license for shared work.\n")
+
+    return 0
+
+
 # ---------------------------------------------------------------------------
 # Argument parser construction
 # ---------------------------------------------------------------------------
@@ -740,6 +812,14 @@ def _build_parser() -> argparse.ArgumentParser:
         help="List color presets with hex values",
     )
     p_prs.set_defaults(func=cmd_presets)
+
+    # --- licenses ---
+    p_lic = subparsers.add_parser(
+        "licenses",
+        parents=[global_flags],
+        help="List available license presets",
+    )
+    p_lic.set_defaults(func=cmd_licenses)
 
     return parser
 

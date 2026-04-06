@@ -100,6 +100,13 @@ DEFAULTS: dict[str, Any] = {
         },
         "custom_sections": [],
     },
+    "license": {
+        "preset": "",
+        "name": "",
+        "spdx": "",
+        "url": "",
+        "notice": "",
+    },
     "variants": {
         "rules": [],
         "auto_detect": True,
@@ -442,10 +449,38 @@ def load_config(config_path: str | Path | None = None) -> dict[str, Any]:
 
     cfg = _apply_dynamic_defaults(cfg, root)
     cfg = resolve_brand(cfg, user_brand_overrides=user_brand_overrides)
+    cfg = _resolve_license(cfg)
 
     errors = _validate_config(cfg)
     if errors:
         bullet_list = "\n  - ".join(errors)
         raise ValueError(f"Configuration errors:\n  - {bullet_list}")
+
+    return cfg
+
+
+def _resolve_license(config: dict[str, Any]) -> dict[str, Any]:
+    """Apply the named license preset to the license section of *config*."""
+    cfg = copy.deepcopy(config)
+    lic = cfg.setdefault("license", {})
+    preset_name = lic.get("preset", "")
+
+    if not preset_name:
+        return cfg
+
+    from briefkit.presets.licenses import LICENSE_PRESETS  # noqa: PLC0415
+
+    preset = LICENSE_PRESETS.get(preset_name)
+    if preset is None:
+        available = ", ".join(sorted(LICENSE_PRESETS))
+        raise ValueError(
+            f"Unknown license preset: {preset_name!r}. "
+            f"Available presets: {available}"
+        )
+
+    # Fill in unset fields from preset
+    for key in ("name", "spdx", "url", "notice"):
+        if not lic.get(key):
+            lic[key] = preset.get(key, "")
 
     return cfg

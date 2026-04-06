@@ -141,10 +141,15 @@ def build_back_cover(date=None, generator_note="", brand=None, content_width=Non
         ))
 
     abn_part = f" | ABN {abn}" if abn else ""
+    license_notice = b.get("_license_notice", "")
+    rights = "All rights reserved." if not license_notice else ""
     flowables.append(Paragraph(
-        f"{copyright}{abn_part}. All rights reserved.",
+        f"{copyright}{abn_part}. {rights}",
         meta_style,
     ))
+
+    if license_notice:
+        flowables.append(Paragraph(license_notice, meta_style))
 
     flowables.append(Spacer(1, 40 * mm))
 

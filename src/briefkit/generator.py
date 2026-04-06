@@ -191,7 +191,15 @@ class BaseBriefingTemplate:
     ):
         self.target_path = Path(target_path).resolve()
         self.config      = config or {}
-        self.brand       = self.config.get("brand", {})
+        self.brand       = dict(self.config.get("brand", {}))
+
+        # Inject license notice into brand for back cover access
+        license_cfg = self.config.get("license", {})
+        license_notice = license_cfg.get("notice", "")
+        if license_notice:
+            self.brand["_license_notice"] = license_notice
+        elif not license_cfg.get("preset") and not license_cfg.get("name"):
+            self.brand["_license_notice"] = ""
 
         # Resolve project root from config
         self._project_root: Path | None = None

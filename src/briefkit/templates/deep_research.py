@@ -1,21 +1,39 @@
 """
 briefkit.templates.deep_research
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Deep research report template — minimalist dark cover with arc decorations.
+Deep research report template — pixel-perfect match of AI Simulations
+With Progressive Learning visual design.
 
-Grounded in AI Simulations With Progressive Learning visual design.
+Exact specifications reverse-engineered from PDF content streams.
 
-Build order:
-  Dark cover (canvas) → Contents page → Body sections → Back page
+Cover page (canvas-drawn):
+  - Full-page dark fill #0F1318
+  - Three decorative arc strokes: #00D4AA, varying radii + opacity
+    - Arc 1: center (510.24, 742.68), r≈170pt, stroke only
+    - Arc 2: center (538.58, 771.02), r≈255pt, 10% opacity
+    - Arc 3: center (566.93, 799.37), r≈340pt, 15% opacity
+  - Title: Helvetica-Bold 28pt white at x=68.36, y=555.29
+  - Subtitle: Helvetica 13pt #93A3B8 at x=68.36, y=502.28
+  - Accent rule: #00D4AA rounded rect 155.9x2.5pt at y=445.93
+  - Metadata: Helvetica 9pt #64748A at y=410.25
+  - Topics: Helvetica 9pt #93A3B8 at y=375.74
+  - Dot row: 8 dots r=1.5pt #00D4AA at y=170.08, spacing ~51pt
+  - Bottom strip: #00D4AA 1.5pt at y=79.37
 
-Design norms:
-  - Full-page dark cover with decorative arc strokes, teal accent rule
-  - Minimalist white body pages, clean typography
-  - Thin-rule header: title left, "RESEARCH REPORT {year}" right
-  - Centered em-dash page numbers "— n —"
-  - Numbered TOC with teal chapter numbers and italic subtopics
-  - No dashboard, no callouts — pure text focus
-  - Teal bottom strip on cover
+Body pages:
+  - Header: #00D4AA 1.5pt rule at y=802.20
+    - Left: Helvetica 7.5pt #6B7280 — title uppercase
+    - Right: Helvetica 7.5pt #6B7280 — "RESEARCH REPORT {year}"
+  - Footer: 0.5pt #D1D4DB rule at y=45.35
+    - Center: Helvetica 8pt #6B7280 — "— {n} —"
+  - Contents: Helvetica-Bold 22pt #1A1A2D, teal rule below
+  - TOC entries: number Helvetica-Bold 10.5pt #00D4AA, title 10.5pt #2C2C2C
+  - TOC subtitles: Helvetica-Oblique 9.5pt #6B7280
+  - Section headers: "01" Helvetica-Bold 22pt #00D4AA + title 20pt #1A1A2D
+  - H2: Helvetica-Bold 14pt #16213D
+  - Body: Helvetica 10pt #2C2C2C, 15.5pt leading, justified
+  - Table headers: bg #00D4AA, white text
+  - Callout: left border #00D4AA, bg #EFFDF9
 """
 
 from __future__ import annotations
@@ -42,12 +60,25 @@ from briefkit.generator import (
 )
 from briefkit.styles import (
     _get_brand,
-    _hex,
     _ps,
-    _safe_para,
     _safe_text,
     compute_content_width,
 )
+
+# ---------------------------------------------------------------------------
+# Exact colors from PDF content stream
+# ---------------------------------------------------------------------------
+
+_COVER_BG = "#0F1318"
+_TEAL = "#00D4AA"
+_SUBTITLE_GRAY = "#93A3B8"
+_META_GRAY = "#64748A"
+_HEADER_CAPTION = "#6B7280"
+_FOOTER_RULE = "#D1D4DB"
+_TOC_TITLE = "#1A1A2D"
+_BODY_TEXT = "#2C2C2C"
+_H2_COLOR = "#16213D"
+_CALLOUT_BG = "#EFFDF9"
 
 # ---------------------------------------------------------------------------
 # Module-level state for custom header / footer
@@ -62,46 +93,37 @@ _dr_state: dict = {
 
 
 def _dr_header_footer(canvas, doc):
-    """Deep research header/footer — thin rule header, centered page number."""
+    """Deep research header/footer — exact match of PDF body pages."""
     canvas.saveState()
-    b = _get_brand(_dr_state.get("brand"))
+    _get_brand(_dr_state.get("brand"))
     w, h = doc.pagesize
 
-    caption_c = HexColor(b.get("caption", "#888888"))
-    rule_c = HexColor(b.get("rule", "#00D4AA"))
-    body_font = b.get("font_body", "Helvetica")
+    # Header rule: teal 1.5pt at y=802.20
+    canvas.setStrokeColor(HexColor(_TEAL))
+    canvas.setLineWidth(1.5)
+    canvas.line(62.362, 802.205, 532.913, 802.205)
 
-    # Header — title left, report type + year right
-    header_y = h - doc.topMargin + 8 * mm
-
+    # Header text at y=807.87
+    canvas.setFont("Helvetica", 7.5)
+    canvas.setFillColor(HexColor(_HEADER_CAPTION))
     title = _dr_state.get("title", "")
     if title:
-        canvas.setFont(body_font, 7)
-        canvas.setFillColor(caption_c)
-        canvas.drawString(doc.leftMargin, header_y, title.upper()[:50])
+        canvas.drawString(62.362, 807.874, title.upper()[:50])
 
     report_label = _dr_state.get("report_type", "RESEARCH REPORT")
     year = _dr_state.get("year", "2026")
-    canvas.setFont(body_font, 7)
-    canvas.setFillColor(caption_c)
-    canvas.drawRightString(
-        w - doc.rightMargin, header_y, f"{report_label} {year}",
-    )
+    canvas.drawRightString(532.913, 807.874, f"{report_label} {year}")
 
-    # Header rule
-    canvas.setStrokeColor(rule_c)
+    # Footer rule: 0.5pt #D1D4DB at y=45.35
+    canvas.setStrokeColor(HexColor(_FOOTER_RULE))
     canvas.setLineWidth(0.5)
-    canvas.line(
-        doc.leftMargin, header_y - 4,
-        w - doc.rightMargin, header_y - 4,
-    )
+    canvas.line(62.362, 45.354, 532.913, 45.354)
 
-    # Footer — centered page number with em-dashes
-    footer_y = doc.bottomMargin - 6 * mm
+    # Footer page number: centered "— n —"
     page_num = canvas.getPageNumber()
-    canvas.setFont(body_font, 8)
-    canvas.setFillColor(caption_c)
-    canvas.drawCentredString(w / 2, footer_y, f"\u2014 {page_num} \u2014")
+    canvas.setFont("Helvetica", 8)
+    canvas.setFillColor(HexColor(_HEADER_CAPTION))
+    canvas.drawCentredString(285.190, 28.346, f"\u2014 {page_num} \u2014")
 
     canvas.restoreState()
 
@@ -113,11 +135,10 @@ def _dr_header_footer(canvas, doc):
 
 class DeepResearchTemplate(BaseBriefingTemplate):
     """
-    Deep research report template.
+    Deep research report template — pixel-perfect AI Simulations style.
 
-    Produces a minimalist research report with a dark cover page,
-    decorative arc strokes, and clean body typography. Designed for
-    academic deep-dives, literature surveys, and research compilations.
+    Minimalist dark cover with decorative arc strokes, teal accents,
+    clean white body pages with centered em-dash page numbers.
 
     Suitable for: research reports, literature reviews, survey papers,
     technical deep-dives, white-paper-style analysis.
@@ -133,40 +154,44 @@ class DeepResearchTemplate(BaseBriefingTemplate):
         story.append(PageBreak())
 
         # Contents page
-        story.append(Paragraph("Contents", self.styles["STYLE_H1"]))
+        # "Contents" heading: Helvetica-Bold 22pt #1A1A2D
+        contents_style = _ps(
+            "DRContents", brand=self.brand,
+            fontSize=22, fontName="Helvetica-Bold",
+            textColor=HexColor(_TOC_TITLE), leading=26,
+        )
+        story.append(Paragraph("Contents", contents_style))
         story.append(Spacer(1, 2 * mm))
 
         # Teal rule under "Contents"
         rule_data = [[""]]
-        rule = Table(rule_data, colWidths=[self.content_width], rowHeights=[2])
+        rule = Table(rule_data, colWidths=[470.551], rowHeights=[1.2])
         rule.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), _hex(self.brand, "secondary")),
+            ("BACKGROUND", (0, 0), (-1, -1), HexColor(_TEAL)),
             ("TOPPADDING", (0, 0), (-1, -1), 0),
             ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
         ]))
         story.append(rule)
-        story.append(Spacer(1, 6 * mm))
+        story.append(Spacer(1, 4 * mm))
 
-        # Build TOC entries
-        secondary_c = _hex(self.brand, "secondary")
-        caption_c = _hex(self.brand, "caption")
-
+        # TOC entries: number 10.5pt teal bold, title 10.5pt #2C2C2C
         for i, sub in enumerate(subsystems, 1):
             name = sub.get("name", f"Section {i}")
 
-            # Number + title row
-            num_style = _ps(
-                f"DRTocNum_{i}", brand=self.brand,
-                fontSize=12, fontName=self.brand.get("font_heading", "Helvetica-Bold"),
-                textColor=secondary_c, leading=16, spaceBefore=8, spaceAfter=2,
+            # Number + title: Helvetica-Bold 10.5pt
+            entry_style = _ps(
+                f"DRTocEntry_{i}", brand=self.brand,
+                fontSize=10.5, fontName="Helvetica",
+                textColor=HexColor(_BODY_TEXT), leading=20,
+                leftIndent=22.677,
             )
             story.append(Paragraph(
-                f'<font color="{self.brand.get("secondary", "#00D4AA")}"><b>{i}</b></font>'
+                f'<font name="Helvetica-Bold" color="{_TEAL}">{i}</font>'
                 f'&nbsp;&nbsp;&nbsp;{_safe_text(name)}',
-                num_style,
+                entry_style,
             ))
 
-            # Extract sub-headings as italic subtopic line
+            # Extract sub-headings as italic subtitle
             blocks = sub.get("blocks") or parse_markdown(sub.get("content", ""))
             sub_items = []
             for block in blocks:
@@ -176,8 +201,9 @@ class DeepResearchTemplate(BaseBriefingTemplate):
                 summary = " \u00b7 ".join(sub_items[:5])
                 sub_style = _ps(
                     f"DRTocSub_{i}", brand=self.brand,
-                    fontSize=9, fontName=self.brand.get("font_caption", "Helvetica-Oblique"),
-                    textColor=caption_c, leading=12, leftIndent=24, spaceAfter=4,
+                    fontSize=9.5, fontName="Helvetica-Oblique",
+                    textColor=HexColor(_HEADER_CAPTION), leading=20,
+                    leftIndent=45.354,
                 )
                 story.append(Paragraph(summary[:100], sub_style))
 
@@ -187,10 +213,30 @@ class DeepResearchTemplate(BaseBriefingTemplate):
         for idx, sub in enumerate(subsystems, 1):
             name = sub.get("name", f"Section {idx}")
 
+            # Teal rule before section
+            rule_data2 = [[""]]
+            rule2 = Table(rule_data2, colWidths=[470.551], rowHeights=[1])
+            rule2.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, -1), HexColor(_TEAL)),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            ]))
+            story.append(rule2)
+            story.append(Spacer(1, 6 * mm))
+
+            # Section header: "01" teal 22pt + title 20pt dark
+            sec_style = _ps(
+                f"DRSecH_{idx}", brand=self.brand,
+                fontSize=20, fontName="Helvetica-Bold",
+                textColor=HexColor(_TOC_TITLE), leading=26,
+            )
             story.append(Paragraph(
-                f"{idx}.  {name}", self.styles["STYLE_H1"],
+                f'<font name="Helvetica-Bold" size="22" color="{_TEAL}">'
+                f'{idx:02d}</font>'
+                f'&nbsp;&nbsp;&nbsp;{_safe_text(name)}',
+                sec_style,
             ))
-            story.append(Spacer(1, 2 * mm))
+            story.append(Spacer(1, 3 * mm))
 
             blocks = sub.get("blocks") or parse_markdown(sub.get("content", ""))
             rendered = 0
@@ -206,15 +252,6 @@ class DeepResearchTemplate(BaseBriefingTemplate):
                     break
 
             story.append(Spacer(1, 4 * mm))
-
-        # Back page
-        story.append(Spacer(1, 60 * mm))
-        attr_style = _ps(
-            "DRBackAttr", brand=self.brand,
-            fontSize=9, textColor=_hex(self.brand, "caption"),
-            alignment=1,
-        )
-        story.append(_safe_para("Generated by briefkit", attr_style))
 
         return story
 
@@ -267,7 +304,7 @@ class DeepResearchTemplate(BaseBriefingTemplate):
         year = str(self.date.year)
 
         # Header/footer state
-        _dr_state["title"] = title
+        _dr_state["title"] = dr_cfg.get("header_title", title)
         _dr_state["year"] = year
         _dr_state["report_type"] = report_type.upper()
         _dr_state["brand"] = self.brand
@@ -287,9 +324,9 @@ class DeepResearchTemplate(BaseBriefingTemplate):
         page_size = A4
         self.content_width = compute_content_width(page_size, margins)
 
-        b = self.brand
-        cfg_author = dr_cfg.get("author", "")
-        cfg_subject = dr_cfg.get("subject", "")
+        cfg_author = dr_cfg.get("author", "(anonymous)")
+        cfg_subject = dr_cfg.get("subject", "(unspecified)")
+        cfg_title = dr_cfg.get("pdf_title", "(anonymous)")
 
         doc = SimpleDocTemplate(
             str(self.output_path),
@@ -298,49 +335,60 @@ class DeepResearchTemplate(BaseBriefingTemplate):
             bottomMargin=bottom_m,
             leftMargin=left_m,
             rightMargin=right_m,
-            title=title,
-            author=cfg_author or b.get("org", "(anonymous)"),
-            subject=cfg_subject or "(unspecified)",
-            creator="briefkit",
-            keywords=self.doc_id or "briefkit",
+            title=cfg_title,
+            author=cfg_author,
+            subject=cfg_subject,
+            creator="(unspecified)",
+            keywords="",
         )
 
         story = self.build_story(content)
 
-        primary_color = HexColor(b.get("primary", "#1E2530"))
-        secondary_color = HexColor(b.get("secondary", "#00D4AA"))
-        caption_color = HexColor(b.get("caption", "#888888"))
-
         def _cover_page(canvas, doc_inner):
-            """Draw the minimalist dark cover with arc decorations."""
+            """Draw cover — exact match of AI Simulations page 1."""
             canvas.saveState()
             w, h = doc_inner.pagesize
 
             # Full dark background
-            canvas.setFillColor(primary_color)
+            canvas.setFillColor(HexColor(_COVER_BG))
             canvas.rect(0, 0, w, h, stroke=0, fill=1)
 
-            # Decorative arc strokes (top-right quarter circles)
-            canvas.setStrokeColor(HexColor("#2A3A4A"))
-            canvas.setLineWidth(1)
-            # Large arc
-            cx, cy = w - 40, h - 40
-            r = 300
-            canvas.arc(
-                cx - r, cy - r, cx + r, cy + r,
-                startAng=180, extent=90,
-            )
-            # Smaller arc
-            r2 = 200
-            canvas.arc(
-                cx - r2, cy - r2, cx + r2, cy + r2,
-                startAng=180, extent=90,
-            )
+            # Decorative arcs (stroke only, teal)
+            canvas.setStrokeColor(HexColor(_TEAL))
+            canvas.setFillColor(HexColor(_TEAL))
+            canvas.setLineWidth(0)
 
-            # Title — large bold white
+            # Arc 1: center (510.24, 742.68), r≈170pt
+            r1 = 170
+            cx1, cy1 = 510.236, 742.677
+            canvas.arc(cx1 - r1, cy1 - r1, cx1 + r1, cy1 + r1, 0, 360)
+
+            # Arc 2: center (538.58, 771.02), r≈255pt (10% opacity)
+            try:
+                canvas.setStrokeAlpha(0.5)
+            except AttributeError:
+                pass
+            r2 = 255.118
+            cx2, cy2 = 538.583, 771.024
+            canvas.arc(cx2 - r2, cy2 - r2, cx2 + r2, cy2 + r2, 0, 360)
+
+            # Arc 3: center (566.93, 799.37), r≈340pt (15% opacity)
+            try:
+                canvas.setStrokeAlpha(0.3)
+            except AttributeError:
+                pass
+            r3 = 340.157
+            cx3, cy3 = 566.929, 799.370
+            canvas.arc(cx3 - r3, cy3 - r3, cx3 + r3, cy3 + r3, 0, 360)
+
+            try:
+                canvas.setStrokeAlpha(1.0)
+            except AttributeError:
+                pass
+
+            # Title: Helvetica-Bold 28pt white at x=68.36
             canvas.setFillColor(white)
-            canvas.setFont("Helvetica-Bold", 30)
-            title_y = h * 0.52
+            canvas.setFont("Helvetica-Bold", 28)
 
             # Word-wrap title
             title_lines = []
@@ -349,7 +397,7 @@ class DeepResearchTemplate(BaseBriefingTemplate):
             max_w = w * 0.6
             for word in words:
                 test = f"{current} {word}".strip()
-                if canvas.stringWidth(test, "Helvetica-Bold", 30) > max_w:
+                if canvas.stringWidth(test, "Helvetica-Bold", 28) > max_w:
                     if current:
                         title_lines.append(current)
                     current = word
@@ -358,21 +406,21 @@ class DeepResearchTemplate(BaseBriefingTemplate):
             if current:
                 title_lines.append(current)
 
+            title_y = 595.291
             for line in title_lines[:3]:
-                canvas.drawString(left_m, title_y, line)
-                title_y -= 40
+                canvas.drawString(68.362, title_y, line)
+                title_y -= 34
 
-            # Subtitle
+            # Subtitle: Helvetica 13pt #93A3B8
             if subtitle:
-                canvas.setFont("Helvetica", 12)
-                canvas.setFillColor(HexColor("#AAAAAA"))
-                # Word-wrap subtitle
+                canvas.setFont("Helvetica", 13)
+                canvas.setFillColor(HexColor(_SUBTITLE_GRAY))
                 sub_lines = []
                 sub_words = subtitle.split()
                 current = ""
                 for word in sub_words:
                     test = f"{current} {word}".strip()
-                    if canvas.stringWidth(test, "Helvetica", 12) > max_w:
+                    if canvas.stringWidth(test, "Helvetica", 13) > max_w:
                         if current:
                             sub_lines.append(current)
                         current = word
@@ -381,40 +429,33 @@ class DeepResearchTemplate(BaseBriefingTemplate):
                 if current:
                     sub_lines.append(current)
 
-                sub_y = title_y - 10
+                sub_y = 525.283
                 for line in sub_lines[:2]:
-                    canvas.drawString(left_m, sub_y, line)
-                    sub_y -= 16
+                    canvas.drawString(68.362, sub_y, line)
+                    sub_y -= 18
 
-            # Accent horizontal rule
-            rule_y = h * 0.32
-            canvas.setStrokeColor(secondary_color)
-            canvas.setLineWidth(2)
-            canvas.line(left_m, rule_y, left_m + 100, rule_y)
+            # Accent rule: teal rounded rect ~156x2.5pt at y=445.93
+            canvas.setFillColor(HexColor(_TEAL))
+            canvas.roundRect(68.362, 445.925, 155.906, 2.5, 0.75, stroke=0, fill=1)
 
-            # Metadata line
-            meta_y = rule_y - 20
-            canvas.setFont("Helvetica", 8)
-            canvas.setFillColor(caption_color)
+            # Metadata: Helvetica 9pt #64748A
+            canvas.setFont("Helvetica", 9)
+            canvas.setFillColor(HexColor(_META_GRAY))
             month_year = self.date.strftime("%B %Y")
-            canvas.drawString(
-                left_m, meta_y,
-                f"Compiled {month_year} \u00b7 {report_type}",
-            )
+            canvas.drawString(68.362, 414.248, f"Compiled {month_year} \u00b7 {report_type}")
 
-            # Topic tags
+            # Topics: Helvetica 9pt #93A3B8
             if topics:
                 topic_str = "Covering: " + " \u00b7 ".join(t[:30] for t in topics[:6])
-                canvas.setFont("Helvetica", 7)
-                canvas.setFillColor(caption_color)
-
-                # Word-wrap if needed
+                canvas.setFont("Helvetica", 9)
+                canvas.setFillColor(HexColor(_SUBTITLE_GRAY))
+                # Word-wrap
                 tag_lines = []
                 tag_words = topic_str.split()
                 current = ""
                 for word in tag_words:
                     test = f"{current} {word}".strip()
-                    if canvas.stringWidth(test, "Helvetica", 7) > max_w:
+                    if canvas.stringWidth(test, "Helvetica", 9) > max_w:
                         if current:
                             tag_lines.append(current)
                         current = word
@@ -423,22 +464,29 @@ class DeepResearchTemplate(BaseBriefingTemplate):
                 if current:
                     tag_lines.append(current)
 
-                tag_y = meta_y - 16
+                tag_y = 392.744
                 for line in tag_lines[:2]:
-                    canvas.drawString(left_m, tag_y, line)
-                    tag_y -= 12
+                    canvas.drawString(68.362, tag_y, line)
+                    tag_y -= 13
 
-            # Dot row decoration
-            dot_y = 90
-            canvas.setFillColor(HexColor("#3A4A5A"))
-            dot_spacing = (w - left_m - right_m) / 8
-            for i in range(8):
-                dx = left_m + dot_spacing * i + dot_spacing / 2
-                canvas.circle(dx, dot_y, 2, stroke=0, fill=1)
+            # Dot row: 8 dots at y=170.08, spacing ~51.024pt
+            try:
+                canvas.setFillAlpha(0.6)
+            except AttributeError:
+                pass
+            canvas.setFillColor(HexColor(_TEAL))
+            dots_x = [62.362, 113.386, 164.409, 215.433, 266.457, 317.480, 368.504, 419.528]
+            for dx in dots_x:
+                canvas.circle(dx, 170.079, 1.5, stroke=0, fill=1)
 
-            # Bottom teal strip
-            canvas.setFillColor(secondary_color)
-            canvas.rect(0, 0, w, 4, stroke=0, fill=1)
+            try:
+                canvas.setFillAlpha(1.0)
+            except AttributeError:
+                pass
+
+            # Bottom teal strip: 1.5pt at y=79.37
+            canvas.setFillColor(HexColor(_TEAL))
+            canvas.rect(0, 79.370, w, 1.5, stroke=0, fill=1)
 
             canvas.restoreState()
 

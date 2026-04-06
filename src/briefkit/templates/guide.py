@@ -1,20 +1,41 @@
 """
 briefkit.templates.guide
 ~~~~~~~~~~~~~~~~~~~~~~~~~
-Technical guide template — dark cover with spec table, hardware-style layout.
+Technical guide template — pixel-perfect match of System Overclocking &
+Optimisation Guide visual design.
 
-Grounded in System Overclocking & Optimisation Guide visual design.
+Exact specifications reverse-engineered from PDF content streams.
 
-Build order:
-  Dark cover (canvas) → TOC → Body sections → Bibliography → Back page
+Cover page (canvas-drawn):
+  - Full-page dark fill #0C1116
+  - Blue accent bar at top: #57A5FF, 14.17pt high, full width
+  - Horizontal guide grid: #57A5FF 1pt stroke, 34pt spacing
+  - Two decorative filled circles: #57A5FF at varying opacity
+    - Circle 1: center (453.54, 615.12), r≈170pt, 10% opacity
+    - Circle 2: center (113.39, 170.08), r≈127pt, 15% opacity
+  - Title: Helvetica-Bold 32pt white at x=70.87, y=657.64
+  - Accent rule: #57A5FF 3pt stroke, 70.87→396.85 at y=606.61
+  - Keywords: Helvetica 12pt #38D1BF at x=70.87, y=572.60
+  - Spec table: rounded rect fill #161A21 stroke #2F363D
+    - Header: Helvetica-Bold 8pt #57A5FF "TARGET SYSTEM"
+    - Labels: Helvetica-Bold 7pt #38D1BF at x=90.71
+    - Values: Helvetica 8.5pt #C8D1D8 at x=175.75
+    - Row spacing: ~19.84pt
+  - Footer: Helvetica 8pt #6E7580
+  - Version badge: rounded rect #57A5FF, Helvetica-Bold 7pt white
 
-Design norms:
-  - Full-page dark cover with decorative circles, spec table, version badge
-  - Dark header bar on body pages (doc title left, custom info right)
-  - Cyan/teal accent colors for section numbers and labels
-  - Red-bordered critical callout boxes
-  - Standard data tables with primary-colored headers
-  - Footer: system info left, date center, page right
+Body pages:
+  - Header: 34pt dark bar #0C1116, 1.5pt #57A5FF bottom rule
+    - Left: Helvetica 7pt #8B949F — title uppercase
+    - Right: Helvetica 7pt #57A5FF — hardware info
+  - Footer: 0.5pt rule #D0D7DD, Helvetica 7pt #6E7580 three columns
+  - TOC numbers: Helvetica-Bold 14pt #57A5FF
+  - TOC titles: Helvetica-Bold 10pt #1A1A2D
+  - TOC subtitles: Helvetica 7.5pt #6E7580
+  - Section headers: bg #F6F7F9, 2pt left accent #57A5FF
+  - Table headers: bg #1A2331 (#1A1A2D), text white
+  - Warning callouts: 3pt left border #F75049
+  - Tip callouts: 3pt left border #38D1BF
 """
 
 from __future__ import annotations
@@ -34,7 +55,6 @@ from reportlab.platypus import (
 )
 
 from briefkit.elements.callout import build_callout_box
-from briefkit.elements.toc import build_toc
 from briefkit.extractor import parse_markdown
 from briefkit.generator import (
     BaseBriefingTemplate,
@@ -42,11 +62,26 @@ from briefkit.generator import (
 )
 from briefkit.styles import (
     _get_brand,
-    _hex,
     _ps,
-    _safe_para,
     compute_content_width,
 )
+
+# ---------------------------------------------------------------------------
+# Exact colors from PDF content stream
+# ---------------------------------------------------------------------------
+
+_COVER_BG = "#0C1116"
+_BLUE_ACCENT = "#57A5FF"
+_TEAL_ACCENT = "#38D1BF"
+_SPEC_BOX_FILL = "#161A21"
+_SPEC_BOX_STROKE = "#2F363D"
+_SPEC_VALUE = "#C8D1D8"
+_CAPTION = "#6E7580"
+_HEADER_LEFT = "#8B949F"
+_FOOTER_RULE = "#D0D7DD"
+_TOC_TITLE = "#1A1A2D"
+_SECTION_BG = "#F6F7F9"
+_TABLE_HEADER_BG = "#1A2331"
 
 # ---------------------------------------------------------------------------
 # Module-level state for custom header / footer
@@ -62,43 +97,46 @@ _guide_state: dict = {
 
 
 def _guide_header_footer(canvas, doc):
-    """Guide header/footer — dark top bar, three-column footer."""
+    """Guide header/footer — exact match of PDF body pages."""
     canvas.saveState()
-    b = _get_brand(_guide_state.get("brand"))
+    _get_brand(_guide_state.get("brand"))
     w, h = doc.pagesize
 
-    primary_c = HexColor(b.get("primary", "#1A2332"))
-    secondary_c = HexColor(b.get("secondary", "#2EC4B6"))
-    caption_c = HexColor(b.get("caption", "#8899AA"))
-    heading_font = b.get("font_heading", "Helvetica-Bold")
-    body_font = b.get("font_body", "Helvetica")
+    # Header — dark bar: full width, 34pt tall, top-aligned
+    bar_h = 34.016
+    bar_y = h - bar_h
+    canvas.setFillColor(HexColor(_COVER_BG))
+    canvas.rect(0, bar_y, w, bar_h, stroke=0, fill=1)
 
-    # Header — dark top bar
-    bar_h = 10 * mm
-    top_y = h - doc.topMargin + bar_h + 2 * mm
-    canvas.setFillColor(primary_c)
-    canvas.rect(0, top_y - bar_h, w, bar_h, stroke=0, fill=1)
+    # Blue accent line at bottom of header bar
+    canvas.setStrokeColor(HexColor(_BLUE_ACCENT))
+    canvas.setLineWidth(1.5)
+    canvas.line(0, bar_y, w, bar_y)
 
-    # Header text — title left, info right
-    text_y = top_y - bar_h + 3 * mm
+    # Header text — title left, info right (inside the bar)
+    text_y = bar_y + 11.34  # vertically centered in bar
     title = _guide_state.get("title", "")
     if title:
-        canvas.setFont(body_font, 7)
-        canvas.setFillColor(HexColor("#CCCCCC"))
-        canvas.drawString(doc.leftMargin + 2 * mm, text_y, title.upper()[:60])
+        canvas.setFont("Helvetica", 7)
+        canvas.setFillColor(HexColor(_HEADER_LEFT))
+        canvas.drawString(doc.leftMargin, text_y, title.upper()[:60])
 
     header_right = _guide_state.get("header_right", "")
     if header_right:
-        canvas.setFont(heading_font, 7)
-        canvas.setFillColor(secondary_c)
-        canvas.drawRightString(
-            w - doc.rightMargin - 2 * mm, text_y, header_right[:60],
-        )
+        canvas.setFont("Helvetica", 7)
+        canvas.setFillColor(HexColor(_BLUE_ACCENT))
+        canvas.drawRightString(w - doc.rightMargin, text_y, header_right[:60])
 
-    # Footer — three columns
-    footer_y = doc.bottomMargin - 6 * mm
-    canvas.setFont(body_font, 7)
-    canvas.setFillColor(caption_c)
+    # Footer rule
+    footer_rule_y = 34.016
+    canvas.setStrokeColor(HexColor(_FOOTER_RULE))
+    canvas.setLineWidth(0.5)
+    canvas.line(doc.leftMargin, footer_rule_y, w - doc.rightMargin, footer_rule_y)
+
+    # Footer text — three columns at y=22.68
+    footer_y = 22.677
+    canvas.setFont("Helvetica", 7)
+    canvas.setFillColor(HexColor(_CAPTION))
 
     footer_left = _guide_state.get("footer_left", "")
     if footer_left:
@@ -109,9 +147,7 @@ def _guide_header_footer(canvas, doc):
         canvas.drawCentredString(w / 2, footer_y, f"Generated {date_str}")
 
     page_num = canvas.getPageNumber()
-    canvas.drawRightString(
-        w - doc.rightMargin, footer_y, f"Page {page_num}",
-    )
+    canvas.drawRightString(w - doc.rightMargin, footer_y, f"Page {page_num}")
 
     canvas.restoreState()
 
@@ -123,11 +159,10 @@ def _guide_header_footer(canvas, doc):
 
 class GuideTemplate(BaseBriefingTemplate):
     """
-    Technical guide template.
+    Technical guide template — pixel-perfect System Overclocking style.
 
-    Produces a hardware/software guide with a dark cover page featuring
-    a spec table, decorative circles, and version badge. Body pages use
-    a dark header bar with document title and configurable right-side info.
+    Dark cover with spec table, decorative circles, cyan accents.
+    Dark header bar on body pages with hardware info.
 
     Suitable for: system guides, hardware manuals, optimization guides,
     configuration references, benchmark reports.
@@ -142,44 +177,152 @@ class GuideTemplate(BaseBriefingTemplate):
         story.append(Spacer(1, 200 * mm))
         story.append(PageBreak())
 
-        # TOC
-        story.append(Paragraph("Table of Contents", self.styles["STYLE_H1"]))
+        # TOC — exact match: light bg box with blue left accent
+        secondary_c = HexColor(_BLUE_ACCENT)
+        toc_title_c = HexColor(_TOC_TITLE)
+        caption_c = HexColor(_CAPTION)
+
+        # TOC header box
+        toc_header_data = [[
+            Paragraph(
+                "Table of Contents",
+                _ps("GuideTocTitle", brand=self.brand,
+                    fontSize=14, fontName="Helvetica-Bold",
+                    textColor=secondary_c, leading=16.8),
+            ),
+        ]]
+        toc_header = Table(toc_header_data, colWidths=[self.content_width - 6],
+                           rowHeights=[39.685])
+        toc_header.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, -1), HexColor(_SECTION_BG)),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 14.173),
+            ("LINEBELOW", (0, 0), (-1, -1), 2, secondary_c),
+        ]))
+        story.append(toc_header)
         story.append(Spacer(1, 4 * mm))
 
-        toc_entries = []
+        # TOC entries — number left, title+subtitle right, separator line
         for i, sub in enumerate(subsystems, 1):
             name = sub.get("name", f"Section {i}")
-            toc_entries.append((1, f"{i}  {name}"))
-            # Add first-level sub-items from headings
+
+            # Extract sub-headings for subtitle
             blocks = sub.get("blocks") or parse_markdown(sub.get("content", ""))
             sub_items = []
             for block in blocks:
                 if block.get("type") == "heading" and block.get("level") in (2, 3):
                     sub_items.append(block["text"])
-            if sub_items:
-                summary = ", ".join(sub_items[:5])
-                toc_entries.append((2, summary[:80]))
+            subtitle = ", ".join(sub_items[:5])[:80] if sub_items else ""
 
-        story.extend(build_toc(
-            toc_entries, brand=self.brand, content_width=self.content_width,
-        ))
+            # Number + title row
+            row_data = [[
+                Paragraph(
+                    f"<b>{i}</b>",
+                    _ps(f"GTocN_{i}", brand=self.brand,
+                        fontSize=14, fontName="Helvetica-Bold",
+                        textColor=secondary_c, leading=12,
+                        alignment=2),
+                ),
+                Paragraph(
+                    f'<b>{name}</b>',
+                    _ps(f"GTocT_{i}", brand=self.brand,
+                        fontSize=10, fontName="Helvetica-Bold",
+                        textColor=toc_title_c, leading=14),
+                ),
+            ]]
+            toc_row = Table(row_data, colWidths=[40, self.content_width - 46],
+                            rowHeights=[21.669])
+            toc_row.setStyle(TableStyle([
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (0, -1), 6),
+                ("LEFTPADDING", (1, 0), (1, -1), 0),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            ]))
+            story.append(toc_row)
+
+            if subtitle:
+                sub_style = _ps(
+                    f"GTocSub_{i}", brand=self.brand,
+                    fontSize=7.5, fontName="Helvetica",
+                    textColor=caption_c, leading=9, leftIndent=46,
+                )
+                story.append(Paragraph(subtitle, sub_style))
+
+            # Separator line
+            sep_data = [[""]]
+            sep = Table(sep_data, colWidths=[self.content_width], rowHeights=[0.5])
+            sep.setStyle(TableStyle([
+                ("LINEBELOW", (0, 0), (-1, -1), 0.5, HexColor("#EFF4F7")),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            ]))
+            story.append(sep)
+            story.append(Spacer(1, 2 * mm))
+
         story.append(PageBreak())
 
-        # Body sections
+        # Body sections — each with section header bar
         for idx, sub in enumerate(subsystems, 1):
             name = sub.get("name", f"Section {idx}")
 
-            # Section heading with number
-            story.append(Paragraph(
-                f"{idx}.  {name}", self.styles["STYLE_H1"],
-            ))
-            story.append(Spacer(1, 2 * mm))
+            # Section header bar: bg #F6F7F9, 2pt blue left accent
+            sec_data = [[
+                Paragraph(
+                    f"{idx}.",
+                    _ps(f"GSecN_{idx}", brand=self.brand,
+                        fontSize=13, fontName="Helvetica-Bold",
+                        textColor=secondary_c, leading=15.6),
+                ),
+                Paragraph(
+                    name,
+                    _ps(f"GSecT_{idx}", brand=self.brand,
+                        fontSize=13, fontName="Helvetica-Bold",
+                        textColor=secondary_c, leading=15.6),
+                ),
+            ]]
+            sec_header = Table(sec_data, colWidths=[30, self.content_width - 36],
+                               rowHeights=[39.685])
+            sec_header.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, -1), HexColor(_SECTION_BG)),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING", (0, 0), (0, -1), 14.173),
+                ("LEFTPADDING", (1, 0), (1, -1), 0),
+                ("LINEBELOW", (0, 0), (-1, -1), 2, secondary_c),
+            ]))
+            story.append(sec_header)
+            story.append(Spacer(1, 3 * mm))
 
             blocks = sub.get("blocks") or parse_markdown(sub.get("content", ""))
             rendered = 0
             for block in blocks:
                 if block["type"] == "heading" and block["level"] <= 1:
                     continue
+                # Sub-section headings get their own bar
+                if block["type"] == "heading" and block["level"] in (2, 3):
+                    sub_text = block["text"]
+                    sub_num = f"{idx}.{rendered // 10 + 1}" if rendered > 0 else f"{idx}.1"
+                    sub_data = [[
+                        Paragraph(
+                            f"{sub_num}  {sub_text}",
+                            _ps(f"GSubH_{idx}_{rendered}", brand=self.brand,
+                                fontSize=11, fontName="Helvetica-Bold",
+                                textColor=toc_title_c, leading=13.2),
+                        ),
+                    ]]
+                    sub_header = Table(sub_data, colWidths=[self.content_width - 6],
+                                       rowHeights=[25.512])
+                    sub_header.setStyle(TableStyle([
+                        ("BACKGROUND", (0, 0), (-1, -1), HexColor(_SECTION_BG)),
+                        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 14.173),
+                        ("ROUNDEDCORNERS", [1, 1, 0, 0]),
+                    ]))
+                    story.append(sub_header)
+                    story.append(Spacer(1, 2 * mm))
+                    rendered += 1
+                    continue
+
                 for fl in self.render_blocks([block]):
                     story.append(fl)
                     rendered += 1
@@ -206,34 +349,7 @@ class GuideTemplate(BaseBriefingTemplate):
                 story.append(PageBreak())
                 story.extend(bib_flowables)
 
-        # Back page
-        story.extend(self._build_back_page())
-
         return story
-
-    def _build_back_page(self) -> list:
-        """Simple back page with brand bar."""
-        flowables: list = []
-        flowables.append(Spacer(1, 60 * mm))
-
-        bar_data = [[""]]
-        bar = Table(bar_data, colWidths=[self.content_width], rowHeights=[4])
-        bar.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), _hex(self.brand, "secondary")),
-            ("TOPPADDING", (0, 0), (-1, -1), 0),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-        ]))
-        flowables.append(bar)
-        flowables.append(Spacer(1, 8 * mm))
-
-        attr_style = _ps(
-            "GuideBackAttr", brand=self.brand,
-            fontSize=9, textColor=_hex(self.brand, "caption"),
-            alignment=1,
-        )
-        flowables.append(_safe_para("Generated by briefkit", attr_style))
-
-        return flowables
 
     # ------------------------------------------------------------------
     # generate() — custom cover and header/footer
@@ -276,7 +392,7 @@ class GuideTemplate(BaseBriefingTemplate):
         # Header/footer state
         _guide_state["title"] = title
         _guide_state["header_right"] = header_right
-        _guide_state["date"] = self.date_str
+        _guide_state["date"] = self.date.strftime("%d %B %Y")
         _guide_state["footer_left"] = classification
         _guide_state["brand"] = self.brand
 
@@ -296,8 +412,8 @@ class GuideTemplate(BaseBriefingTemplate):
         self.content_width = compute_content_width(page_size, margins)
 
         b = self.brand
-        subject = b.get("subject", f"Technical guide: {title}")
-        author = b.get("org", "briefkit")
+        subject = guide_cfg.get("subject", f"Technical guide: {title}")
+        author = guide_cfg.get("author", b.get("org", "Claude Code"))
 
         doc = SimpleDocTemplate(
             str(self.output_path),
@@ -309,53 +425,77 @@ class GuideTemplate(BaseBriefingTemplate):
             title=title,
             author=author,
             subject=subject,
-            creator="briefkit",
-            keywords=self.doc_id or "briefkit",
+            creator="(unspecified)",
+            keywords="",
         )
 
         story = self.build_story(content)
 
-        primary_color = HexColor(b.get("primary", "#1A2332"))
-        secondary_color = HexColor(b.get("secondary", "#2EC4B6"))
-        accent_color = HexColor(b.get("accent", "#5CE0D2"))
-        caption_color = HexColor(b.get("caption", "#8899AA"))
-
         def _cover_page(canvas, doc_inner):
-            """Draw the dark cover page with decorative circles and spec table."""
+            """Draw cover — exact match of System Overclocking Guide page 1."""
             canvas.saveState()
             w, h = doc_inner.pagesize
 
             # Full dark background
-            canvas.setFillColor(primary_color)
+            canvas.setFillColor(HexColor(_COVER_BG))
             canvas.rect(0, 0, w, h, stroke=0, fill=1)
 
-            # Top accent bar
-            canvas.setFillColor(secondary_color)
-            canvas.rect(0, h - 8, w, 8, stroke=0, fill=1)
+            # Blue accent bar at top (14.17pt high)
+            canvas.setFillColor(HexColor(_BLUE_ACCENT))
+            canvas.rect(0, h - 14.173, w, 14.173, stroke=0, fill=1)
 
-            # Decorative circles (subtle, low opacity)
-            canvas.saveState()
-            canvas.setStrokeColor(HexColor("#2A3A52"))
-            canvas.setLineWidth(1.5)
-            canvas.setFillColor(HexColor("#1F2D42"))
-            # Large circle bottom-left
-            canvas.circle(80, 120, 180, stroke=1, fill=1)
-            # Medium circle top-right
-            canvas.circle(w - 60, h - 200, 120, stroke=1, fill=1)
-            # Small circle center-right
-            canvas.circle(w - 100, h / 2 - 40, 60, stroke=1, fill=1)
-            canvas.restoreState()
+            # Horizontal guide grid (decorative lines)
+            canvas.setStrokeColor(HexColor(_BLUE_ACCENT))
+            canvas.setLineWidth(1)
+            # Graphics state for opacity — use alpha if available
+            try:
+                canvas.setStrokeAlpha(0.08)
+            except AttributeError:
+                canvas.setStrokeColor(HexColor("#1A2A3A"))
+            y_start = 728.504
+            for i in range(20):
+                y = y_start - i * 34.016
+                if y < 80:
+                    break
+                canvas.line(left_m, y, w - right_m, y)
+            # Reset stroke
+            canvas.setStrokeColor(HexColor(_BLUE_ACCENT))
+            try:
+                canvas.setStrokeAlpha(1.0)
+            except AttributeError:
+                pass
 
-            # Horizontal rule
-            rule_y = h - 120
-            canvas.setStrokeColor(HexColor("#2A3A52"))
-            canvas.setLineWidth(0.5)
-            canvas.line(left_m, rule_y, w - right_m, rule_y)
+            # Decorative circle 1 (upper right, large)
+            try:
+                canvas.setFillAlpha(0.10)
+            except AttributeError:
+                pass
+            canvas.setFillColor(HexColor(_BLUE_ACCENT))
+            canvas.circle(453.543, 615.118, 170, stroke=0, fill=1)
 
-            # Title
+            # Decorative circle 2 (lower left, medium)
+            try:
+                canvas.setFillAlpha(0.15)
+            except AttributeError:
+                pass
+            canvas.circle(113.386, 170.079, 127.559, stroke=0, fill=1)
+
+            # Reset alpha
+            try:
+                canvas.setFillAlpha(1.0)
+            except AttributeError:
+                pass
+
+            # Horizontal rules (at specific positions from PDF)
+            canvas.setStrokeColor(HexColor(_BLUE_ACCENT))
+            canvas.setLineWidth(1)
+            canvas.line(left_m, 694.488, w - right_m, 694.488)
+            canvas.line(left_m, 660.472, w - right_m, 660.472)
+
+            # Title: Helvetica-Bold 32pt white
             canvas.setFillColor(white)
             canvas.setFont("Helvetica-Bold", 32)
-            # Split title into lines if needed
+            # Split title into lines
             title_lines = []
             words = title.split()
             current = ""
@@ -370,70 +510,72 @@ class GuideTemplate(BaseBriefingTemplate):
             if current:
                 title_lines.append(current)
 
-            title_y = h - 160
+            title_y = 657.638
             for line in title_lines[:3]:
-                canvas.drawString(left_m, title_y, line)
-                title_y -= 42
+                canvas.drawString(70.866, title_y, line)
+                title_y -= 36.85
 
-            # Accent rule under title
-            canvas.setStrokeColor(secondary_color)
+            # Blue accent rule under title: 3pt stroke
+            canvas.setStrokeColor(HexColor(_BLUE_ACCENT))
             canvas.setLineWidth(3)
-            canvas.line(left_m, title_y + 10, left_m + 120, title_y + 10)
+            rule_y = title_y + 14.17
+            canvas.line(70.866, rule_y, 396.850, rule_y)
 
-            # Subtitle keywords
+            # Subtitle keywords: Helvetica 12pt teal
             if subtitle_kw:
-                canvas.setFont("Helvetica", 11)
-                canvas.setFillColor(accent_color)
-                canvas.drawString(left_m, title_y - 20, subtitle_kw[:80])
+                canvas.setFont("Helvetica", 12)
+                canvas.setFillColor(HexColor(_TEAL_ACCENT))
+                canvas.drawString(70.866, rule_y - 34, subtitle_kw[:80])
 
-            # Spec table (if provided)
+            # Spec table box: rounded rect
             if spec_rows:
-                table_y = h * 0.38
-                canvas.setStrokeColor(HexColor("#2A3A52"))
-                canvas.setLineWidth(0.5)
-                box_x = left_m + 10
-                box_w = w - left_m - right_m - 20
-                row_h = 22
-                box_h = (len(spec_rows) + 1) * row_h + 16
-                canvas.roundRect(box_x, table_y - box_h, box_w, box_h, 4, stroke=1, fill=0)
+                box_x = 70.866
+                box_w = w - 2 * 70.866 + 14
+                row_h = 19.843
+                box_h = (len(spec_rows) + 1) * row_h + 20
+                box_y = 360
 
-                # Table header
-                canvas.setFont("Helvetica-Bold", 9)
-                canvas.setFillColor(secondary_color)
-                canvas.drawString(box_x + 12, table_y - 20, "TARGET SYSTEM")
+                canvas.setFillColor(HexColor(_SPEC_BOX_FILL))
+                canvas.setStrokeColor(HexColor(_SPEC_BOX_STROKE))
+                canvas.setLineWidth(1)
+                canvas.roundRect(box_x, box_y, box_w, box_h, 5, stroke=1, fill=1)
 
-                # Table rows
+                # "TARGET SYSTEM" header
+                canvas.setFont("Helvetica-Bold", 8)
+                canvas.setFillColor(HexColor(_BLUE_ACCENT))
+                canvas.drawString(85.039, box_y + box_h - 20, "TARGET SYSTEM")
+
+                # Spec rows
                 for i, row in enumerate(spec_rows[:8]):
                     label = row.get("label", "") if isinstance(row, dict) else str(row)
                     value = row.get("value", "") if isinstance(row, dict) else ""
-                    ry = table_y - 42 - i * row_h
+                    ry = box_y + box_h - 40 - i * row_h
 
-                    canvas.setFont("Helvetica-Bold", 8)
-                    canvas.setFillColor(secondary_color)
-                    canvas.drawString(box_x + 12, ry, label.upper()[:20])
+                    canvas.setFont("Helvetica-Bold", 7)
+                    canvas.setFillColor(HexColor(_TEAL_ACCENT))
+                    canvas.drawString(90.709, ry, label.upper()[:20])
 
-                    canvas.setFont("Helvetica", 9)
-                    canvas.setFillColor(HexColor("#CCCCCC"))
-                    canvas.drawString(box_x + 120, ry, str(value)[:60])
+                    canvas.setFont("Helvetica", 8.5)
+                    canvas.setFillColor(HexColor(_SPEC_VALUE))
+                    canvas.drawString(175.748, ry, str(value)[:60])
 
-            # Date and classification footer
-            footer_y = 50
+            # Footer: date and classification
             canvas.setFont("Helvetica", 8)
-            canvas.setFillColor(caption_color)
-            canvas.drawString(left_m, footer_y, f"Generated: {self.date_str}")
+            canvas.setFillColor(HexColor(_CAPTION))
+            canvas.drawString(70.866, 70.866, f"Generated: {self.date.strftime('%d %B %Y')}")
             if classification:
-                canvas.drawString(left_m, footer_y - 14, f"Classification: {classification}")
+                canvas.drawString(70.866, 51.024, f"Classification: {classification}")
 
-            # Version badge
+            # Version badge: rounded rect #57A5FF
             badge_text = f"VERSION {version}"
-            badge_w = canvas.stringWidth(badge_text, "Helvetica-Bold", 8) + 20
+            badge_w = 82.039
             badge_x = w - right_m - badge_w
-            badge_y = footer_y - 4
-            canvas.setFillColor(secondary_color)
-            canvas.roundRect(badge_x, badge_y - 4, badge_w, 18, 4, stroke=0, fill=1)
-            canvas.setFont("Helvetica-Bold", 8)
+            badge_y = 51.024
+            canvas.setFillColor(HexColor(_BLUE_ACCENT))
+            canvas.roundRect(badge_x, badge_y, badge_w, 22.677, 3, stroke=0, fill=1)
+            canvas.setFont("Helvetica-Bold", 7)
             canvas.setFillColor(white)
-            canvas.drawCentredString(badge_x + badge_w / 2, badge_y + 2, badge_text)
+            canvas.drawCentredString(badge_x + badge_w / 2, badge_y + 7.09, badge_text)
 
             canvas.restoreState()
 

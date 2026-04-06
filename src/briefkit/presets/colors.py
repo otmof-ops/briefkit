@@ -313,73 +313,77 @@ PRESETS: dict[str, dict[str, str]] = {
         "font_mono": "Courier",
         "font_caption": "Times-Italic",
     },
+    # Exact colors extracted from System-Overclocking-and-Optimisation-Guide.pdf
     "cyber": {
-        "primary": "#1A2332",
-        "secondary": "#2EC4B6",
-        "accent": "#5CE0D2",
-        "body_text": "#2C2C2C",
-        "caption": "#8899AA",
-        "background": "#FFFFFF",
-        "rule": "#2EC4B6",
-        "success": "#2EC4B6",
-        "warning": "#F0A500",
-        "danger": "#E74C3C",
-        "code_bg": "#F0F4F8",
-        "table_alt": "#F5F8FA",
+        "primary": "#0C1116",       # dark cover background
+        "secondary": "#57A5FF",     # blue accent (header right text, links)
+        "accent": "#38D1BF",        # teal/cyan (cover keywords, spec labels)
+        "body_text": "#2C2C2C",     # body text on white pages
+        "caption": "#6E7580",       # caption gray
+        "background": "#FFFFFF",    # white body pages
+        "rule": "#CFD6DD",          # body page rules/borders
+        "success": "#3FB84F",       # green callout
+        "warning": "#EF873D",       # amber/orange callout
+        "danger": "#F75049",        # red critical callout
+        "code_bg": "#EFF4F7",       # code block background
+        "table_alt": "#F6F7F9",     # alternating table rows
         "font_body": "Helvetica",
         "font_heading": "Helvetica-Bold",
         "font_mono": "Courier",
         "font_caption": "Helvetica-Oblique",
     },
+    # Exact colors extracted from AI-Simulations-With-Progressive-Learning.pdf
     "deep-research": {
-        "primary": "#1E2530",
-        "secondary": "#00D4AA",
-        "accent": "#00D4AA",
-        "body_text": "#2C2C2C",
-        "caption": "#888888",
-        "background": "#FFFFFF",
-        "rule": "#00D4AA",
-        "success": "#00D4AA",
-        "warning": "#F0A500",
-        "danger": "#E74C3C",
-        "code_bg": "#F0F8F6",
-        "table_alt": "#F5FAF9",
+        "primary": "#0F1318",       # dark cover background
+        "secondary": "#00D4AA",     # teal accent (rules, chapter numbers, links)
+        "accent": "#00D4AA",        # same teal (monochrome accent)
+        "body_text": "#2B2B2B",     # body text
+        "caption": "#64748A",       # header/footer caption text
+        "background": "#FFFFFF",    # white body pages
+        "rule": "#D1D4DB",          # body page stroke rules
+        "success": "#00A887",       # darker teal for success
+        "warning": "#EF873D",       # amber
+        "danger": "#F75049",        # red
+        "code_bg": "#EFFDF9",       # light teal code bg
+        "table_alt": "#EFFDF9",     # alternating table rows (same light teal)
         "font_body": "Helvetica",
         "font_heading": "Helvetica-Bold",
         "font_mono": "Courier",
         "font_caption": "Helvetica-Oblique",
     },
+    # Exact colors extracted from Chromecast_and_Android_TV_Guide (dark).pdf
     "neon": {
-        "primary": "#1A1F2E",
-        "secondary": "#00E5FF",
-        "accent": "#B388FF",
-        "body_text": "#E0E0E0",
-        "caption": "#8899AA",
-        "background": "#1A1F2E",
-        "rule": "#00E5FF",
-        "success": "#00E5FF",
-        "warning": "#FFD740",
-        "danger": "#FF4081",
-        "code_bg": "#232838",
-        "table_alt": "#1F2535",
+        "primary": "#0A0E16",       # page background (very dark)
+        "secondary": "#00E4FF",     # cyan title text, accent links, section numbers
+        "accent": "#B387FF",        # purple accent blocks
+        "body_text": "#E8EDF2",     # light text on dark pages
+        "caption": "#8799AA",       # caption/subtitle text
+        "background": "#0A0E16",    # dark throughout (cover + body)
+        "rule": "#1C2A3A",          # dark rules/borders
+        "success": "#00E675",       # green
+        "warning": "#FFAA3F",       # amber/orange
+        "danger": "#FF3F80",        # pink/magenta (bottom bar, alerts)
+        "code_bg": "#131C28",       # code bg
+        "table_alt": "#0F1823",     # alternating dark table rows
         "font_body": "Helvetica",
         "font_heading": "Helvetica-Bold",
         "font_mono": "Courier",
         "font_caption": "Helvetica-Oblique",
     },
+    # Exact colors extracted from Chromecast_and_Android_TV_Guide_PRINT.pdf
     "neon-print": {
-        "primary": "#1A3C5E",
-        "secondary": "#0097A7",
-        "accent": "#B388FF",
-        "body_text": "#2C2C2C",
-        "caption": "#6B7B8D",
-        "background": "#FFFFFF",
-        "rule": "#0097A7",
-        "success": "#0097A7",
-        "warning": "#F0A500",
-        "danger": "#FF4081",
-        "code_bg": "#F0F8FA",
-        "table_alt": "#F5FAFB",
+        "primary": "#1A1F2B",       # navy text/headings on light background
+        "secondary": "#0077B5",     # teal-blue accent (links, section numbers)
+        "accent": "#C3B5FD",        # light purple accent blocks
+        "body_text": "#1A1F2B",     # dark body text on white
+        "caption": "#495467",       # caption/header text
+        "background": "#FFFFFF",    # white body pages
+        "rule": "#D1D4DB",          # light gray rules
+        "success": "#037756",       # green
+        "warning": "#B35208",       # amber/brown
+        "danger": "#BD185D",        # pink/magenta
+        "code_bg": "#EBF4FB",       # light blue code bg
+        "table_alt": "#F6F9FB",     # alternating table rows
         "font_body": "Helvetica",
         "font_heading": "Helvetica-Bold",
         "font_mono": "Courier",

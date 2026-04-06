@@ -60,6 +60,14 @@ Available templates
                                    role callouts, running footer — incident response, runbooks)
   deck       DeckTemplate       — landscape slide deck (one subsystem per slide, Sequoia-flow
                                    reordering, title bars, cover/closing slides)
+  guide      GuideTemplate      — technical guide (dark cover with spec table, decorative
+                                   circles, cyan accents, dark header bar, version badge)
+  deep-research DeepResearchTemplate — deep research report (dark minimal cover with arc
+                                   decorations, teal accents, centered page numbers,
+                                   clean body typography)
+  magazine   MagazineTemplate   — magazine-style guide (large stacked typography, multi-color
+                                   accents, sidebar spine text, dark/light adaptive,
+                                   section labels, alternating-row TOC)
 """
 from __future__ import annotations
 
@@ -70,9 +78,12 @@ from briefkit.templates.certificate import CertificateTemplate
 from briefkit.templates.contract import ContractTemplate
 from briefkit.templates.datasheet import DatasheetTemplate
 from briefkit.templates.deck import DeckTemplate
+from briefkit.templates.deep_research import DeepResearchTemplate
 from briefkit.templates.evaluation import EvaluationTemplate
+from briefkit.templates.guide import GuideTemplate
 from briefkit.templates.invoice import InvoiceTemplate
 from briefkit.templates.letter import LetterTemplate
+from briefkit.templates.magazine import MagazineTemplate
 from briefkit.templates.manual import ManualTemplate
 from briefkit.templates.memo import MemoTemplate
 from briefkit.templates.minimal import MinimalTemplate
@@ -115,6 +126,9 @@ _REGISTRY: dict[str, type] = {
     "datasheet":    DatasheetTemplate,
     "playbook":     PlaybookTemplate,
     "deck":         DeckTemplate,
+    "guide":        GuideTemplate,
+    "deep-research": DeepResearchTemplate,
+    "magazine":     MagazineTemplate,
 }
 
 
@@ -180,6 +194,9 @@ __all__ = [
     "DatasheetTemplate",
     "PlaybookTemplate",
     "DeckTemplate",
+    "GuideTemplate",
+    "DeepResearchTemplate",
+    "MagazineTemplate",
     "get_template",
     "list_templates",
 ]

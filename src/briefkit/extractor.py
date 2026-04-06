@@ -59,7 +59,10 @@ def _strip_inline(s: str) -> str:
     s = _RE_BOLD_UND.sub(r'<b>\1</b>', s)
     s = _RE_ITALIC_AST.sub(r'<i>\1</i>', s)
     s = _RE_ITALIC_UND.sub(r'<i>\1</i>', s)
-    s = _RE_INLINE_CODE.sub(r'<font name="Courier">\1</font>', s)
+    def _escape_code(m):
+        inner = m.group(1).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        return f'<font name="Courier">{inner}</font>'
+    s = _RE_INLINE_CODE.sub(_escape_code, s)
     s = _RE_STRIKETHROUGH.sub(r'<strike>\1</strike>', s)
     s = _RE_MD_LINK.sub(r'\1', s)
     return s

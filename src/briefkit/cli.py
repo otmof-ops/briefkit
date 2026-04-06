@@ -192,7 +192,10 @@ def cmd_init(args: argparse.Namespace) -> int:
 
         brand:
           preset: navy      # navy | charcoal | ocean | forest | crimson
-                            # slate | royal | sunset | mono | midnight | custom
+                            # slate | royal | sunset | mono | midnight
+                            # emerald | corporate | arctic | terracotta
+                            # ink | gothic | cyber | deep-research
+                            # neon | neon-print | custom
           # Uncomment to override individual colors (preset: custom to disable preset):
           # primary: "#1B2A4A"
           # secondary: "#2E86AB"
@@ -344,7 +347,7 @@ def cmd_quality(args: argparse.Namespace) -> int:
 
     try:
         from briefkit.quality import run_quality_gates  # noqa: PLC0415
-        passed, lines = run_quality_gates(pdf_path, level=3)
+        passed, lines = run_quality_gates(pdf_path)
         report = {"pdf": str(pdf_path), "passed": passed, "checks": lines}
     except Exception as exc:
         report = {
@@ -569,12 +572,12 @@ def _build_parser() -> argparse.ArgumentParser:
     gen_flags.add_argument(
         "--preset", "-p",
         metavar="NAME",
-        help="Color preset (e.g. navy, charcoal, ocean, forest)",
+        help="Color preset (e.g. navy, charcoal, ocean, cyber, neon)",
     )
     gen_flags.add_argument(
         "--variant", "-v",
         metavar="NAME",
-        help="Output variant (e.g. print, web, accessible)",
+        help="Output variant (e.g. aiml, legal, medical, engineering, hardware)",
     )
     gen_flags.add_argument(
         "--output", "-o",

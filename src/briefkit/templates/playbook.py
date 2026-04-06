@@ -40,7 +40,6 @@ from briefkit.elements.callout import build_callout_box
 from briefkit.extractor import parse_markdown
 from briefkit.generator import (
     BaseBriefingTemplate,
-    _hf_state,
 )
 from briefkit.styles import (
     _hex,
@@ -441,10 +440,6 @@ class PlaybookTemplate(BaseBriefingTemplate):
             )
 
         # Header/footer state
-        _hf_state["section"] = title
-        _hf_state["date"] = self.date_str
-        _hf_state["doc_id"] = self.doc_id
-        _hf_state["brand"] = self.brand
 
         layout = self.config.get("layout", {})
         margins = layout.get("margins", {})

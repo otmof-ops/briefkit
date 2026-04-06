@@ -24,7 +24,6 @@ import re
 from reportlab.lib.units import mm
 from reportlab.platypus import PageBreak, Paragraph, Spacer
 
-from briefkit.elements.header_footer import _hf_state
 from briefkit.elements.tables import build_data_table
 from briefkit.elements.toc import build_toc
 from briefkit.extractor import parse_markdown
@@ -53,7 +52,6 @@ class AcademicTemplate(BaseBriefingTemplate):
         body_c    = _hex(b, "body_text")
 
         # Update running header
-        _hf_state["section"] = title
 
         # --- Title Page (minimalist, no cover graphics) ---
         title_style = _ps(

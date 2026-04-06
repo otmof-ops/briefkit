@@ -26,7 +26,7 @@ from reportlab.lib.units import mm
 from reportlab.platypus import CondPageBreak, PageBreak, Paragraph, Spacer
 
 from briefkit.extractor import parse_markdown
-from briefkit.generator import _hf_state, build_toc
+from briefkit.generator import build_toc
 from briefkit.styles import CONTENT_WIDTH, _hex, _ps, _safe_para
 from briefkit.templates.book import BookTemplate
 
@@ -447,7 +447,6 @@ class NovelTemplate(BookTemplate):
         for idx, (chapter_title, chapter_flowables) in enumerate(chapters):
             if hasattr(self, '_hf_state'):
                 self._hf_state["section"] = chapter_title
-            _hf_state["section"] = chapter_title
 
             # First chapter: no separator needed (starts after preface)
             # Subsequent chapters: conditional page break — only if less
@@ -462,7 +461,6 @@ class NovelTemplate(BookTemplate):
         # Reset running header
         if hasattr(self, '_hf_state'):
             self._hf_state["section"] = content.get("title", "")
-        _hf_state["section"] = content.get("title", "")
 
         # --- Glossary ---
         if glossary_flowables:

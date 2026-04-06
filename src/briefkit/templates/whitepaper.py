@@ -34,7 +34,6 @@ from briefkit.elements.back_cover import build_back_cover
 from briefkit.extractor import parse_markdown
 from briefkit.generator import (
     BaseBriefingTemplate,
-    _hf_state,
     build_toc,
 )
 from briefkit.styles import (
@@ -371,10 +370,6 @@ class WhitepaperTemplate(BaseBriefingTemplate):
         _wp_state["brand"] = self.brand
 
         # Also populate base _hf_state for consistency
-        _hf_state["section"] = title
-        _hf_state["date"] = self.date_str
-        _hf_state["doc_id"] = self.doc_id
-        _hf_state["brand"] = self.brand
 
         # Recalculate content width for Letter
         layout = self.config.get("layout", {})

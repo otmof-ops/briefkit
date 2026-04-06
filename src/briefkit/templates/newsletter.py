@@ -41,7 +41,6 @@ from reportlab.platypus import (
 from briefkit.extractor import parse_markdown
 from briefkit.generator import (
     BaseBriefingTemplate,
-    _hf_state,
     build_callout_box,
     build_pull_quote,
     make_header_footer,
@@ -471,10 +470,6 @@ class NewsletterTemplate(BaseBriefingTemplate):
             )
 
         # Populate header/footer state
-        _hf_state["section"] = title
-        _hf_state["date"] = self.date_str
-        _hf_state["doc_id"] = self.doc_id
-        _hf_state["brand"] = self.brand
 
         hf = make_header_footer(
             {"section": title, "date": self.date_str, "doc_id": self.doc_id},

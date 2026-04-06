@@ -36,7 +36,6 @@ from reportlab.platypus import (
 from briefkit.extractor import parse_markdown
 from briefkit.generator import (
     BaseBriefingTemplate,
-    _hf_state,
 )
 from briefkit.styles import (
     _hex,
@@ -693,10 +692,6 @@ class InvoiceTemplate(BaseBriefingTemplate):
             )
 
         # Header/footer state
-        _hf_state["section"] = ""
-        _hf_state["date"] = self.date_str
-        _hf_state["doc_id"] = ""
-        _hf_state["brand"] = self.brand
 
         layout = self.config.get("layout", {})
         margins = layout.get("margins", {})

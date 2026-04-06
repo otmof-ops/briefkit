@@ -71,6 +71,7 @@ _PAGE_SIZES = {
     "A3": A3,
     "Letter": letter,
     "Legal": legal,
+    "Tabloid": (792, 1224),
 }
 
 # ---------------------------------------------------------------------------
@@ -291,16 +292,7 @@ class BaseBriefingTemplate:
                 ordered = block.get("ordered", False)
                 idx     = block.get("index", 0)
                 bullet  = f"{idx}. " if ordered else "\u2022 "
-                list_style = _ps(
-                    "BKListItem",
-                    brand=self.brand,
-                    fontSize=10,
-                    textColor=_hex(self.brand, "body_text"),
-                    leading=14,
-                    leftIndent=12,
-                    spaceAfter=2,
-                )
-                flowables.append(_safe_para(f"{bullet}{text}", list_style))
+                flowables.append(_safe_para(f"{bullet}{text}", self.styles["STYLE_LIST_ITEM"]))
 
             elif btype == "code":
                 text = block.get("text", "")

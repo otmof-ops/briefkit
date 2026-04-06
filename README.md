@@ -69,9 +69,9 @@ Unlike general-purpose converters like Pandoc or WeasyPrint, BriefKit is purpose
 
 ## Features
 
-- **6 built-in templates** — briefing, book, report, manual, academic, minimal
+- **28 built-in templates** — briefing, report, book, manual, academic, minimal, letter, contract, proposal, policy, and 18 more
 - **12 domain-aware variants** — AI/ML, legal, medical, engineering, research, API, gaming, finance, species, historical, hardware, religion — auto-detected or configured
-- **10 color presets** — switch the entire look with one line
+- **20 color presets** — switch the entire look with one line
 - **Auto-extracted bibliography** — 6 citation formats + legislation + RFCs + case law
 - **Document ID system** — persistent registry with configurable format
 - **Version-tracked batch processing** — skip what is current, regenerate what is stale
@@ -343,7 +343,7 @@ A: No. BriefKit is fully offline — no external APIs, no telemetry, no cloud de
 
 **Q: Can I use custom branding?**
 
-A: Yes. Choose from 10 built-in color presets or define custom colors with 7 color keys (primary, secondary, accent, body text, caption, background, rule). Add a logo via config.
+A: Yes. Choose from 20 built-in color presets or define custom colors with 12 color keys (primary, secondary, accent, body text, caption, background, rule, success, warning, danger, code_bg, table_alt). Add a logo via config.
 
 ---
 

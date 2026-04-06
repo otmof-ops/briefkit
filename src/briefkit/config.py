@@ -19,6 +19,8 @@ try:
 except ImportError as exc:  # pragma: no cover
     raise ImportError("PyYAML is required: pip install pyyaml") from exc
 
+from briefkit.styles import DEFAULT_BRAND as _DEFAULT_BRAND
+
 # ---------------------------------------------------------------------------
 # Default configuration
 # ---------------------------------------------------------------------------
@@ -33,23 +35,8 @@ DEFAULTS: dict[str, Any] = {
         "abn": "",
     },
     "brand": {
+        **_DEFAULT_BRAND,
         "preset": "navy",
-        "primary": "#1B2A4A",
-        "secondary": "#2E86AB",
-        "accent": "#E8C547",
-        "body_text": "#2C2C2C",
-        "caption": "#666666",
-        "background": "#FFFFFF",
-        "rule": "#CCCCCC",
-        "success": "#00b894",
-        "warning": "#fdcb6e",
-        "danger": "#d63031",
-        "code_bg": "#f5f6fa",
-        "table_alt": "#f8f9fa",
-        "font_body": "Helvetica",
-        "font_heading": "Helvetica-Bold",
-        "font_mono": "Courier",
-        "font_caption": "Helvetica-Oblique",
         "logo": "",
     },
     "doc_ids": {
@@ -206,6 +193,39 @@ def _validate_config(cfg: dict[str, Any]) -> list[str]:
         if val is not None and (not isinstance(val, int) or val < 0):
             errors.append(
                 f"content.{int_key} must be a non-negative integer, got: {val!r}"
+            )
+
+    # Validate brand.logo path if set
+    logo = brand.get("logo", "")
+    if logo:
+        logo_path = Path(logo)
+        _ALLOWED_LOGO_EXTS = {".png", ".jpg", ".jpeg", ".svg", ".gif"}
+        if logo_path.suffix.lower() not in _ALLOWED_LOGO_EXTS:
+            errors.append(
+                f"brand.logo must have one of {sorted(_ALLOWED_LOGO_EXTS)} extension, "
+                f"got: {logo_path.suffix!r}"
+            )
+        if logo_path.is_absolute() and logo_path.is_symlink():
+            errors.append("brand.logo must not be a symlink")
+
+    # Validate output_dir is not an escape path
+    output_dir = output.get("output_dir", "")
+    if output_dir and ".." in str(output_dir):
+        errors.append(f"output.output_dir must not contain '..', got: {output_dir!r}")
+
+    # Validate glob patterns don't contain dangerous traversal
+    for pat_key in ("orientation_doc_pattern", "numbered_doc_pattern"):
+        pat = content.get(pat_key, "")
+        if pat and (".." in pat or pat.startswith("/")):
+            errors.append(f"content.{pat_key} must not contain '..' or start with '/', got: {pat!r}")
+
+    # Validate doc_ids prefix and type are alphanumeric
+    _SAFE_ID_RE = re.compile(r'^[A-Za-z0-9\-]*$')
+    for id_key in ("prefix", "type"):
+        val = doc_ids.get(id_key, "")
+        if val and not _SAFE_ID_RE.match(val):
+            errors.append(
+                f"doc_ids.{id_key} must be alphanumeric/hyphens only, got: {val!r}"
             )
 
     return errors

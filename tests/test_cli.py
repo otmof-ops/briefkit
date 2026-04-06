@@ -1,4 +1,5 @@
 """Tests for the CLI interface."""
+import re
 import subprocess
 import sys
 
@@ -18,7 +19,7 @@ class TestCLIHelp:
             capture_output=True, text=True,
         )
         assert result.returncode == 0
-        assert "1.0.0" in result.stdout
+        assert re.search(r'\d+\.\d+\.\d+', result.stdout)
 
 
 class TestCLIPresets:

@@ -53,7 +53,6 @@ from reportlab.platypus import (
 from briefkit.extractor import parse_markdown
 from briefkit.generator import (
     BaseBriefingTemplate,
-    _hf_state,
 )
 from briefkit.styles import (
     _get_brand,
@@ -388,10 +387,6 @@ class MagazineTemplate(BaseBriefingTemplate):
         _mag_state["is_dark"] = is_dark
         _mag_state["brand"] = b
 
-        _hf_state["section"] = title
-        _hf_state["date"] = self.date_str
-        _hf_state["doc_id"] = self.doc_id
-        _hf_state["brand"] = b
 
         layout = self.config.get("layout", {})
         margins = layout.get("margins", {})

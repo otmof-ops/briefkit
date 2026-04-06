@@ -30,7 +30,6 @@ from briefkit.elements.header_footer import make_header_footer
 from briefkit.extractor import parse_markdown
 from briefkit.generator import (
     BaseBriefingTemplate,
-    _hf_state,
     build_toc,
 )
 from briefkit.styles import (
@@ -168,7 +167,6 @@ class BookTemplate(BaseBriefingTemplate):
             # Update running header for this chapter
             if hasattr(self, '_hf_state'):
                 self._hf_state["section"] = chapter_title
-            _hf_state["section"] = chapter_title
 
             story.append(Paragraph(chapter_title, self.styles["STYLE_H1"]))
             story.append(Spacer(1, 2 * mm))
@@ -178,7 +176,6 @@ class BookTemplate(BaseBriefingTemplate):
         # Reset running header
         if hasattr(self, '_hf_state'):
             self._hf_state["section"] = content.get("title", "")
-        _hf_state["section"] = content.get("title", "")
 
         # --- Back matter ---
         if glossary_flowables:

@@ -163,7 +163,7 @@ def _safe_text(text):
     # Strategy: escape ALL < > then unescape the allowed ones.
     text = xml.sax.saxutils.escape(text)
     # Restore allowed tags
-    for tag in ['b', 'i', 'u', 'br/', 'br', 'super', 'sub']:
+    for tag in ['b', 'i', 'u', 'br/', 'br', 'super', 'sub', 'strike']:
         text = text.replace(f'&lt;{tag}&gt;', f'<{tag}>')
         text = text.replace(f'&lt;/{tag}&gt;', f'</{tag}>')
     # Restore font tags with attributes
@@ -193,8 +193,8 @@ def _safe_text(text):
     text = re.sub(r'<font ([^>]+)>', _sanitize_font_attrs, text)
 
     # Close any unclosed tags (from content truncation mid-tag)
-    open_tags = re.findall(r'<(b|i|u|font)[^>]*>', text)
-    close_tags = re.findall(r'</(b|i|u|font)>', text)
+    open_tags = re.findall(r'<(b|i|u|font|strike)[^>]*>', text)
+    close_tags = re.findall(r'</(b|i|u|font|strike)>', text)
     for tag in reversed(open_tags[len(close_tags):]):
         text += f'</{tag}>'
 
@@ -262,9 +262,6 @@ def _build_styles_cached(brand_key):
     secondary = _hex(b, "secondary")
     body_text = _hex(b, "body_text")
     caption   = _hex(b, "caption")
-    _hex(b, "background")
-    _hex(b, "rule")
-
     # Derived semantic aliases matching source conventions
     otm_navy  = primary
     otm_steel = secondary
@@ -433,6 +430,16 @@ def _build_styles_cached(brand_key):
         fontSize=8,
         textColor=body_text,
         leading=11,
+        spaceAfter=2,
+    )
+
+    styles["STYLE_LIST_ITEM"] = _ps(
+        "BKListItem",
+        brand=b,
+        fontSize=10,
+        textColor=body_text,
+        leading=14,
+        leftIndent=12,
         spaceAfter=2,
     )
 

@@ -299,6 +299,12 @@ class BaseBriefingTemplate:
                 flowables.append(_safe_para(f"{bullet}{text}", self.styles["STYLE_LIST_ITEM"]))
 
             elif btype == "code":
+                # Code blocks need pre-escaped text with whitespace preserved.
+                # We bypass _safe_para here because _safe_text would re-escape
+                # the &amp; in our &nbsp; entities, causing literal "&nbsp;"
+                # to render in the PDF. Construct the Paragraph directly with
+                # already-escaped content.
+                from reportlab.platypus import Paragraph as _RLParagraph
                 text = block.get("text", "")
                 text = (
                     text
@@ -308,7 +314,11 @@ class BaseBriefingTemplate:
                     .replace("\n", "<br/>")
                     .replace(" ", "&nbsp;")
                 )
-                flowables.append(_safe_para(text, self.styles["STYLE_CODE"]))
+                try:
+                    flowables.append(_RLParagraph(text, self.styles["STYLE_CODE"]))
+                except Exception:
+                    # Fallback to safe path if Paragraph rejects the markup
+                    flowables.append(_safe_para(block.get("text", ""), self.styles["STYLE_CODE"]))
 
             elif btype == "blockquote":
                 text = block.get("text", "")

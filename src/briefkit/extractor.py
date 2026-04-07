@@ -265,7 +265,12 @@ def _extract_doc_set_content(path: Path, config: dict) -> dict:
     and inline citations.
     """
     content_cfg = config.get("content", {})
-    max_words   = content_cfg.get("max_words_per_section", 3000)
+    # Default raised from 3000 to 12000 after real-world testing showed
+    # technical manuals (workshop guides, SOPs, reference docs) routinely
+    # exceeded the lower limit, silently truncating tables and dropping
+    # content from the Reference Tables section. 12000 covers ~95% of
+    # technical chapters in practice; users still override via config.
+    max_words   = content_cfg.get("max_words_per_section", 12000)
     max_terms   = content_cfg.get("max_terms_in_index", 40)
     max_refs    = content_cfg.get("max_cross_refs", 30)
     ori_pattern = content_cfg.get("orientation_doc_pattern", "00-what-is-*.md")

@@ -1,0 +1,40 @@
+# Workshop manual template example
+#
+# Demonstrates the OEM service-manual structural pattern: front matter
+# (foreword, abbreviations, safety, technical data, special tools) followed
+# by numbered service groups with consistent per-chapter sections (Technical
+# Data → Special Tools → Tightening Torques → Procedure → Notes), then
+# technical appendices (torque master, part numbers, index).
+#
+# This pattern was battle-tested at scale on a 38-group, 50,000-word vehicle
+# rebuild manual. See:
+#   https://github.com/otmof-ops/briefkit
+#
+# Key configuration choices for technical manuals:
+#   - manual template (procedural rendering of numbered list items)
+#   - high max_words_per_section so deep chapters are not truncated
+#   - slate or navy color preset for technical look
+#   - CC-BY-NC-SA license appropriate for community knowledge
+
+project:
+  name: "Vehicle Rebuild Workshop Manual"
+  org: "Example Garage"
+  tagline: "OEM-style workshop manual demonstration"
+  author: "BriefKit Examples"
+  version: "1.0"
+
+brand:
+  preset: "navy"
+
+template:
+  preset: "manual"
+
+content:
+  max_words_per_section: 20000
+
+license:
+  preset: "CC-BY-NC-SA-4.0"
+
+document:
+  classification: "TECHNICAL MANUAL"
+  distribution: "Public"

@@ -13,9 +13,9 @@ Build order:
   Chapters (with narrative-aware block styling) -> Glossary -> Colophon
 
 Design origin:
-  Created for The Backrooms: A Jcore Adaptation — a 50,000-word
-  metafictional horror novel with 120+ meta-narrative elements
-  that require distinct visual treatment from the prose.
+  Built for long-form literary and horror fiction with meta-narrative
+  elements (system commands, entity voices, erasure, metafictional
+  intrusions) that require distinct visual treatment from the prose.
 """
 
 from __future__ import annotations
@@ -401,26 +401,6 @@ class NovelTemplate(BookTemplate):
             "the prior written permission of the publisher.",
             cp_style,
         ))
-        story.append(Spacer(1, 8 * mm))
-        # Acknowledgment block
-        ack_style = _ps(
-            "CopyrightAck", brand=b,
-            fontSize=8, textColor=caption_c, leading=12,
-        )
-        story.append(Paragraph(
-            "<b>ACKNOWLEDGMENT</b>",
-            ack_style,
-        ))
-        story.append(Spacer(1, 2 * mm))
-        story.append(Paragraph(
-            "The Backrooms concept originated from an anonymous 4chan post (2019) "
-            "and has been developed by the collaborative Backrooms community, "
-            "including contributors to the Backrooms Wiki. This novel is an original "
-            "literary work of fiction inspired by and set within the Backrooms universe. "
-            "The author acknowledges and respects the community that built and "
-            "continues to expand this shared mythology.",
-            ack_style,
-        ))
         story.append(PageBreak())
 
         # Pre-build sections
@@ -514,12 +494,6 @@ class NovelTemplate(BookTemplate):
         flowables.append(Spacer(1, 4 * mm))
         flowables.append(Paragraph(copyright_str, body_style))
         flowables.append(Spacer(1, 8 * mm))
-        flowables.append(Paragraph(
-            "This is a work of fiction. The Backrooms mythology originated as collaborative "
-            "internet fiction. This adaptation is an independent creative work.",
-            body_style,
-        ))
-        flowables.append(Spacer(1, 4 * mm))
         flowables.append(Paragraph(
             f"First edition {year}",
             body_style,

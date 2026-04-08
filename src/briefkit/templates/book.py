@@ -24,7 +24,7 @@ from __future__ import annotations
 from reportlab.lib.pagesizes import A3, A4, legal, letter
 from reportlab.lib.units import mm
 from reportlab.pdfbase.pdfmetrics import stringWidth
-from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer
+from reportlab.platypus import KeepTogether, PageBreak, Paragraph, SimpleDocTemplate, Spacer
 
 from briefkit.elements.header_footer import make_header_footer
 from briefkit.extractor import parse_markdown
@@ -168,9 +168,28 @@ class BookTemplate(BaseBriefingTemplate):
             if hasattr(self, '_hf_state'):
                 self._hf_state["section"] = chapter_title
 
-            story.append(Paragraph(chapter_title, self.styles["STYLE_H1"]))
-            story.append(Spacer(1, 2 * mm))
-            story.extend(chapter_flowables)
+            # Wrap the chapter title with its first content flowable in a
+            # KeepTogether block. Without this, a chapter whose first real
+            # content is a large table (bigger than the remaining page space)
+            # can orphan the H1 title on an otherwise-empty page: the H1's
+            # keepWithNext chain breaks at the table's page break, stranding
+            # the title alone above a sea of whitespace.
+            title_para = Paragraph(chapter_title, self.styles["STYLE_H1"])
+            if chapter_flowables:
+                # Clear keepWithNext on the first content flowable before
+                # wrapping — otherwise the KeepTogether inherits the chain,
+                # tries to stay glued to a huge following table, and splits
+                # anyway (stranding the H1 title alone on the previous page).
+                first = chapter_flowables[0]
+                if hasattr(first, "keepWithNext"):
+                    first.keepWithNext = False
+                story.append(KeepTogether(
+                    [title_para, Spacer(1, 2 * mm), first]
+                ))
+                story.extend(chapter_flowables[1:])
+            else:
+                story.append(title_para)
+                story.append(Spacer(1, 2 * mm))
             story.append(PageBreak())
 
         # Reset running header

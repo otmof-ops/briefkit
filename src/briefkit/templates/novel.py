@@ -23,7 +23,7 @@ from __future__ import annotations
 import re
 
 from reportlab.lib.units import mm
-from reportlab.platypus import CondPageBreak, PageBreak, Paragraph, Spacer
+from reportlab.platypus import CondPageBreak, KeepTogether, PageBreak, Paragraph, Spacer
 
 from briefkit.extractor import parse_markdown
 from briefkit.generator import build_toc
@@ -441,9 +441,21 @@ class NovelTemplate(BookTemplate):
             if idx > 0:
                 story.append(CondPageBreak(80 * mm))
 
-            story.append(Paragraph(chapter_title, self.styles["STYLE_H1"]))
-            story.append(Spacer(1, 2 * mm))
-            story.extend(chapter_flowables)
+            # Prevent orphaned chapter titles: wrap the H1 with its first
+            # content flowable in a KeepTogether so a large opening block
+            # cannot strand the title on an otherwise-empty page.
+            title_para = Paragraph(chapter_title, self.styles["STYLE_H1"])
+            if chapter_flowables:
+                first = chapter_flowables[0]
+                if hasattr(first, "keepWithNext"):
+                    first.keepWithNext = False
+                story.append(KeepTogether(
+                    [title_para, Spacer(1, 2 * mm), first]
+                ))
+                story.extend(chapter_flowables[1:])
+            else:
+                story.append(title_para)
+                story.append(Spacer(1, 2 * mm))
 
         # Reset running header
         if hasattr(self, '_hf_state'):

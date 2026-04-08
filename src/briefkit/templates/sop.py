@@ -42,6 +42,7 @@ from briefkit.styles import (
     _ps,
     _safe_text,
 )
+from briefkit.templates._helpers import should_skip
 
 _GREY_BG = HexColor("#f2f2f2")
 _BORDER_W = 0.5
@@ -226,6 +227,7 @@ class SOPTemplate(BaseBriefingTemplate):
         # ================================================================
         # PAGE 2 — Change history
         # ================================================================
+        _ch_start = len(story)
         story.append(PageBreak())
         story.append(Paragraph("Change History", heading_style))
 
@@ -257,6 +259,9 @@ class SOPTemplate(BaseBriefingTemplate):
         ]))
         story.append(t_ch)
         story.append(Spacer(1, 8 * mm))
+
+        if should_skip(self.config, "revision_history"):
+            del story[_ch_start:]
 
         # ================================================================
         # NUMBERED SECTIONS from subsystems

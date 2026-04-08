@@ -45,6 +45,7 @@ from briefkit.styles import (
     _ps,
     _safe_para,
 )
+from briefkit.templates._helpers import should_skip
 
 # ---------------------------------------------------------------------------
 # Page sizes
@@ -180,14 +181,15 @@ class PolicyTemplate(BaseBriefingTemplate):
         # ============================================================
         # Pre-build sections for TOC
         # ============================================================
+        cfg = self.config
         doc_control = self._build_document_control(content)
-        purpose = self._build_purpose_scope(content)
+        purpose = [] if should_skip(cfg, "scope") else self._build_purpose_scope(content)
         definitions = self._build_definitions(content)
         statements = self._build_policy_statements(content)
         compliance = self._build_compliance(content)
         review_schedule = self._build_review_schedule()
         approvals = self._build_approval_signatures()
-        version_history = self._build_version_history(content)
+        version_history = [] if should_skip(cfg, "revision_history") else self._build_version_history(content)
 
         # ============================================================
         # Document Control Block
@@ -198,30 +200,34 @@ class PolicyTemplate(BaseBriefingTemplate):
         # ============================================================
         # Table of Contents
         # ============================================================
-        story.append(_safe_para("Table of Contents", self.styles["STYLE_H1"]))
-        story.append(Spacer(1, 2 * mm))
+        if not should_skip(cfg, "toc"):
+            story.append(_safe_para("Table of Contents", self.styles["STYLE_H1"]))
+            story.append(Spacer(1, 2 * mm))
 
-        toc_entries = [(1, "Purpose & Scope")]
-        if definitions:
-            toc_entries.append((1, "Definitions"))
-        toc_entries.append((1, "Policy Statements"))
-        for i, sub in enumerate(content.get("subsystems", []), 1):
-            toc_entries.append((2, f"  {i}. {sub.get('name', f'Section {i}')}"))
-        toc_entries.append((1, "Compliance & Enforcement"))
-        toc_entries.append((1, "Review Schedule"))
-        toc_entries.append((1, "Approval Signatures"))
-        if version_history:
-            toc_entries.append((1, "Version History"))
+            toc_entries = []
+            if purpose:
+                toc_entries.append((1, "Purpose & Scope"))
+            if definitions:
+                toc_entries.append((1, "Definitions"))
+            toc_entries.append((1, "Policy Statements"))
+            for i, sub in enumerate(content.get("subsystems", []), 1):
+                toc_entries.append((2, f"  {i}. {sub.get('name', f'Section {i}')}"))
+            toc_entries.append((1, "Compliance & Enforcement"))
+            toc_entries.append((1, "Review Schedule"))
+            toc_entries.append((1, "Approval Signatures"))
+            if version_history:
+                toc_entries.append((1, "Version History"))
 
-        from briefkit.generator import build_toc
-        story.extend(build_toc(toc_entries, brand=b, content_width=self.content_width))
-        story.append(PageBreak())
+            from briefkit.generator import build_toc
+            story.extend(build_toc(toc_entries, brand=b, content_width=self.content_width))
+            story.append(PageBreak())
 
         # ============================================================
         # Body Sections
         # ============================================================
-        story.extend(purpose)
-        story.append(Spacer(1, 6 * mm))
+        if purpose:
+            story.extend(purpose)
+            story.append(Spacer(1, 6 * mm))
 
         if definitions:
             story.extend(definitions)

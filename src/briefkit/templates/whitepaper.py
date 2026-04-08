@@ -44,6 +44,7 @@ from briefkit.styles import (
     _safe_text,
     compute_content_width,
 )
+from briefkit.templates._helpers import should_skip
 
 # ---------------------------------------------------------------------------
 # Module-level state for custom header / footer
@@ -117,24 +118,28 @@ class WhitepaperTemplate(BaseBriefingTemplate):
         overview = content.get("overview", "")
         subsystems = content.get("subsystems", [])
 
+        cfg = self.config
+
         # ---- Cover page ----
         story.extend(self._build_cover(title, subtitle, overview, content))
         story.append(PageBreak())
 
         # ---- Table of contents ----
-        story.extend(self._build_toc(subsystems))
-        story.append(PageBreak())
+        if not should_skip(cfg, "toc"):
+            story.extend(self._build_toc(subsystems))
+            story.append(PageBreak())
 
         # ---- Body sections ----
         story.extend(self._build_body(subsystems))
 
         # ---- Back cover ----
-        story.append(PageBreak())
-        story.extend(build_back_cover(
-            date=self.date,
-            brand=self.brand,
-            content_width=self.content_width,
-        ))
+        if not should_skip(cfg, "back_cover"):
+            story.append(PageBreak())
+            story.extend(build_back_cover(
+                date=self.date,
+                brand=self.brand,
+                content_width=self.content_width,
+            ))
 
         return story
 

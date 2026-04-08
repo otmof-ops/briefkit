@@ -64,6 +64,7 @@ from briefkit.styles import (
     _ps,
     compute_content_width,
 )
+from briefkit.templates._helpers import should_skip
 
 # ---------------------------------------------------------------------------
 # Exact colors from PDF content stream
@@ -172,9 +173,13 @@ class GuideTemplate(BaseBriefingTemplate):
         story: list = []
         subsystems = content.get("subsystems", [])
 
+        cfg = self.config
+
         # Cover placeholder — canvas draws the actual cover
         story.append(Spacer(1, 200 * mm))
         story.append(PageBreak())
+
+        _toc_start = len(story)
 
         # TOC — exact match: light bg box with blue left accent
         secondary_c = HexColor(_BLUE_ACCENT)
@@ -261,6 +266,9 @@ class GuideTemplate(BaseBriefingTemplate):
 
         story.append(PageBreak())
 
+        if should_skip(cfg, "toc"):
+            del story[_toc_start:]
+
         # Body sections — each with section header bar
         for idx, sub in enumerate(subsystems, 1):
             name = sub.get("name", f"Section {idx}")
@@ -342,7 +350,7 @@ class GuideTemplate(BaseBriefingTemplate):
 
         # Bibliography
         bib = content.get("bibliography", [])
-        if bib:
+        if bib and not should_skip(cfg, "bibliography"):
             bib_flowables = self.build_bibliography(bib)
             if bib_flowables:
                 story.append(PageBreak())

@@ -25,6 +25,8 @@ import re
 from reportlab.lib.units import mm
 from reportlab.platypus import CondPageBreak, KeepTogether, PageBreak, Paragraph, Spacer
 
+from briefkit.templates._helpers import should_skip
+
 from briefkit.extractor import parse_markdown
 from briefkit.generator import build_toc
 from briefkit.styles import CONTENT_WIDTH, _hex, _ps, _safe_para
@@ -403,27 +405,25 @@ class NovelTemplate(BookTemplate):
         ))
         story.append(PageBreak())
 
-        # Pre-build sections
-        # Preface can be suppressed via project.skip_preface: true
-        skip_preface = bool(
-            self.config.get("project", {}).get("skip_preface", False)
-        )
-        preface_flowables = [] if skip_preface else self._build_preface(content)
-        chapters = self._build_chapters(content)
-        glossary_flowables = self._build_glossary(content)
+        # Pre-build sections — every optional one honours project.skip_<section>
+        cfg = self.config
+        preface_flowables  = [] if should_skip(cfg, "preface")  else self._build_preface(content)
+        chapters           = self._build_chapters(content)
+        glossary_flowables = [] if should_skip(cfg, "glossary") else self._build_glossary(content)
 
         # --- TOC ---
-        story.append(_safe_para("Contents", self.styles["STYLE_H1"]))
-        story.append(Spacer(1, 2 * mm))
-        toc_entries = []
-        if preface_flowables:
-            toc_entries.append((1, "Preface"))
-        for chapter_title, _ in chapters:
-            toc_entries.append((1, chapter_title))
-        if glossary_flowables:
-            toc_entries.append((1, "Glossary"))
-        story.extend(build_toc(toc_entries, brand=b, content_width=self.content_width))
-        story.append(PageBreak())
+        if not should_skip(cfg, "toc"):
+            story.append(_safe_para("Contents", self.styles["STYLE_H1"]))
+            story.append(Spacer(1, 2 * mm))
+            toc_entries = []
+            if preface_flowables:
+                toc_entries.append((1, "Preface"))
+            for chapter_title, _ in chapters:
+                toc_entries.append((1, chapter_title))
+            if glossary_flowables:
+                toc_entries.append((1, "Glossary"))
+            story.extend(build_toc(toc_entries, brand=b, content_width=self.content_width))
+            story.append(PageBreak())
 
         # --- Preface ---
         if preface_flowables:
@@ -467,8 +467,9 @@ class NovelTemplate(BookTemplate):
             story.extend(glossary_flowables)
 
         # --- Colophon ---
-        story.append(PageBreak())
-        story.extend(self._build_colophon(title, org, year, copyright_str))
+        if not should_skip(cfg, "colophon"):
+            story.append(PageBreak())
+            story.extend(self._build_colophon(title, org, year, copyright_str))
 
         return story
 

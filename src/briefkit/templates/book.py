@@ -26,6 +26,12 @@ from reportlab.lib.units import mm
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.platypus import KeepTogether, PageBreak, Paragraph, SimpleDocTemplate, Spacer
 
+from briefkit.templates._helpers import (
+    optional_section,
+    section_break,
+    should_skip,
+)
+
 from briefkit.elements.header_footer import make_header_footer
 from briefkit.extractor import parse_markdown
 from briefkit.generator import (
@@ -131,36 +137,44 @@ class BookTemplate(BaseBriefingTemplate):
             story.append(Paragraph(b["url"], cp_style))
         story.append(PageBreak())
 
-        # Pre-build sections for dynamic TOC
-        preface_flowables   = self._build_preface(content)
+        # Pre-build sections for dynamic TOC.
+        # Every optional section honours a project.skip_<section> flag;
+        # skipped sections return an empty list so they drop out of both
+        # the TOC and the final story naturally.
+        cfg = self.config
+        preface_flowables   = [] if should_skip(cfg, "preface")    else self._build_preface(content)
         chapters            = self._build_chapters(content)
-        glossary_flowables  = self._build_glossary(content)
-        bib_flowables       = self.build_bibliography(
+        glossary_flowables  = [] if should_skip(cfg, "glossary")   else self._build_glossary(content)
+        bib_flowables       = [] if should_skip(cfg, "bibliography") else self.build_bibliography(
             content.get("bibliography", []),
             source_type=content.get("metrics", {}).get("source_type", "ACADEMIC"),
         )
-        index_flowables     = self._build_index(content)
+        index_flowables     = [] if should_skip(cfg, "index")      else self._build_index(content)
 
         # --- TOC ---
-        story.append(_safe_para("Contents", self.styles["STYLE_H1"]))
-        story.append(Spacer(1, 2 * mm))
+        if not should_skip(cfg, "toc"):
+            story.append(_safe_para("Contents", self.styles["STYLE_H1"]))
+            story.append(Spacer(1, 2 * mm))
 
-        toc_entries = [(1, "Preface")]
-        for chapter_title, _ in chapters:
-            toc_entries.append((1, chapter_title))
-        if glossary_flowables:
-            toc_entries.append((1, "Glossary"))
-        if bib_flowables:
-            toc_entries.append((1, "Bibliography"))
-        if index_flowables:
-            toc_entries.append((1, "Index"))
+            toc_entries = []
+            if preface_flowables:
+                toc_entries.append((1, "Preface"))
+            for chapter_title, _ in chapters:
+                toc_entries.append((1, chapter_title))
+            if glossary_flowables:
+                toc_entries.append((1, "Glossary"))
+            if bib_flowables:
+                toc_entries.append((1, "Bibliography"))
+            if index_flowables:
+                toc_entries.append((1, "Index"))
 
-        story.extend(build_toc(toc_entries, brand=b, content_width=self.content_width))
-        story.append(PageBreak())
+            story.extend(build_toc(toc_entries, brand=b, content_width=self.content_width))
+            story.append(PageBreak())
 
         # --- Preface ---
-        story.extend(preface_flowables)
-        story.append(PageBreak())
+        if preface_flowables:
+            story.extend(preface_flowables)
+            story.append(PageBreak())
 
         # --- Chapters (recto — each on new page) ---
         for chapter_title, chapter_flowables in chapters:
@@ -210,7 +224,8 @@ class BookTemplate(BaseBriefingTemplate):
             story.append(PageBreak())
 
         # --- Colophon ---
-        story.extend(self._build_colophon(title, org, year, copyright_str))
+        if not should_skip(cfg, "colophon"):
+            story.extend(self._build_colophon(title, org, year, copyright_str))
 
         return story
 

@@ -29,6 +29,7 @@ from briefkit.elements.toc import build_toc
 from briefkit.extractor import parse_markdown
 from briefkit.generator import BaseBriefingTemplate
 from briefkit.styles import _hex, _ps, _safe_para
+from briefkit.templates._helpers import should_skip
 
 
 class AcademicTemplate(BaseBriefingTemplate):
@@ -87,64 +88,71 @@ class AcademicTemplate(BaseBriefingTemplate):
         story.append(PageBreak())
 
         # Pre-build sections for TOC
+        cfg = self.config
         abstract_text        = self._derive_abstract(content)
-        intro_flowables      = self._build_introduction(content)
-        lit_review_flowables = self._build_literature_review(content)
+        intro_flowables      = [] if should_skip(cfg, "introduction")      else self._build_introduction(content)
+        lit_review_flowables = [] if should_skip(cfg, "literature_review") else self._build_literature_review(content)
         body_flowables       = self._build_body(content)
-        results_flowables    = self._build_results(content)
-        discussion_flowables = self._build_discussion(content)
-        conclusion_flowables = self._build_conclusion(content)
-        appendix_flowables   = self._build_appendices(content)
-        ref_flowables        = self._build_references(content)
+        results_flowables    = [] if should_skip(cfg, "results")           else self._build_results(content)
+        discussion_flowables = [] if should_skip(cfg, "discussion")        else self._build_discussion(content)
+        conclusion_flowables = [] if should_skip(cfg, "conclusion")        else self._build_conclusion(content)
+        appendix_flowables   = [] if should_skip(cfg, "appendices")        else self._build_appendices(content)
+        ref_flowables        = [] if should_skip(cfg, "references")        else self._build_references(content)
 
         # TOC
-        story.append(_safe_para("Table of Contents", self.styles["STYLE_H1"]))
-        story.append(Spacer(1, 2 * mm))
+        if not should_skip(cfg, "toc"):
+            story.append(_safe_para("Table of Contents", self.styles["STYLE_H1"]))
+            story.append(Spacer(1, 2 * mm))
 
-        toc_entries = [
-            (1, "Abstract"),
-            (1, "1. Introduction"),
-        ]
-        if lit_review_flowables:
-            toc_entries.append((1, "2. Literature Review"))
-        toc_entries.append((1, "3. Content"))
-        for i, sub in enumerate(content.get("subsystems", []), 1):
-            toc_entries.append((2, f"  3.{i} {sub.get('name', f'Section {i}')}"))
-        if results_flowables:
-            toc_entries.append((1, "4. Results"))
-        toc_entries.append((1, "5. Discussion"))
-        toc_entries.append((1, "6. Conclusion"))
-        if ref_flowables:
-            toc_entries.append((1, "References"))
-        if appendix_flowables:
-            toc_entries.append((1, "Appendices"))
+            toc_entries = []
+            if not should_skip(cfg, "abstract"):
+                toc_entries.append((1, "Abstract"))
+            if intro_flowables:
+                toc_entries.append((1, "1. Introduction"))
+            if lit_review_flowables:
+                toc_entries.append((1, "2. Literature Review"))
+            toc_entries.append((1, "3. Content"))
+            for i, sub in enumerate(content.get("subsystems", []), 1):
+                toc_entries.append((2, f"  3.{i} {sub.get('name', f'Section {i}')}"))
+            if results_flowables:
+                toc_entries.append((1, "4. Results"))
+            if discussion_flowables:
+                toc_entries.append((1, "5. Discussion"))
+            if conclusion_flowables:
+                toc_entries.append((1, "6. Conclusion"))
+            if ref_flowables:
+                toc_entries.append((1, "References"))
+            if appendix_flowables:
+                toc_entries.append((1, "Appendices"))
 
-        story.extend(build_toc(toc_entries, brand=b, content_width=self.content_width))
-        story.append(PageBreak())
+            story.extend(build_toc(toc_entries, brand=b, content_width=self.content_width))
+            story.append(PageBreak())
 
         # Abstract
-        story.append(Paragraph("Abstract", self.styles["STYLE_H1"]))
-        story.append(Spacer(1, 2 * mm))
-        story.append(Paragraph(abstract_text, self.styles["STYLE_BODY"]))
-
-        terms = list(content.get("terms", {}).keys())[:8]
-        if terms:
+        if not should_skip(cfg, "abstract"):
+            story.append(Paragraph("Abstract", self.styles["STYLE_H1"]))
             story.append(Spacer(1, 2 * mm))
-            kw_style = _ps(
-                "AcadKeywords", brand=b,
-                fontSize=9, textColor=caption_c,
-                fontName="Helvetica-Oblique",
-            )
-            story.append(Paragraph(
-                "<b>Keywords:</b> " + ", ".join(terms),
-                kw_style,
-            ))
+            story.append(Paragraph(abstract_text, self.styles["STYLE_BODY"]))
 
-        story.append(PageBreak())
+            terms = list(content.get("terms", {}).keys())[:8]
+            if terms:
+                story.append(Spacer(1, 2 * mm))
+                kw_style = _ps(
+                    "AcadKeywords", brand=b,
+                    fontSize=9, textColor=caption_c,
+                    fontName="Helvetica-Oblique",
+                )
+                story.append(Paragraph(
+                    "<b>Keywords:</b> " + ", ".join(terms),
+                    kw_style,
+                ))
+
+            story.append(PageBreak())
 
         # Body sections
-        story.extend(intro_flowables)
-        story.append(PageBreak())
+        if intro_flowables:
+            story.extend(intro_flowables)
+            story.append(PageBreak())
 
         if lit_review_flowables:
             story.extend(lit_review_flowables)
@@ -157,11 +165,13 @@ class AcademicTemplate(BaseBriefingTemplate):
             story.extend(results_flowables)
             story.append(PageBreak())
 
-        story.extend(discussion_flowables)
-        story.append(PageBreak())
+        if discussion_flowables:
+            story.extend(discussion_flowables)
+            story.append(PageBreak())
 
-        story.extend(conclusion_flowables)
-        story.append(PageBreak())
+        if conclusion_flowables:
+            story.extend(conclusion_flowables)
+            story.append(PageBreak())
 
         if ref_flowables:
             story.extend(ref_flowables)

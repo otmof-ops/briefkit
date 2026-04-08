@@ -60,6 +60,7 @@ from briefkit.styles import (
     _safe_text,
     compute_content_width,
 )
+from briefkit.templates._helpers import should_skip
 
 # ---------------------------------------------------------------------------
 # Exact colors from PDF content streams — DARK variant
@@ -205,10 +206,12 @@ class MagazineTemplate(BaseBriefingTemplate):
             cyan, text_c, _caption_c, _purple, _rule_c = _P_CYAN, _P_TEXT, _P_CAPTION, _P_LINK, _P_RULE
             row_even, row_odd, _table_hdr = _P_ROW_EVEN, _P_ROW_ODD, _P_TABLE_HEADER
 
+        cfg = self.config
         # Cover placeholder
         story.append(Spacer(1, 200 * mm))
         story.append(PageBreak())
 
+        _toc_start = len(story)
         # TOC page — "S E C T I O N 00"
         sec_label_style = _ps(
             "MagSecLabel", brand=b,
@@ -277,6 +280,9 @@ class MagazineTemplate(BaseBriefingTemplate):
             story.append(toc_table)
 
         story.append(PageBreak())
+
+        if should_skip(cfg, "toc"):
+            del story[_toc_start:]
 
         # Body sections
         for idx, sub in enumerate(subsystems, 1):

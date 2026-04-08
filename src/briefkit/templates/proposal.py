@@ -43,6 +43,7 @@ from briefkit.styles import (
     _ps,
     _safe_para,
 )
+from briefkit.templates._helpers import should_skip
 
 # ---------------------------------------------------------------------------
 # Page sizes
@@ -111,8 +112,9 @@ class ProposalTemplate(BaseBriefingTemplate):
         # ============================================================
         # Pre-build sections for TOC
         # ============================================================
-        exec_summary = self._build_executive_summary(content)
-        scope = self._build_scope(content)
+        cfg = self.config
+        exec_summary = [] if should_skip(cfg, "executive_summary") else self._build_executive_summary(content)
+        scope = [] if should_skip(cfg, "scope") else self._build_scope(content)
         deliverables = self._build_deliverables(content)
         timeline = self._build_timeline(content)
         pricing = self._build_pricing(content)
@@ -122,33 +124,39 @@ class ProposalTemplate(BaseBriefingTemplate):
         # ============================================================
         # Table of Contents
         # ============================================================
-        story.extend(self._heading_with_rule("Table of Contents", "STYLE_H1"))
+        if not should_skip(cfg, "toc"):
+            story.extend(self._heading_with_rule("Table of Contents", "STYLE_H1"))
 
-        toc_entries = [(1, "Executive Summary")]
-        toc_entries.append((1, "Scope & Objectives"))
-        toc_entries.append((1, "Deliverables"))
-        for i, sub in enumerate(content.get("subsystems", []), 1):
-            toc_entries.append((2, f"  {i}. {sub.get('name', f'Deliverable {i}')}"))
-        if timeline:
-            toc_entries.append((1, "Timeline"))
-        if pricing:
-            toc_entries.append((1, "Pricing & Budget"))
-        if terms:
-            toc_entries.append((1, "Terms & Conditions"))
-        toc_entries.append((1, "Acceptance & Sign-off"))
+            toc_entries = []
+            if exec_summary:
+                toc_entries.append((1, "Executive Summary"))
+            if scope:
+                toc_entries.append((1, "Scope & Objectives"))
+            toc_entries.append((1, "Deliverables"))
+            for i, sub in enumerate(content.get("subsystems", []), 1):
+                toc_entries.append((2, f"  {i}. {sub.get('name', f'Deliverable {i}')}"))
+            if timeline:
+                toc_entries.append((1, "Timeline"))
+            if pricing:
+                toc_entries.append((1, "Pricing & Budget"))
+            if terms:
+                toc_entries.append((1, "Terms & Conditions"))
+            toc_entries.append((1, "Acceptance & Sign-off"))
 
-        from briefkit.generator import build_toc
-        story.extend(build_toc(toc_entries, brand=b, content_width=self.content_width))
-        story.append(PageBreak())
+            from briefkit.generator import build_toc
+            story.extend(build_toc(toc_entries, brand=b, content_width=self.content_width))
+            story.append(PageBreak())
 
         # ============================================================
         # Body Sections
         # ============================================================
-        story.extend(exec_summary)
-        story.append(PageBreak())
+        if exec_summary:
+            story.extend(exec_summary)
+            story.append(PageBreak())
 
-        story.extend(scope)
-        story.append(Spacer(1, 6 * mm))
+        if scope:
+            story.extend(scope)
+            story.append(Spacer(1, 6 * mm))
 
         story.extend(deliverables)
         story.append(PageBreak())
@@ -171,7 +179,8 @@ class ProposalTemplate(BaseBriefingTemplate):
         # ============================================================
         # Back Cover
         # ============================================================
-        story.extend(self._build_back_cover_page())
+        if not should_skip(cfg, "back_cover"):
+            story.extend(self._build_back_cover_page())
 
         return story
 

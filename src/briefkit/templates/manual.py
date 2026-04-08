@@ -33,6 +33,7 @@ from briefkit.generator import (
     build_toc,
 )
 from briefkit.styles import _hex, _ps, _safe_para
+from briefkit.templates._helpers import should_skip
 
 # Regex patterns for safety extractions
 _WARNING_PATTERN = re.compile(
@@ -83,40 +84,43 @@ class ManualTemplate(BaseBriefingTemplate):
         ))
         story.append(Spacer(1, 2 * mm))
 
+        cfg = self.config
         # Pre-build sections
-        revision_flowables    = self._build_revision_history(content)
-        safety_flowables      = self._build_safety_warnings(content)
-        scope_flowables       = self._build_scope(content)
+        revision_flowables    = [] if should_skip(cfg, "revision_history") else self._build_revision_history(content)
+        safety_flowables      = [] if should_skip(cfg, "safety_warnings")  else self._build_safety_warnings(content)
+        scope_flowables       = [] if should_skip(cfg, "scope")            else self._build_scope(content)
         procedures_flowables  = self._build_procedures(content)
-        ref_tables_flowables  = self._build_reference_tables(content)
-        troubleshoot_flowables = self._build_troubleshooting(content)
-        bib_flowables         = self.build_bibliography(
+        ref_tables_flowables  = [] if should_skip(cfg, "reference_tables") else self._build_reference_tables(content)
+        troubleshoot_flowables = [] if should_skip(cfg, "troubleshooting") else self._build_troubleshooting(content)
+        bib_flowables         = [] if should_skip(cfg, "bibliography") else self.build_bibliography(
             content.get("bibliography", []),
             source_type=content.get("metrics", {}).get("source_type", "DOCUMENTATION"),
         )
 
         # TOC
-        story.append(_safe_para("Table of Contents", self.styles["STYLE_H1"]))
-        story.append(Spacer(1, 2 * mm))
+        if not should_skip(cfg, "toc"):
+            story.append(_safe_para("Table of Contents", self.styles["STYLE_H1"]))
+            story.append(Spacer(1, 2 * mm))
 
-        toc_entries: list[tuple[int, str]] = []
-        if revision_flowables:
-            toc_entries.append((1, "Revision History"))
-        if safety_flowables:
-            toc_entries.append((1, "Safety Warnings"))
-        toc_entries.append((1, "Scope"))
-        toc_entries.append((1, "Procedures"))
-        for i, sub in enumerate(content.get("subsystems", []), 1):
-            toc_entries.append((2, f"  {i}. {sub.get('name', f'Procedure {i}')}"))
-        if ref_tables_flowables:
-            toc_entries.append((1, "Reference Tables"))
-        if troubleshoot_flowables:
-            toc_entries.append((1, "Troubleshooting"))
-        if bib_flowables:
-            toc_entries.append((1, "Bibliography"))
+            toc_entries: list[tuple[int, str]] = []
+            if revision_flowables:
+                toc_entries.append((1, "Revision History"))
+            if safety_flowables:
+                toc_entries.append((1, "Safety Warnings"))
+            if scope_flowables:
+                toc_entries.append((1, "Scope"))
+            toc_entries.append((1, "Procedures"))
+            for i, sub in enumerate(content.get("subsystems", []), 1):
+                toc_entries.append((2, f"  {i}. {sub.get('name', f'Procedure {i}')}"))
+            if ref_tables_flowables:
+                toc_entries.append((1, "Reference Tables"))
+            if troubleshoot_flowables:
+                toc_entries.append((1, "Troubleshooting"))
+            if bib_flowables:
+                toc_entries.append((1, "Bibliography"))
 
-        story.extend(build_toc(toc_entries, brand=self.brand, content_width=self.content_width))
-        story.append(PageBreak())
+            story.extend(build_toc(toc_entries, brand=self.brand, content_width=self.content_width))
+            story.append(PageBreak())
 
         # Revision History
         if revision_flowables:
@@ -129,8 +133,9 @@ class ManualTemplate(BaseBriefingTemplate):
             story.append(PageBreak())
 
         # Scope
-        story.extend(scope_flowables)
-        story.append(PageBreak())
+        if scope_flowables:
+            story.extend(scope_flowables)
+            story.append(PageBreak())
 
         # Procedures
         story.extend(procedures_flowables)
@@ -151,7 +156,8 @@ class ManualTemplate(BaseBriefingTemplate):
             story.extend(bib_flowables)
 
         # Back cover
-        story.extend(self.build_back_cover())
+        if not should_skip(cfg, "back_cover"):
+            story.extend(self.build_back_cover())
 
         return story
 

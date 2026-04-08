@@ -20,6 +20,7 @@ from reportlab.lib.colors import HexColor
 from reportlab.lib.pagesizes import A3, A4, legal, letter
 from reportlab.lib.units import mm
 from reportlab.platypus import (
+    CondPageBreak,
     Flowable,
     KeepTogether,
     PageBreak,
@@ -874,6 +875,123 @@ class BaseBriefingTemplate:
         return base
 
     # ------------------------------------------------------------------
+    # Universal story post-processing — applied to every template
+    # ------------------------------------------------------------------
+
+    def _protect_section_headings(self, story: list) -> list:
+        """
+        Walk *story* and wrap every bare section heading with its next
+        content flowable in a ``KeepTogether`` block, so the heading
+        cannot be orphaned on an otherwise-empty page when the following
+        content is too large to fit on the remaining page.
+
+        This is the universal orphan-title guard rail: it runs on every
+        template's story after ``build_story()`` returns, regardless of
+        whether the template remembered to wrap its own headings.
+
+        Behaviour:
+          * Only rewrites bare ``Paragraph`` instances whose style is
+            ``STYLE_H1`` (or subclass H1 — name.endswith("H1")).
+          * Skips paragraphs already inside a ``KeepTogether``.
+          * Skips when the next non-spacer flowable is a page break,
+            another heading, or already a ``KeepTogether`` (nothing to
+            protect against in those cases).
+          * Clears ``keepWithNext`` on the wrapped neighbour so the
+            ``KeepTogether`` itself is not dragged into a split with a
+            still-larger following flowable.
+          * Honours ``project.disable_orphan_protection: true`` as an
+            escape hatch for users who want the raw unprotected story.
+
+        Idempotent: running twice produces the same result as running
+        once.
+        """
+        if bool(self.config.get("project", {}).get("disable_orphan_protection", False)):
+            return story
+
+        try:
+            h1_style = self.styles["STYLE_H1"]
+            h1_name = getattr(h1_style, "name", None)
+        except Exception:
+            return story
+        if not h1_name:
+            return story
+
+        def _is_h1(fl):
+            if not isinstance(fl, Paragraph):
+                return False
+            st = getattr(fl, "style", None)
+            name = getattr(st, "name", "")
+            return name == h1_name or name.endswith("H1")
+
+        protected: list = []
+        i = 0
+        n = len(story)
+        while i < n:
+            fl = story[i]
+            if _is_h1(fl):
+                # Find the next "real" flowable, allowing a run of Spacers
+                # (which carry the traditional title→body gap) in between.
+                j = i + 1
+                spacers: list = []
+                while j < n and isinstance(story[j], Spacer):
+                    spacers.append(story[j])
+                    j += 1
+                if j < n:
+                    nxt = story[j]
+                    if not isinstance(nxt, (PageBreak, CondPageBreak, KeepTogether)) and not _is_h1(nxt):
+                        if hasattr(nxt, "keepWithNext"):
+                            nxt.keepWithNext = False
+                        protected.append(KeepTogether([fl, *spacers, nxt]))
+                        i = j + 1
+                        continue
+            protected.append(fl)
+            i += 1
+        return protected
+
+    def _collapse_empty_page_runs(self, story: list) -> list:
+        """
+        Collapse adjacent page-break flowables that would emit empty pages.
+
+        Fixes the "big gap that makes no sense" problem where a template
+        does ``PageBreak → optional section (empty) → PageBreak`` and
+        leaves an empty page in the middle. If the optional section is
+        skipped via a ``skip_*`` flag OR happens to produce zero content,
+        we end up with ``PageBreak → PageBreak`` which ReportLab renders
+        as a blank page.
+
+        This post-pass walks the story and removes any PageBreak /
+        CondPageBreak that is immediately adjacent (ignoring Spacers) to
+        another page break flowable.
+
+        Honours ``project.disable_empty_page_collapse: true`` as an
+        escape hatch.
+        """
+        if bool(self.config.get("project", {}).get("disable_empty_page_collapse", False)):
+            return story
+
+        def _is_break(f) -> bool:
+            return isinstance(f, (PageBreak, CondPageBreak))
+
+        def _is_plain_spacer(f) -> bool:
+            # CondPageBreak subclasses Spacer in ReportLab, so guard
+            # against treating it as a "pass-through" spacer during
+            # the look-back walk.
+            return isinstance(f, Spacer) and not isinstance(f, CondPageBreak)
+
+        out: list = []
+        for fl in story:
+            if _is_break(fl):
+                k = len(out) - 1
+                while k >= 0 and _is_plain_spacer(out[k]):
+                    k -= 1
+                if k >= 0 and _is_break(out[k]):
+                    # Drop trailing plain spacers plus this duplicate break
+                    out = out[: k + 1]
+                    continue
+            out.append(fl)
+        return out
+
+    # ------------------------------------------------------------------
     # build_story — override in subclasses for different section orders
     # ------------------------------------------------------------------
 
@@ -896,6 +1014,8 @@ class BaseBriefingTemplate:
         Subclasses override this method to change the order or insert
         template-specific sections.
         """
+        from briefkit.templates._helpers import should_skip
+        cfg = self.config
         story = []
 
         # Cover
@@ -922,40 +1042,51 @@ class BaseBriefingTemplate:
         cross_ref_flowables = self.build_cross_references(
             content.get("cross_refs", []), ref_labels=ref_labels
         )
-        index_flowables = self.build_index(content.get("terms", {}))
-        bib_flowables   = self.build_bibliography(
+        index_flowables = [] if should_skip(cfg, "index") else self.build_index(content.get("terms", {}))
+        bib_flowables   = [] if should_skip(cfg, "bibliography") else self.build_bibliography(
             content.get("bibliography", []), source_type=source_type
         )
+        exec_summary_flowables = [] if should_skip(cfg, "executive_summary") else list(self.build_executive_summary(content))
+        dashboard_flowables    = [] if should_skip(cfg, "dashboard") else list(self.build_at_a_glance(content.get("metrics", {})))
 
         # Table of contents
-        story.append(_safe_para("Table of Contents", self.styles["STYLE_H1"]))
-        story.append(Spacer(1, 2 * mm))
+        if not should_skip(cfg, "toc"):
+            story.append(_safe_para("Table of Contents", self.styles["STYLE_H1"]))
+            story.append(Spacer(1, 2 * mm))
 
-        toc_entries = [
-            (1, "1. Executive Summary"),
-            (1, "2. At a Glance"),
-            (1, "3. Content Overview"),
-        ]
-        for i, sub in enumerate(content.get("subsystems", []), 1):
-            toc_entries.append((2, f"  3.{i} {sub.get('name', f'Section {i}')}"))
+            toc_entries = []
+            n = 0
+            if exec_summary_flowables:
+                n += 1
+                toc_entries.append((1, f"{n}. Executive Summary"))
+            if dashboard_flowables:
+                n += 1
+                toc_entries.append((1, f"{n}. At a Glance"))
+            n += 1
+            content_n = n
+            toc_entries.append((1, f"{content_n}. Content Overview"))
+            for i, sub in enumerate(content.get("subsystems", []), 1):
+                toc_entries.append((2, f"  {content_n}.{i} {sub.get('name', f'Section {i}')}"))
 
-        if cross_ref_flowables:
-            toc_entries.append((1, "Cross-Reference Map"))
-        if index_flowables:
-            toc_entries.append((1, "Key Terms Index"))
-        if bib_flowables:
-            toc_entries.append((1, "Source Bibliography"))
+            if cross_ref_flowables:
+                toc_entries.append((1, "Cross-Reference Map"))
+            if index_flowables:
+                toc_entries.append((1, "Key Terms Index"))
+            if bib_flowables:
+                toc_entries.append((1, "Source Bibliography"))
 
-        story.extend(build_toc(toc_entries, brand=self.brand, content_width=self.content_width))
-        story.append(PageBreak())
+            story.extend(build_toc(toc_entries, brand=self.brand, content_width=self.content_width))
+            story.append(PageBreak())
 
         # Executive summary
-        story.extend(self.build_executive_summary(content))
-        story.append(Spacer(1, 4 * mm))
+        if exec_summary_flowables:
+            story.extend(exec_summary_flowables)
+            story.append(Spacer(1, 4 * mm))
 
         # At a glance
-        story.append(KeepTogether(self.build_at_a_glance(content.get("metrics", {}))))
-        story.append(PageBreak())
+        if dashboard_flowables:
+            story.append(KeepTogether(dashboard_flowables))
+            story.append(PageBreak())
 
         # Body
         story.extend(self.build_body(content))
@@ -974,7 +1105,8 @@ class BaseBriefingTemplate:
             story.extend(bib_flowables)
 
         # Back cover
-        story.extend(self.build_back_cover())
+        if not should_skip(cfg, "back_cover"):
+            story.extend(self.build_back_cover())
 
         return story
 
@@ -1072,6 +1204,20 @@ class BaseBriefingTemplate:
             variant_obj = get_variant(variant_name)
             if variant_obj:
                 story = variant_obj.build_variant_sections(content, story, self.styles, self.brand)
+
+        # ----- Universal story post-processing -----
+        # Applied after build_story() and variant sections so every
+        # template (and every custom variant) benefits from the same
+        # guard rails:
+        #   1. Orphan-title protection — wrap bare H1s with their next
+        #      content flowable in KeepTogether.
+        #   2. Empty-page collapse — drop runs of adjacent PageBreaks
+        #      left behind by skipped optional sections.
+        story = self._collapse_empty_page_runs(story)
+        story = self._protect_section_headings(story)
+        # Re-collapse: orphan protection can merge flowables but doesn't
+        # create new breaks, so a single post-pass is sufficient here.
+        story = self._collapse_empty_page_runs(story)
 
         if verbose:
             print(f"  Building PDF: {len(story)} flowables", file=sys.stderr)

@@ -41,6 +41,7 @@ from briefkit.styles import (
     _ps,
     _safe_para,
 )
+from briefkit.templates._helpers import should_skip
 
 
 def _minimal_header_footer(canvas, doc):
@@ -90,9 +91,10 @@ class MinimalTemplate(BaseBriefingTemplate):
         story.append(Paragraph(" | ".join(meta_parts), meta_style))
         story.append(Spacer(1, 6 * mm))
 
+        cfg = self.config
         # Pre-build body and bibliography
         body_flowables = self._build_minimal_body(content)
-        bib_flowables  = self._build_minimal_bibliography(content)
+        bib_flowables  = [] if should_skip(cfg, "bibliography") else self._build_minimal_bibliography(content)
 
         # TOC
         toc_entries = []
@@ -101,7 +103,7 @@ class MinimalTemplate(BaseBriefingTemplate):
         if bib_flowables:
             toc_entries.append((1, "Bibliography"))
 
-        if toc_entries:
+        if toc_entries and not should_skip(cfg, "toc"):
             story.append(_safe_para("Contents", self.styles["STYLE_H2"]))
             story.append(Spacer(1, 2 * mm))
             story.extend(build_toc(toc_entries, brand=self.brand, content_width=self.content_width))

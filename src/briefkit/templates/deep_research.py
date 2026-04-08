@@ -63,6 +63,7 @@ from briefkit.styles import (
     _safe_text,
     compute_content_width,
 )
+from briefkit.templates._helpers import should_skip
 
 # ---------------------------------------------------------------------------
 # Exact colors from PDF content stream
@@ -148,9 +149,13 @@ class DeepResearchTemplate(BaseBriefingTemplate):
         story: list = []
         subsystems = content.get("subsystems", [])
 
+        cfg = self.config
+
         # Cover placeholder — canvas draws the actual cover
         story.append(Spacer(1, 200 * mm))
         story.append(PageBreak())
+
+        _toc_start = len(story)
 
         # Contents page
         # "Contents" heading: Helvetica-Bold 22pt #1A1A2D
@@ -207,6 +212,9 @@ class DeepResearchTemplate(BaseBriefingTemplate):
                 story.append(Paragraph(summary[:100], sub_style))
 
         story.append(PageBreak())
+
+        if should_skip(cfg, "toc"):
+            del story[_toc_start:]
 
         # Body sections
         for idx, sub in enumerate(subsystems, 1):

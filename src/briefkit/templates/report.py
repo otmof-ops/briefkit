@@ -31,6 +31,7 @@ from briefkit.generator import (
     build_toc,
 )
 from briefkit.styles import _hex, _ps, _safe_para
+from briefkit.templates._helpers import should_skip
 
 
 class ReportTemplate(BaseBriefingTemplate):
@@ -63,52 +64,61 @@ class ReportTemplate(BaseBriefingTemplate):
         ))
 
         # Pre-build optional sections to drive dynamic TOC
+        cfg = self.config
         source_type       = content.get("metrics", {}).get("source_type", "ACADEMIC")
-        bib_flowables     = self.build_bibliography(
+        bib_flowables     = [] if should_skip(cfg, "bibliography") else self.build_bibliography(
             content.get("bibliography", []), source_type=source_type
         )
 
-        abstract_flowables     = self._build_abstract(content)
-        methodology_flowables  = self._build_methodology(content)
-        findings_flowables     = self._build_findings(content)
-        discussion_flowables   = self._build_discussion(content)
-        recommend_flowables    = self._build_recommendations(content)
-        appendix_flowables     = self._build_appendices(content)
+        abstract_flowables     = [] if should_skip(cfg, "abstract")        else self._build_abstract(content)
+        methodology_flowables  = [] if should_skip(cfg, "methodology")     else self._build_methodology(content)
+        findings_flowables     = [] if should_skip(cfg, "findings")        else self._build_findings(content)
+        discussion_flowables   = [] if should_skip(cfg, "discussion")      else self._build_discussion(content)
+        recommend_flowables    = [] if should_skip(cfg, "recommendations") else self._build_recommendations(content)
+        appendix_flowables     = [] if should_skip(cfg, "appendices")      else self._build_appendices(content)
 
         # TOC
-        story.append(_safe_para("Table of Contents", self.styles["STYLE_H1"]))
-        story.append(Spacer(1, 2 * mm))
+        if not should_skip(cfg, "toc"):
+            story.append(_safe_para("Table of Contents", self.styles["STYLE_H1"]))
+            story.append(Spacer(1, 2 * mm))
 
-        toc_entries = [(1, "Abstract")]
-        if methodology_flowables:
-            toc_entries.append((1, "Methodology"))
-        toc_entries.append((1, "Findings"))
-        for i, sub in enumerate(content.get("subsystems", []), 1):
-            toc_entries.append((2, f"  {i}. {sub.get('name', f'Section {i}')}"))
-        toc_entries.append((1, "Discussion"))
-        if recommend_flowables:
-            toc_entries.append((1, "Recommendations"))
-        if appendix_flowables:
-            toc_entries.append((1, "Appendices"))
-        if bib_flowables:
-            toc_entries.append((1, "References"))
+            toc_entries = []
+            if abstract_flowables:
+                toc_entries.append((1, "Abstract"))
+            if methodology_flowables:
+                toc_entries.append((1, "Methodology"))
+            if findings_flowables:
+                toc_entries.append((1, "Findings"))
+            for i, sub in enumerate(content.get("subsystems", []), 1):
+                toc_entries.append((2, f"  {i}. {sub.get('name', f'Section {i}')}"))
+            if discussion_flowables:
+                toc_entries.append((1, "Discussion"))
+            if recommend_flowables:
+                toc_entries.append((1, "Recommendations"))
+            if appendix_flowables:
+                toc_entries.append((1, "Appendices"))
+            if bib_flowables:
+                toc_entries.append((1, "References"))
 
-        story.extend(build_toc(toc_entries, brand=self.brand, content_width=self.content_width))
-        story.append(PageBreak())
+            story.extend(build_toc(toc_entries, brand=self.brand, content_width=self.content_width))
+            story.append(PageBreak())
 
         # Sections
-        story.extend(abstract_flowables)
-        story.append(PageBreak())
+        if abstract_flowables:
+            story.extend(abstract_flowables)
+            story.append(PageBreak())
 
         if methodology_flowables:
             story.extend(methodology_flowables)
             story.append(PageBreak())
 
-        story.extend(findings_flowables)
-        story.append(PageBreak())
+        if findings_flowables:
+            story.extend(findings_flowables)
+            story.append(PageBreak())
 
-        story.extend(discussion_flowables)
-        story.append(PageBreak())
+        if discussion_flowables:
+            story.extend(discussion_flowables)
+            story.append(PageBreak())
 
         if recommend_flowables:
             story.extend(recommend_flowables)

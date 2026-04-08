@@ -390,17 +390,13 @@ class DeckTemplate(BaseBriefingTemplate):
         # Recompute content width for landscape
         self.content_width = page_size[0] - left_m - right_m
 
-        doc = SimpleDocTemplate(
-            str(self.output_path),
+        doc = self._build_doc(
             pagesize=page_size,
             topMargin=top_m,
             bottomMargin=bottom_m,
             leftMargin=left_m,
             rightMargin=right_m,
-            title=title,
-            author=self.brand.get("org", "briefkit"),
             subject="Deck",
-            creator="briefkit",
         )
 
         # Build story: cover + slides + closing
@@ -474,6 +470,7 @@ class DeckTemplate(BaseBriefingTemplate):
 
             canvas.restoreState()
 
+        story = self._finalize_story(story)
         doc.build(
             story,
             onFirstPage=_cover,

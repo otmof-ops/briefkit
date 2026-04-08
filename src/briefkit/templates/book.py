@@ -482,19 +482,16 @@ class BookTemplate(BaseBriefingTemplate):
         page_size = _PAGE_SIZES.get(layout.get("page_size", "A4"), A4)
         margins = layout.get("margins", {})
 
-        doc = SimpleDocTemplate(
-            str(self.output_path),
+        doc = self._build_doc(
             pagesize=page_size,
             topMargin=margins.get("top", 25) * mm,
             bottomMargin=margins.get("bottom", 22) * mm,
             leftMargin=margins.get("left", 20) * mm,
             rightMargin=margins.get("right", 20) * mm,
-            title=content.get("title", ""),
-            author=self.brand.get("org", "briefkit"),
-            creator="briefkit",
         )
 
         story = self.build_story(content)
+        story = self._finalize_story(story)
 
         if verbose:
             print(f"  Building PDF: {len(story)} flowables", file=sys.stderr)

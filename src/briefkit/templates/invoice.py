@@ -700,20 +700,17 @@ class InvoiceTemplate(BaseBriefingTemplate):
         left_m = margins.get("left", 20) * mm
         right_m = margins.get("right", 20) * mm
 
-        doc = SimpleDocTemplate(
-            str(self.output_path),
+        doc = self._build_doc(
             pagesize=A4,
             topMargin=top_m,
             bottomMargin=bottom_m,
             leftMargin=left_m,
             rightMargin=right_m,
-            title=content.get("title", "Invoice"),
-            author=self.brand.get("org", "briefkit"),
             subject="Invoice",
-            creator="briefkit",
         )
 
         story = self.build_story(content)
+        story = self._finalize_story(story)
 
         caption_color = HexColor(self.brand.get("caption", "#666666"))
         org = self.brand.get("org", "")

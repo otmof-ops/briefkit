@@ -8,7 +8,7 @@ Extracted and generalized from generate-briefing-v2.py build_metric_dashboard()
 from reportlab.graphics.shapes import Drawing, Line, Rect, String
 from reportlab.lib.colors import HexColor, white
 from reportlab.lib.units import mm
-from reportlab.platypus import Spacer
+from reportlab.platypus import CondPageBreak, KeepTogether, Spacer
 
 from briefkit.styles import CONTENT_WIDTH, _get_brand, _hex
 
@@ -87,4 +87,7 @@ def build_metric_dashboard(metrics, brand=None, content_width=None):
         )
         d.add(lbl_str)
 
-    return d
+    # Wrap in a KeepTogether preceded by a CondPageBreak so the 60 mm
+    # panel never straddles a page boundary or overflows into the
+    # footer area when fewer than ~65 mm of vertical space remain.
+    return KeepTogether([CondPageBreak(panel_height + 5 * mm), d])

@@ -141,8 +141,21 @@ def cmd_generate(args: argparse.Namespace) -> int:
             )
 
     if getattr(args, "dry_run", False):
-        print("(dry-run — no file written)")
-        return 0
+        # Real dry-run: actually extract content and report a structured
+        # summary of what WOULD be generated. No PDF is written.
+        return _dry_run_report(path, cfg)
+
+    # Fail-loud pre-check: do a content extraction before handing off to
+    # _generate_one so that a misconfigured directory (no 01-*.md, no
+    # README) produces a helpful error instead of a 6-page empty PDF.
+    try:
+        from briefkit.extractor import extract_content
+        pre = extract_content(path, level=3, config=cfg)
+    except Exception:
+        pre = None
+    if pre is not None and _extraction_is_empty(pre):
+        _print_empty_extraction_error(path, cfg)
+        return 2
 
     result = _generate_one(path, cfg, dry_run=False)
 
@@ -153,6 +166,110 @@ def cmd_generate(args: argparse.Namespace) -> int:
     if not getattr(args, "quiet", False):
         print(f"Done in {result['elapsed']:.1f}s")
 
+    return 0
+
+
+_EMPTY_OVERVIEW_SENTINELS = (
+    "No analysis documents found",
+    "Overview not available",
+)
+
+
+def _extraction_is_empty(content: dict) -> bool:
+    """True when nothing worth rendering was extracted from the source."""
+    if not content:
+        return False  # _generate_one didn't report — assume OK
+    if content.get("subsystems"):
+        return False
+    if content.get("orientation"):
+        return False
+    overview = (content.get("overview") or "").strip()
+    if not overview:
+        return True
+    # The extractor injects a placeholder overview when nothing is
+    # found; treat that as empty so we can emit a helpful error.
+    return any(overview.startswith(s) for s in _EMPTY_OVERVIEW_SENTINELS)
+
+
+def _print_empty_extraction_error(path: Path, cfg: dict) -> None:
+    """Print a fix-suggesting error when extraction finds nothing."""
+    numbered = cfg.get("content", {}).get("numbered_doc_pattern", "[0-9][0-9]-*.md")
+    present = sorted(p.name for p in path.iterdir() if p.is_file() and p.suffix == ".md")[:10]
+    present_str = ", ".join(present) if present else "(no .md files)"
+    print(
+        f"\nError: No content was extracted from {path}.\n"
+        f"  briefkit looked for:\n"
+        f"    - 00-what-is-*.md  (orientation doc)\n"
+        f"    - {numbered}      (numbered chapters, configurable via content.numbered_doc_pattern)\n"
+        f"    - README.md        (overview / title fallback)\n"
+        f"  Present .md files: {present_str}\n"
+        f"\n"
+        f"  Fixes:\n"
+        f"    (a) Rename chapters to match the numbered pattern (e.g. 01-intro.md, 02-...).\n"
+        f"    (b) Override the pattern in briefkit.yml:\n"
+        f"          content:\n"
+        f"            numbered_doc_pattern: \"*.md\"\n"
+        f"    (c) See `briefkit generate --help` for more options.\n",
+        file=sys.stderr,
+    )
+
+
+def _dry_run_report(path: Path, cfg: dict) -> int:
+    """
+    Real --dry-run: extract content, pretend to build the story, and
+    print a structured summary of what would be generated. No PDF is
+    written.
+    """
+    try:
+        from briefkit.extractor import extract_content
+        from briefkit.templates import get_template
+        from briefkit.templates._helpers import SKIPPABLE_SECTIONS, should_skip
+    except Exception as exc:
+        print(f"dry-run failed to import briefkit internals: {exc}", file=sys.stderr)
+        return 1
+
+    tpl_name = cfg.get("template", {}).get("preset", "briefing")
+    print(f"\n--- briefkit dry-run ---")
+    print(f"Source:   {path}")
+    print(f"Template: {tpl_name}")
+    layout = cfg.get("layout", {})
+    print(f"Page:     {layout.get('page_size', 'A4')} {layout.get('orientation', 'portrait')}")
+
+    try:
+        content = extract_content(path, level=3, config=cfg)
+    except Exception as exc:
+        print(f"\nExtraction failed: {exc}", file=sys.stderr)
+        return 1
+
+    subsystems = content.get("subsystems", []) or []
+    bibliography = content.get("bibliography", []) or []
+    terms = content.get("terms", {}) or {}
+    metrics = content.get("metrics", {}) or {}
+
+    print(f"\nExtracted:")
+    print(f"  Subsystems:    {len(subsystems)}")
+    print(f"  Words total:   {metrics.get('word_count', 'n/a')}")
+    print(f"  Bibliography:  {len(bibliography)}")
+    print(f"  Terms (index): {len(terms)}")
+    if content.get("orientation"):
+        print(f"  Orientation:   present")
+    if content.get("overview"):
+        print(f"  Overview:      present")
+
+    if _extraction_is_empty(content):
+        print()
+        _print_empty_extraction_error(path, cfg)
+        return 2
+
+    # Report skip-flag manifest
+    proj = cfg.get("project", {}) or {}
+    active_skips = [k for k in proj if k.startswith("skip_") and proj[k]]
+    if active_skips:
+        print(f"\nActive skip flags: {', '.join(active_skips)}")
+    else:
+        print(f"\nActive skip flags: (none)")
+
+    print(f"\n(dry-run — no PDF written)\n")
     return 0
 
 

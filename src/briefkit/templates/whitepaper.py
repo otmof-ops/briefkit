@@ -384,20 +384,17 @@ class WhitepaperTemplate(BaseBriefingTemplate):
         left_m = margins.get("left", 20) * mm
         right_m = margins.get("right", 20) * mm
 
-        doc = SimpleDocTemplate(
-            str(self.output_path),
+        doc = self._build_doc(
             pagesize=letter,
             topMargin=top_m,
             bottomMargin=bottom_m,
             leftMargin=left_m,
             rightMargin=right_m,
-            title=title,
-            author=self.brand.get("org", "briefkit"),
             subject="White Paper",
-            creator="briefkit",
         )
 
         story = self.build_story(content)
+        story = self._finalize_story(story)
         doc.build(
             story,
             onFirstPage=_wp_header_footer,

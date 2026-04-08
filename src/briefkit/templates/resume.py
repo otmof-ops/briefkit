@@ -451,20 +451,17 @@ class ResumeTemplate(BaseBriefingTemplate):
 
         page_size = _PAGE_SIZES.get(layout.get("page_size", "A4"), A4)
 
-        doc = SimpleDocTemplate(
-            str(self.output_path),
+        doc = self._build_doc(
             pagesize=page_size,
             topMargin=top_m,
             bottomMargin=bottom_m,
             leftMargin=left_m,
             rightMargin=right_m,
-            title=content.get("title", "Resume"),
-            author=self.brand.get("org", "briefkit"),
             subject="Resume",
-            creator="briefkit",
         )
 
         story = self.build_story(content)
+        story = self._finalize_story(story)
 
         def _resume_footer(canvas, doc_inner):
             """Subtle page number footer for multi-page resumes."""

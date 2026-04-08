@@ -45,26 +45,125 @@ _RE_BOLD_UND = re.compile(r'_{2}(.+?)_{2}')
 _RE_ITALIC_AST = re.compile(r'\*(.+?)\*')
 _RE_ITALIC_UND = re.compile(r'(?<!\w)_(.+?)_(?!\w)')  # word-boundary restricted
 _RE_INLINE_CODE = re.compile(r'`(.+?)`')
-_RE_MD_LINK = re.compile(r'\[([^\]]+)\]\([^\)]*\)')
+_RE_MD_LINK = re.compile(r'\[([^\]]+)\]\(([^)]*)\)')
 _RE_STRIKETHROUGH = re.compile(r'~~(.+?)~~')
+
+# Smart-punctuation patterns (applied after inline markdown strip,
+# before HTML emission, with code spans protected by sentinels so
+# they're never rewritten).
+_RE_SMART_APOS_MID   = re.compile(r"(?<=\w)'(?=\w)")           # don't → don\u2019t
+_RE_SMART_APOS_OPEN  = re.compile(r"(?<!\w)'(?=\w)")           # 'tis → \u2018tis
+_RE_SMART_APOS_CLOSE = re.compile(r"(?<=\w)'(?!\w)")           # kids' → kids\u2019
+_RE_SMART_DQUO_OPEN  = re.compile(r'(?<![\w"])"(?=\w)')        # "Hello → \u201cHello
+_RE_SMART_DQUO_CLOSE = re.compile(r'(?<=[\w\.,\!?])"(?![\w"])') # world." → world.\u201d
+_RE_EM_DASH          = re.compile(r"---")
+_RE_EN_DASH          = re.compile(r"(?<!-)--(?!-)")
+_RE_ELLIPSIS         = re.compile(r"\.{3}")
+_RE_NBSP_INITIAL     = re.compile(r"(\b[A-Z])\.\s+([A-Z][a-z])")  # J. Smith
+
+# Sentinels for inline code and link tags (never appear in user text).
+# Using NULs guarantees the sentinels survive every regex pass intact.
+_CODE_SENTINEL_OPEN  = "\x00\x01CODE_OPEN\x00"
+_CODE_SENTINEL_CLOSE = "\x00\x01CODE_CLOSE\x00"
+_LINK_SENTINEL_OPEN  = "\x00\x01LINK_OPEN\x00"
+_LINK_SENTINEL_CLOSE = "\x00\x01LINK_CLOSE\x00"
+
+
+def _smart_punctuation(s: str) -> str:
+    """Apply curly quotes, em/en dashes, ellipsis, and NBSP fixes."""
+    s = _RE_SMART_APOS_MID.sub("\u2019", s)
+    s = _RE_SMART_APOS_OPEN.sub("\u2018", s)
+    s = _RE_SMART_APOS_CLOSE.sub("\u2019", s)
+    s = _RE_SMART_DQUO_OPEN.sub("\u201c", s)
+    s = _RE_SMART_DQUO_CLOSE.sub("\u201d", s)
+    s = _RE_EM_DASH.sub("\u2014", s)
+    s = _RE_EN_DASH.sub("\u2013", s)
+    s = _RE_ELLIPSIS.sub("\u2026", s)
+    s = _RE_NBSP_INITIAL.sub(lambda m: f"{m.group(1)}.\u00a0{m.group(2)}", s)
+    return s
 
 
 def _strip_inline(s: str) -> str:
-    """Convert inline markdown to basic HTML that ReportLab Paragraph accepts."""
-    if not any(c in s for c in '*_`['):
+    """
+    Convert inline markdown to basic HTML that ReportLab Paragraph accepts.
+
+    Pipeline (order matters — each pass protects the next):
+
+      1. Tokenise inline code spans into sentinels so smart-punctuation
+         and link rewriting don't touch their contents.
+      2. Escape literal ``&``, ``<``, ``>`` in remaining text so a raw
+         ``A & B with <foo>`` in prose cannot corrupt ReportLab's
+         mini-XML parser.
+      3. Convert markdown bold / italic / strikethrough to HTML tags.
+      4. Convert markdown links ``[text](url)`` to ``<link>`` tags so
+         the URL survives and the click target is hot in the final PDF.
+      5. Apply smart-punctuation (curly quotes, em/en dash, ellipsis).
+      6. Re-emit inline code spans with their sentinels replaced by
+         real ``<font name="Courier">`` tags.
+    """
+    if not s:
         return s
-    s = _RE_BOLD_ITALIC_AST.sub(r'<b><i>\1</i></b>', s)
-    s = _RE_BOLD_ITALIC_UND.sub(r'<b><i>\1</i></b>', s)
-    s = _RE_BOLD_AST.sub(r'<b>\1</b>', s)
-    s = _RE_BOLD_UND.sub(r'<b>\1</b>', s)
-    s = _RE_ITALIC_AST.sub(r'<i>\1</i>', s)
-    s = _RE_ITALIC_UND.sub(r'<i>\1</i>', s)
-    def _escape_code(m):
-        inner = m.group(1).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-        return f'<font name="Courier">{inner}</font>'
-    s = _RE_INLINE_CODE.sub(_escape_code, s)
-    s = _RE_STRIKETHROUGH.sub(r'<strike>\1</strike>', s)
-    s = _RE_MD_LINK.sub(r'\1', s)
+
+    # Step 1 — stash code spans
+    code_spans: list[str] = []
+    def _stash_code(m: re.Match) -> str:
+        inner = m.group(1)
+        code_spans.append(inner)
+        return f"{_CODE_SENTINEL_OPEN}{len(code_spans)-1}{_CODE_SENTINEL_CLOSE}"
+    s = _RE_INLINE_CODE.sub(_stash_code, s)
+
+    # Step 2 — escape XML special characters in remaining prose.
+    # Sentinels are NULs and won't be touched.
+    s = s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+    # Step 3 — markdown emphasis
+    s = _RE_BOLD_ITALIC_AST.sub(r"<b><i>\1</i></b>", s)
+    s = _RE_BOLD_ITALIC_UND.sub(r"<b><i>\1</i></b>", s)
+    s = _RE_BOLD_AST.sub(r"<b>\1</b>", s)
+    s = _RE_BOLD_UND.sub(r"<b>\1</b>", s)
+    s = _RE_ITALIC_AST.sub(r"<i>\1</i>", s)
+    s = _RE_ITALIC_UND.sub(r"<i>\1</i>", s)
+    s = _RE_STRIKETHROUGH.sub(r"<strike>\1</strike>", s)
+
+    # Step 4 — stash markdown links as sentinels so smart-punctuation
+    # can't rewrite the quotes around href attributes.
+    link_specs: list[tuple[str, str]] = []  # (label, href)
+    def _stash_link(m: re.Match) -> str:
+        label = m.group(1)
+        href = m.group(2).replace('"', "&quot;")
+        link_specs.append((label, href))
+        return f"{_LINK_SENTINEL_OPEN}{len(link_specs)-1}{_LINK_SENTINEL_CLOSE}"
+    s = _RE_MD_LINK.sub(_stash_link, s)
+
+    # Step 5 — smart punctuation (sentinels are opaque to these rules)
+    s = _smart_punctuation(s)
+
+    # Step 6 — restore link sentinels as proper <link> tags
+    if link_specs:
+        def _restore_link(m: re.Match) -> str:
+            idx = int(m.group(1))
+            label, href = link_specs[idx]
+            return f'<link href="{href}" color="#1a5fb4">{label}</link>'
+        s = re.sub(
+            re.escape(_LINK_SENTINEL_OPEN) + r"(\d+)" + re.escape(_LINK_SENTINEL_CLOSE),
+            _restore_link,
+            s,
+        )
+
+    # Step 7 — restore code spans as proper font tags
+    if code_spans:
+        def _restore_code(m: re.Match) -> str:
+            idx = int(m.group(1))
+            inner = code_spans[idx]
+            # Escape the code span's own content
+            inner = inner.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            return f'<font name="Courier">{inner}</font>'
+        s = re.sub(
+            re.escape(_CODE_SENTINEL_OPEN) + r"(\d+)" + re.escape(_CODE_SENTINEL_CLOSE),
+            _restore_code,
+            s,
+        )
+
     return s
 
 
@@ -155,13 +254,17 @@ def parse_markdown(text: str) -> list[dict]:
         # Table row
         if line.strip().startswith("|") and line.strip().endswith("|"):
             _flush_paragraph()
-            cells = [_strip_inline(c.strip()) for c in line.strip().strip("|").split("|")]
-            if all(_RE_TABLE_SEP.match(c) for c in cells if c):
+            # Check separator row on RAW cells before any inline rewrite.
+            # Smart-punctuation would otherwise rewrite `---` to an em-dash
+            # and the separator would no longer match.
+            raw_cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            if raw_cells and all(_RE_TABLE_SEP.match(c) for c in raw_cells if c):
                 i += 1
                 continue
+            cells = [_strip_inline(c) for c in raw_cells]
             if not in_table:
                 in_table = True
-                table_headers = [_strip_inline(c) for c in cells]
+                table_headers = cells
                 table_rows = []
             else:
                 table_rows.append(cells)

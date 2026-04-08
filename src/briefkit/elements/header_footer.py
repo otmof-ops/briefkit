@@ -87,7 +87,12 @@ def _draw_header_footer(canvas, doc, state, brand=None):
     left   = doc.leftMargin
     right  = page_width - doc.rightMargin
     top    = page_height - doc.topMargin + 6 * mm
-    bottom = doc.bottomMargin - 6 * mm
+    # Footer y origin. Clamp bottom so the copyright line never lands
+    # inside typical printer no-print zones (< 10 mm from the page edge).
+    # The historic formula ``doc.bottomMargin - 6 * mm`` could yield
+    # negative or dangerously small values when a user set
+    # ``margins.bottom: 10`` in config.
+    bottom = max(doc.bottomMargin - 6 * mm, 10 * mm)
     max_text_width = right - left
 
     # --- HEADER ---

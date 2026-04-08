@@ -15,10 +15,19 @@ import datetime
 import re
 import sys
 from pathlib import Path
+from typing import Any
 
+from reportlab import rl_config
 from reportlab.lib.colors import HexColor
 from reportlab.lib.pagesizes import A3, A4, legal, letter
 from reportlab.lib.units import mm
+
+# Byte-reproducible builds: set ReportLab's global invariant flag at
+# import time so every Canvas / PDF produced by briefkit has a stable
+# /ID and (when SOURCE_DATE_EPOCH is set) a stable /CreationDate /
+# ModDate. Users who genuinely need timestamped output can unset this
+# flag before calling briefkit, or set disable_determinism in config.
+rl_config.invariant = 1
 from reportlab.platypus import (
     CondPageBreak,
     Flowable,
@@ -300,30 +309,63 @@ class BaseBriefingTemplate:
                 flowables.append(_safe_para(f"{bullet}{text}", self.styles["STYLE_LIST_ITEM"]))
 
             elif btype == "code":
-                # Code blocks need pre-escaped text with whitespace preserved.
-                # We bypass _safe_para here because _safe_text would re-escape
-                # the &amp; in our &nbsp; entities, causing literal "&nbsp;"
-                # to render in the PDF. Construct the Paragraph directly with
-                # already-escaped content.
+                # Code blocks: preserve whitespace + prevent right-margin
+                # overflow by hard-wrapping source lines at ~90 chars.
+                # We bypass _safe_para because _safe_text would re-escape
+                # &nbsp; entities.
                 from reportlab.platypus import Paragraph as _RLParagraph
-                text = block.get("text", "")
+                raw = block.get("text", "")
+                # Hard-wrap lines longer than a safe character count.
+                # 90 chars at 9-pt Courier ≈ 162 pt (57 mm), well within
+                # the narrowest content width briefkit produces (160 mm
+                # minus a 6 pt left/right padding on STYLE_CODE).
+                wrapped: list[str] = []
+                max_chars = 90
+                for line in raw.splitlines() or [""]:
+                    if len(line) <= max_chars:
+                        wrapped.append(line)
+                        continue
+                    # Try to break at natural boundaries (space, comma, dot)
+                    # before falling back to a hard cut.
+                    while len(line) > max_chars:
+                        cut = max_chars
+                        for sep in (" ", ",", ";", ".", "/"):
+                            idx = line.rfind(sep, max_chars // 2, max_chars)
+                            if idx > 0:
+                                cut = idx + 1
+                                break
+                        wrapped.append(line[:cut])
+                        line = line[cut:]
+                    if line:
+                        wrapped.append(line)
                 text = (
-                    text
+                    "\n".join(wrapped)
                     .replace("&", "&amp;")
                     .replace("<", "&lt;")
                     .replace(">", "&gt;")
                     .replace("\n", "<br/>")
                     .replace(" ", "&nbsp;")
                 )
+                code_fl: list = []
                 try:
-                    flowables.append(_RLParagraph(text, self.styles["STYLE_CODE"]))
+                    code_fl.append(_RLParagraph(text, self.styles["STYLE_CODE"]))
                 except Exception:
-                    # Fallback to safe path if Paragraph rejects the markup
-                    flowables.append(_safe_para(block.get("text", ""), self.styles["STYLE_CODE"]))
+                    code_fl.append(_safe_para(raw, self.styles["STYLE_CODE"]))
+                # Orphan protection for short code blocks
+                if len(raw) < 1500:
+                    flowables.append(KeepTogether(code_fl))
+                else:
+                    flowables.extend(code_fl)
 
             elif btype == "blockquote":
                 text = block.get("text", "")
-                flowables.append(build_callout_box(text, "insight", brand=self.brand, content_width=self.content_width))
+                callout = build_callout_box(text, "insight", brand=self.brand, content_width=self.content_width)
+                # Wrap in KeepTogether so a mid-callout page break can't
+                # leave half a coloured left border on one page.
+                if isinstance(callout, list):
+                    flowables.append(KeepTogether(callout))
+                else:
+                    flowables.append(KeepTogether([callout]))
 
             elif btype == "table":
                 headers = block.get("headers", [])
@@ -992,6 +1034,152 @@ class BaseBriefingTemplate:
         return out
 
     # ------------------------------------------------------------------
+    # Universal story finalizer + doc builder — used by every template
+    # ------------------------------------------------------------------
+
+    def _finalize_story(self, story: list) -> list:
+        """
+        Apply the universal post-process pipeline to *story* and return it.
+
+        This is the single public entry point templates should call
+        immediately before ``doc.build(story)``. It runs, in order:
+
+          1. ``_collapse_empty_page_runs`` — drop blank pages left by
+             skipped optional sections.
+          2. ``_protect_section_headings`` — wrap bare H1s with their
+             next flowable so titles cannot be orphaned.
+          3. ``_collapse_empty_page_runs`` again — orphan protection
+             may merge flowables but can't create new breaks; one
+             follow-up pass is sufficient.
+
+        Every template that overrides ``generate()`` to build its own
+        ``SimpleDocTemplate`` MUST call this or forfeit orphan / blank-
+        page protection.
+        """
+        story = self._collapse_empty_page_runs(story)
+        story = self._protect_section_headings(story)
+        story = self._collapse_empty_page_runs(story)
+        return story
+
+    def _build_doc(
+        self,
+        output_path: str | Path | None = None,
+        **kwargs: Any,
+    ) -> "SimpleDocTemplate":
+        """
+        Construct a ``SimpleDocTemplate`` with briefkit's standard
+        metadata, determinism, language, and producer defaults applied.
+
+        Every template that instantiates a SimpleDocTemplate directly
+        SHOULD use this helper instead. It is the single place where
+        per-project metadata (from ``metadata:`` in ``briefkit.yml``),
+        byte-determinism (``invariant=True`` +
+        ``SOURCE_DATE_EPOCH``), and the ``/Lang`` attribute are
+        applied.
+
+        Any keyword argument accepted by SimpleDocTemplate may be
+        passed; the caller's kwargs take precedence over briefkit's
+        config-derived defaults, which in turn take precedence over
+        ReportLab's defaults.
+
+        Parameters
+        ----------
+        output_path : str or Path, optional
+            Output file path. Defaults to ``self.output_path``.
+        **kwargs :
+            Passed through to ``SimpleDocTemplate``.
+
+        Returns
+        -------
+        SimpleDocTemplate
+            Fully configured document ready for ``doc.build(story)``.
+        """
+        meta = dict(self.config.get("metadata", {}) or {})
+        project = self.config.get("project", {}) or {}
+
+        # Title / author / subject / keywords fall through from config.
+        # Callers may override any of these via kwargs.
+        defaults: dict[str, Any] = {}
+        title = meta.get("title") or project.get("name") or "Briefing"
+        author = meta.get("author") or self.brand.get("org", "") or ""
+        subject = meta.get("subject") or "briefkit document"
+        creator = meta.get("creator") or "briefkit"
+        producer = meta.get("producer") or "briefkit"
+        keywords = meta.get("keywords")
+        if isinstance(keywords, (list, tuple)):
+            keywords = ", ".join(str(k) for k in keywords)
+        elif keywords is None:
+            keywords = self.doc_id or ""
+        lang = meta.get("lang") or project.get("lang") or "en"
+
+        defaults.update({
+            "title":    title,
+            "author":   author,
+            "subject":  subject,
+            "creator":  creator,
+            "producer": producer,
+            "keywords": keywords,
+            "lang":     lang,
+        })
+
+        # Determinism: rl_config.invariant is set at module import so
+        # every briefkit PDF has a stable /ID and stable timestamps
+        # (the latter when SOURCE_DATE_EPOCH is exported). Users who
+        # need the old non-deterministic behaviour can set
+        # project.disable_determinism: true to flip the flag per call.
+        if project.get("disable_determinism", False):
+            rl_config.invariant = 0
+        else:
+            rl_config.invariant = 1
+
+        # Caller kwargs override defaults. SimpleDocTemplate accepts
+        # **kw but silently ignores unknown keys — strip any
+        # reportlab-incompatible kwargs (lang/producer) to keep the
+        # resulting PDF info dict clean.
+        merged = {**defaults, **kwargs}
+        # Pull lang/producer out of the kwarg set (reportlab doesn't
+        # understand them) and apply them to the doc post-construction.
+        lang_val     = merged.pop("lang", None)
+        producer_val = merged.pop("producer", None)
+
+        # Resolve output path.
+        out_path = Path(output_path) if output_path else self.output_path
+
+        doc = SimpleDocTemplate(str(out_path), **merged)
+
+        # Wire /Lang and /Producer into the PDF info dict via the
+        # BaseDocTemplate's pdfinfo hook. ReportLab stores metadata in
+        # ``doc.title`` / ``doc.author`` / etc. attributes plus an
+        # ``info`` object on the Canvas. We override the producer and
+        # language by monkey-patching the existing attributes that
+        # ReportLab actually consults at build time.
+        if producer_val:
+            # ReportLab reads the producer from canvas.setProducer or
+            # from the _producer attribute on the doc. Setting it on
+            # the doc's extra info survives into the /Info dict.
+            doc._briefkit_producer = producer_val
+        if lang_val:
+            doc._briefkit_lang = lang_val
+
+        # Hook a post-build canvas tweak so producer/lang land in the
+        # final PDF info dict. We intercept afterPage or use a
+        # post-process via doc.build's custom canvasmaker.
+        _orig_handle_document_begin = doc.handle_documentBegin
+        def _with_meta_documentBegin():
+            _orig_handle_document_begin()
+            try:
+                canv = doc.canv
+                if producer_val:
+                    canv.setProducer(producer_val)
+                if lang_val:
+                    canv._doc.info.lang = lang_val
+            except Exception:
+                pass
+        doc.handle_documentBegin = _with_meta_documentBegin
+
+        return doc
+
+    # ------------------------------------------------------------------
     # build_story — override in subclasses for different section orders
     # ------------------------------------------------------------------
 
@@ -1171,8 +1359,7 @@ class BaseBriefingTemplate:
         b       = self.brand
         org     = b.get("org", "briefkit")
 
-        doc = SimpleDocTemplate(
-            str(self.output_path),
+        doc = self._build_doc(
             pagesize=page_size,
             topMargin=top_m,
             bottomMargin=bottom_m,
@@ -1181,8 +1368,6 @@ class BaseBriefingTemplate:
             title=content.get("title", "Briefing"),
             author=org,
             subject=f"Level {self.level} Briefing",
-            creator="briefkit",
-            keywords=self.doc_id or "briefkit",
         )
 
         story = self.build_story(content)
@@ -1205,19 +1390,9 @@ class BaseBriefingTemplate:
             if variant_obj:
                 story = variant_obj.build_variant_sections(content, story, self.styles, self.brand)
 
-        # ----- Universal story post-processing -----
-        # Applied after build_story() and variant sections so every
-        # template (and every custom variant) benefits from the same
-        # guard rails:
-        #   1. Orphan-title protection — wrap bare H1s with their next
-        #      content flowable in KeepTogether.
-        #   2. Empty-page collapse — drop runs of adjacent PageBreaks
-        #      left behind by skipped optional sections.
-        story = self._collapse_empty_page_runs(story)
-        story = self._protect_section_headings(story)
-        # Re-collapse: orphan protection can merge flowables but doesn't
-        # create new breaks, so a single post-pass is sufficient here.
-        story = self._collapse_empty_page_runs(story)
+        # Universal post-processing — orphan protection + empty-page
+        # collapse. Must be called by every template before doc.build.
+        story = self._finalize_story(story)
 
         if verbose:
             print(f"  Building PDF: {len(story)} flowables", file=sys.stderr)

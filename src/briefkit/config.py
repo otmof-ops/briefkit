@@ -240,6 +240,37 @@ def _validate_config(cfg: dict[str, Any]) -> list[str]:
                 f"doc_ids.{id_key} must be alphanumeric/hyphens only, got: {val!r}"
             )
 
+    # Skip-flag typo detection
+    # ------------------------
+    # Users can set project.skip_<section>: true to suppress optional
+    # sections. A typo like `skip_prefece` silently does nothing because
+    # no template ever queries it. Catch such typos here and suggest the
+    # closest canonical section name.
+    project_cfg = cfg.get("project", {}) or {}
+    if isinstance(project_cfg, dict):
+        try:
+            from briefkit.templates._helpers import SKIPPABLE_SECTIONS
+        except Exception:
+            SKIPPABLE_SECTIONS = ()  # type: ignore
+        from difflib import get_close_matches
+        for key in list(project_cfg.keys()):
+            if not key.startswith("skip_"):
+                continue
+            section = key[len("skip_"):]
+            if section in SKIPPABLE_SECTIONS:
+                continue
+            suggestions = get_close_matches(section, SKIPPABLE_SECTIONS, n=1, cutoff=0.6)
+            if suggestions:
+                errors.append(
+                    f"project.{key}: unknown section {section!r}. "
+                    f"Did you mean 'skip_{suggestions[0]}'?"
+                )
+            else:
+                errors.append(
+                    f"project.{key}: unknown section {section!r}. "
+                    f"Valid sections: {', '.join(SKIPPABLE_SECTIONS[:10])}..."
+                )
+
     return errors
 
 
@@ -270,18 +301,33 @@ def _deep_merge(base: dict, override: dict) -> dict:
 # Project root discovery
 # ---------------------------------------------------------------------------
 
-_ROOT_MARKERS = ("briefkit.yml", "briefkit.yaml", ".briefkit", "pyproject.toml")
+# briefkit-specific markers only. pyproject.toml was removed in 2026-04
+# because it made ANY Python project look like a briefkit root, silently
+# substituting defaults instead of warning "no briefkit.yml found".
+_ROOT_MARKERS = ("briefkit.yml", "briefkit.yaml", ".briefkit")
 
 
 def find_project_root(start_path: str | Path | None = None) -> Path | None:
     """
     Walk up the directory tree from *start_path* (defaults to CWD) looking
-    for any of: briefkit.yml, briefkit.yaml, .briefkit/, pyproject.toml.
+    for any of: briefkit.yml, briefkit.yaml, .briefkit/.
 
     Returns the first ancestor that contains a marker, or None if not found.
     """
     key = str(Path(start_path).resolve()) if start_path else None
     return _find_project_root_cached(key)
+
+
+def clear_project_root_cache() -> None:
+    """
+    Clear the cached project-root lookups.
+
+    Call this when a ``briefkit.yml`` has been created, moved, or
+    deleted during the lifetime of a long-running process (tests,
+    watch mode, IDE integrations). Without clearing, the process will
+    keep returning the stale root.
+    """
+    _find_project_root_cached.cache_clear()
 
 
 @functools.lru_cache(maxsize=128)

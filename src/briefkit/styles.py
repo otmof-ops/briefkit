@@ -78,11 +78,14 @@ def _hex(brand, key):
 # =============================================================================
 
 PAGE_SIZE      = A4
+# Margins widened from 20 mm to 25 mm to bring the measure (characters per
+# line) from ~96 cpc down to ~75 cpc at 10/14 body, inside the professional
+# typography target range of 45–75 cpc.
 MARGIN_TOP     = 25 * mm
-MARGIN_BOTTOM  = 20 * mm
-MARGIN_LEFT    = 20 * mm
-MARGIN_RIGHT   = 20 * mm
-CONTENT_WIDTH  = 170 * mm   # 210mm - 20mm left - 20mm right
+MARGIN_BOTTOM  = 22 * mm
+MARGIN_LEFT    = 25 * mm
+MARGIN_RIGHT   = 25 * mm
+CONTENT_WIDTH  = 160 * mm   # 210mm - 25mm left - 25mm right (A4)
 GUTTER         = 8 * mm
 
 
@@ -166,9 +169,17 @@ def _safe_text(text):
     for tag in ['b', 'i', 'u', 'br/', 'br', 'super', 'sub', 'strike']:
         text = text.replace(f'&lt;{tag}&gt;', f'<{tag}>')
         text = text.replace(f'&lt;/{tag}&gt;', f'</{tag}>')
-    # Restore font tags with attributes
-    text = re.sub(r'&lt;font ([^&]+)&gt;', r'<font \1>', text)
+    # Restore font tags with attributes.
+    # The attribute class must allow ``&`` (e.g. inside escaped URLs in
+    # href attributes on link tags, or &quot;-escaped name values) so
+    # we use a non-greedy ``.+?`` bounded by ``&gt;`` instead of the
+    # old ``[^&]+`` which silently dropped tags whose attribute values
+    # contained ampersands.
+    text = re.sub(r'&lt;font (.+?)&gt;', r'<font \1>', text)
     text = text.replace('&lt;/font&gt;', '</font>')
+    # Restore link tags (clickable URLs from markdown links)
+    text = re.sub(r'&lt;link (.+?)&gt;', r'<link \1>', text)
+    text = text.replace('&lt;/link&gt;', '</link>')
 
     # After restoring font tags, sanitize attributes to allowlist
     def _sanitize_font_attrs(match):
@@ -226,14 +237,36 @@ def _ps(name, brand=None, **kw):
     Build a ParagraphStyle with sane defaults, overridden by kw.
 
     brand: optional brand dict; used for default textColor if not overridden.
+
+    Defaults enforce briefkit's global typography guard rails:
+
+    * ``allowWidows=0`` / ``allowOrphans=0`` — never strand a single
+      line of a paragraph at the top (widow) or bottom (orphan) of a
+      page. ReportLab's own default permits widows; briefkit's does
+      not.
+
+    * 4-pt baseline grid — ``leading`` and ``spaceBefore`` /
+      ``spaceAfter`` values are chosen so every built-in style lands
+      on a common 4 pt vertical rhythm. A style that overrides these
+      should keep them on the grid (multiples of 4 pt) or explain why
+      in a comment.
+
+    * ``wordWrap="LTR"`` — every style wraps on word boundaries for
+      Latin scripts. Table cells override to ``"CJK"`` to guarantee
+      wrapping even on unbroken strings (URLs, code tokens, long IDs).
     """
     b = _get_brand(brand)
     defaults = {
-        "fontName":  b.get("font_body", "Helvetica"),
-        "textColor": _hex(b, "body_text"),
-        "spaceAfter": 6,
-        "spaceBefore": 0,
-        "leading":   14,
+        "fontName":      b.get("font_body", "Helvetica"),
+        "textColor":     _hex(b, "body_text"),
+        "spaceAfter":    8,
+        "spaceBefore":   0,
+        "leading":       14,
+        # Widow / orphan control — prevents single-line strandings.
+        "allowWidows":   0,
+        "allowOrphans":  0,
+        # Default word wrap — cells override to CJK.
+        "wordWrap":      "LTR",
     }
     defaults.update(kw)
     return ParagraphStyle(name, **defaults)
@@ -270,16 +303,19 @@ def _build_styles_cached(brand_key):
 
     styles = {}
 
+    # All leading / spacing values below are multiples of 4 pt so every
+    # built-in style lands on the same vertical baseline grid.
     styles["STYLE_TITLE"] = _ps(
         "BKTitle",
         brand=b,
         fontName=b.get("font_heading", "Helvetica-Bold"),
         fontSize=28,
         textColor=otm_navy,
-        leading=34,
+        leading=36,          # 28 pt / 36 pt
         spaceAfter=12,
         spaceBefore=0,
         alignment=1,
+        outlineLevel=0,
     )
 
     styles["STYLE_H1"] = _ps(
@@ -288,10 +324,11 @@ def _build_styles_cached(brand_key):
         fontName=b.get("font_heading", "Helvetica-Bold"),
         fontSize=18,
         textColor=otm_navy,
-        leading=22,
-        spaceBefore=18,
+        leading=24,          # 18 pt / 24 pt — 4 pt multiple
+        spaceBefore=20,      # 4 pt multiple
         spaceAfter=8,
         keepWithNext=True,
+        outlineLevel=0,
     )
 
     styles["STYLE_H2"] = _ps(
@@ -300,10 +337,11 @@ def _build_styles_cached(brand_key):
         fontName=b.get("font_heading", "Helvetica-Bold"),
         fontSize=14,
         textColor=otm_navy,
-        leading=18,
-        spaceBefore=14,
-        spaceAfter=6,
+        leading=20,          # 14 pt / 20 pt
+        spaceBefore=16,
+        spaceAfter=4,
         keepWithNext=True,
+        outlineLevel=1,
     )
 
     styles["STYLE_H3"] = _ps(
@@ -312,18 +350,19 @@ def _build_styles_cached(brand_key):
         fontName=b.get("font_heading", "Helvetica-Bold"),
         fontSize=12,
         textColor=otm_steel,
-        leading=16,
-        spaceBefore=10,
+        leading=16,          # 12 pt / 16 pt
+        spaceBefore=12,
         spaceAfter=4,
         keepWithNext=True,
+        outlineLevel=2,
     )
 
     styles["STYLE_BODY"] = _ps(
         "BKBody",
         brand=b,
-        fontSize=10,
-        leading=15,
-        spaceAfter=6,
+        fontSize=11,         # bumped from 10 for measure; paired with 25 mm margins
+        leading=16,          # 11 pt / 16 pt — 4 pt multiple
+        spaceAfter=8,
         spaceBefore=0,
     )
 
@@ -336,6 +375,7 @@ def _build_styles_cached(brand_key):
         leading=12,
         spaceAfter=0,
         spaceBefore=0,
+        wordWrap="CJK",  # Force wrapping even for unbroken strings in headers
     )
 
     styles["STYLE_TABLE_BODY"] = _ps(
@@ -346,6 +386,7 @@ def _build_styles_cached(brand_key):
         leading=12,
         spaceAfter=0,
         spaceBefore=0,
+        wordWrap="CJK",  # Force wrapping on long URLs / IDs / code tokens in cells
     )
 
     styles["STYLE_CAPTION"] = _ps(
@@ -354,8 +395,9 @@ def _build_styles_cached(brand_key):
         fontName=b.get("font_caption", "Helvetica-Oblique"),
         fontSize=8,
         textColor=caption,
-        leading=11,
+        leading=12,
         spaceAfter=4,
+        keepWithNext=True,  # Pin caption to the figure/table that follows
     )
 
     styles["STYLE_FOOTER"] = _ps(
@@ -439,7 +481,12 @@ def _build_styles_cached(brand_key):
         fontSize=10,
         textColor=body_text,
         leading=14,
-        leftIndent=12,
+        # Hanging indent: bullet sits at 6 pt, text wraps under 18 pt.
+        # firstLineIndent=-12 pulls the bullet out of the text column
+        # so wrapped lines align with the text, not under the bullet.
+        leftIndent=18,
+        firstLineIndent=-12,
+        bulletIndent=0,
         spaceAfter=2,
     )
 

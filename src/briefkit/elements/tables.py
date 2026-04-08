@@ -81,18 +81,42 @@ def build_data_table(headers, rows, title=None, brand=None, content_width=None, 
             _safe_para(str(cell), styles["STYLE_TABLE_BODY"]) for cell in padded
         ])
 
-    # Content-aware column widths based on header text
+    # Content-aware column widths based on both headers and the widest
+    # body cell per column (sampled from the first 50 rows for speed).
     heading_font = b.get("font_heading", "Helvetica-Bold")
-    raw = [sw(str(h), heading_font, 9) + 16 for h in headers]
-    total_raw = sum(raw) or 1
-    if total_raw > cw:
-        col_widths = [w * cw / total_raw for w in raw]
-    else:
-        extra = cw - total_raw
-        col_widths = [w + extra * (w / total_raw) for w in raw]
-    col_widths = [max(w, 15 * mm) for w in col_widths]
+    body_font    = b.get("font_body", "Helvetica")
+    raw: list[float] = []
+    for i, h in enumerate(headers):
+        w_h = sw(str(h), heading_font, 9) + 16
+        w_body = 0.0
+        for row in rows[:50]:
+            if i < len(row):
+                cell_str = str(row[i] if row[i] is not None else "")
+                # Cap the contribution of any single cell at ~40 % of cw
+                # so a pathological 500-char cell doesn't starve other
+                # columns.
+                w_cell = min(sw(cell_str, body_font, 9) + 10, cw * 0.4)
+                if w_cell > w_body:
+                    w_body = w_cell
+        raw.append(max(w_h, w_body))
 
-    t = Table(table_data, colWidths=col_widths, repeatRows=1)
+    # Clamp FIRST (minimum 15 mm per column) — a previous bug applied the
+    # clamp after rescaling, causing a 12-column table to exceed content
+    # width and clip the right edge.
+    min_w = 15 * mm
+    col_widths = [max(w, min_w) for w in raw]
+
+    # Then scale to content width.
+    total = sum(col_widths) or 1
+    if total > cw:
+        # Still wider than the page — proportional shrink.
+        col_widths = [w * cw / total for w in col_widths]
+    else:
+        # Under-full — distribute slack proportionally.
+        extra = cw - total
+        col_widths = [w + extra * (w / total) for w in col_widths]
+
+    t = Table(table_data, colWidths=col_widths, repeatRows=1, splitByRow=1)
     t.setStyle(TableStyle([
         ("BACKGROUND",    (0, 0), (-1, 0),  hdr_bg),
         ("TEXTCOLOR",     (0, 0), (-1, 0),  white),
@@ -171,7 +195,15 @@ def build_comparison_table(headers, rows, brand=None, content_width=None):
             _safe_para(str(c), styles["STYLE_TABLE_BODY"]) for c in padded
         ])
 
-    t = Table(table_data, colWidths=[col_width] * col_count, repeatRows=1)
+    # Weight the first (label) column ~2× the others for comparison
+    # tables, where the left column is typically a row label.
+    if col_count >= 3:
+        first = cw * 0.28
+        rest  = (cw - first) / (col_count - 1)
+        col_widths = [first] + [rest] * (col_count - 1)
+    else:
+        col_widths = [col_width] * col_count
+    t = Table(table_data, colWidths=col_widths, repeatRows=1, splitByRow=1)
 
     style_commands = [
         ("BACKGROUND",   (0, 0), (-1, 0),  primary),

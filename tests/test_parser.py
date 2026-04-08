@@ -129,10 +129,13 @@ class TestInlineFormatting:
         blocks = parse_markdown("Use `print()` here.")
         assert '<font name="Courier">print()</font>' in blocks[0]["text"]
 
-    def test_link_stripped(self):
+    def test_link_preserved_as_hot_link(self):
+        # Markdown links are now preserved as ReportLab <link> tags so
+        # the URL survives into the PDF and the click target is hot.
         blocks = parse_markdown("See [docs](https://example.com) here.")
         assert "docs" in blocks[0]["text"]
-        assert "https" not in blocks[0]["text"]
+        assert "https://example.com" in blocks[0]["text"]
+        assert "<link" in blocks[0]["text"]
 
 
 class TestMixedContent:

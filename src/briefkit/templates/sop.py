@@ -340,20 +340,17 @@ class SOPTemplate(BaseBriefingTemplate):
         left_m = margins.get("left", 25) * mm
         right_m = margins.get("right", 25) * mm
 
-        doc = SimpleDocTemplate(
-            str(self.output_path),
+        doc = self._build_doc(
             pagesize=letter,
             topMargin=top_m,
             bottomMargin=bottom_m,
             leftMargin=left_m,
             rightMargin=right_m,
-            title=content.get("title", "Standard Operating Procedure"),
-            author=self.brand.get("org", "briefkit"),
             subject="SOP",
-            creator="briefkit",
         )
 
         story = self.build_story(content)
+        story = self._finalize_story(story)
 
         revision_text = f"Revision: {self.doc_id}" if self.doc_id else ""
 

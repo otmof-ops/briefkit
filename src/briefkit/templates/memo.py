@@ -229,20 +229,17 @@ class MemoTemplate(BaseBriefingTemplate):
         pw = letter[0]
         self.content_width = pw - left_m - right_m
 
-        doc = SimpleDocTemplate(
-            str(self.output_path),
+        doc = self._build_doc(
             pagesize=letter,
             topMargin=top_m,
             bottomMargin=bottom_m,
             leftMargin=left_m,
             rightMargin=right_m,
-            title=content.get("title", "Memorandum"),
-            author=self.brand.get("org", "briefkit"),
             subject="Memo",
-            creator="briefkit",
         )
 
         story = self.build_story(content)
+        story = self._finalize_story(story)
 
         # No header/footer — memo is self-contained
         doc.build(

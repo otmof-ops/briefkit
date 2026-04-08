@@ -97,11 +97,29 @@ def build_cover_page(title, subtitle, path, level, date, doc_id="", brand=None, 
     flowables.append(Spacer(1, 30 * mm))
 
     # --- Title (auto-size font for long titles) ---
+    # The loop below computes a shrunk font size so the title fits on
+    # the cover without wrapping. Historically the computed size was
+    # never applied — the Paragraph rendered with the unshrunk STYLE_TITLE
+    # (28 pt) and long titles overflowed the cover. Now we build a
+    # dynamic style and actually use it.
     title_font_size = 28
     while stringWidth(str(title), b.get("font_heading", "Helvetica-Bold"), title_font_size) > cw * 0.85 and title_font_size > 16:
         title_font_size -= 2
 
-    flowables.append(Paragraph(title, styles["STYLE_TITLE"]))
+    if title_font_size == 28:
+        title_style = styles["STYLE_TITLE"]
+    else:
+        title_style = _ps(
+            "BKTitleDyn",
+            brand=b,
+            fontName=b.get("font_heading", "Helvetica-Bold"),
+            fontSize=title_font_size,
+            textColor=_hex(b, "primary"),
+            leading=int(title_font_size * 1.25),
+            alignment=1,
+            spaceAfter=12,
+        )
+    flowables.append(Paragraph(title, title_style))
     flowables.append(Spacer(1, 6 * mm))
 
     # --- Subtitle ---

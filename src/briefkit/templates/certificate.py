@@ -233,20 +233,17 @@ class CertificateTemplate(BaseBriefingTemplate):
         # Recompute content width for landscape
         self.content_width = page_size[0] - left_m - right_m
 
-        doc = SimpleDocTemplate(
-            str(self.output_path),
+        doc = self._build_doc(
             pagesize=page_size,
             topMargin=top_m,
             bottomMargin=bottom_m,
             leftMargin=left_m,
             rightMargin=right_m,
-            title=content.get("title", "Certificate"),
-            author=self.brand.get("org", "briefkit"),
             subject="Certificate",
-            creator="briefkit",
         )
 
         story = self.build_story(content)
+        story = self._finalize_story(story)
 
         primary_color = HexColor(self.brand.get("primary", "#1B2A4A"))
         accent_color = HexColor(

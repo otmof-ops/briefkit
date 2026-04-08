@@ -418,21 +418,16 @@ class GuideTemplate(BaseBriefingTemplate):
         subject = guide_cfg.get("subject", f"Technical guide: {title}")
         author = guide_cfg.get("author", b.get("org", "Claude Code"))
 
-        doc = SimpleDocTemplate(
-            str(self.output_path),
+        doc = self._build_doc(
             pagesize=page_size,
             topMargin=top_m,
             bottomMargin=bottom_m,
             leftMargin=left_m,
             rightMargin=right_m,
-            title=title,
-            author=author,
-            subject=subject,
-            creator="(unspecified)",
-            keywords="",
         )
 
         story = self.build_story(content)
+        story = self._finalize_story(story)
 
         def _cover_page(canvas, doc_inner):
             """Draw cover — exact match of System Overclocking Guide page 1."""

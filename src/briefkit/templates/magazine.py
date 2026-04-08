@@ -407,21 +407,16 @@ class MagazineTemplate(BaseBriefingTemplate):
         cfg_author = mag_cfg.get("author", "Research Compilation")
         cfg_subject = mag_cfg.get("subject", title)
 
-        doc = SimpleDocTemplate(
-            str(self.output_path),
+        doc = self._build_doc(
             pagesize=page_size,
             topMargin=top_m,
             bottomMargin=bottom_m,
             leftMargin=left_m,
             rightMargin=right_m,
-            title=title,
-            author=cfg_author,
-            subject=cfg_subject,
-            creator="(unspecified)",
-            keywords="",
         )
 
         story = self.build_story(content)
+        story = self._finalize_story(story)
 
         # Select cover palette
         if is_dark:

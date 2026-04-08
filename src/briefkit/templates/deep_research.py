@@ -331,21 +331,16 @@ class DeepResearchTemplate(BaseBriefingTemplate):
         cfg_subject = dr_cfg.get("subject", "(unspecified)")
         cfg_title = dr_cfg.get("pdf_title", "(anonymous)")
 
-        doc = SimpleDocTemplate(
-            str(self.output_path),
+        doc = self._build_doc(
             pagesize=page_size,
             topMargin=top_m,
             bottomMargin=bottom_m,
             leftMargin=left_m,
             rightMargin=right_m,
-            title=cfg_title,
-            author=cfg_author,
-            subject=cfg_subject,
-            creator="(unspecified)",
-            keywords="",
         )
 
         story = self.build_story(content)
+        story = self._finalize_story(story)
 
         def _cover_page(canvas, doc_inner):
             """Draw cover — exact match of AI Simulations page 1."""

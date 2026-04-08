@@ -404,14 +404,20 @@ class NovelTemplate(BookTemplate):
         story.append(PageBreak())
 
         # Pre-build sections
-        preface_flowables = self._build_preface(content)
+        # Preface can be suppressed via project.skip_preface: true
+        skip_preface = bool(
+            self.config.get("project", {}).get("skip_preface", False)
+        )
+        preface_flowables = [] if skip_preface else self._build_preface(content)
         chapters = self._build_chapters(content)
         glossary_flowables = self._build_glossary(content)
 
         # --- TOC ---
         story.append(_safe_para("Contents", self.styles["STYLE_H1"]))
         story.append(Spacer(1, 2 * mm))
-        toc_entries = [(1, "Preface")]
+        toc_entries = []
+        if preface_flowables:
+            toc_entries.append((1, "Preface"))
         for chapter_title, _ in chapters:
             toc_entries.append((1, chapter_title))
         if glossary_flowables:
@@ -420,8 +426,9 @@ class NovelTemplate(BookTemplate):
         story.append(PageBreak())
 
         # --- Preface ---
-        story.extend(preface_flowables)
-        story.append(PageBreak())
+        if preface_flowables:
+            story.extend(preface_flowables)
+            story.append(PageBreak())
 
         # --- Chapters (continuous flow, no forced page breaks) ---
         for idx, (chapter_title, chapter_flowables) in enumerate(chapters):

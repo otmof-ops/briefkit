@@ -431,6 +431,7 @@ class NovelTemplate(BookTemplate):
             story.append(PageBreak())
 
         # --- Chapters (continuous flow, no forced page breaks) ---
+        prev_title = None
         for idx, (chapter_title, chapter_flowables) in enumerate(chapters):
             if hasattr(self, '_hf_state'):
                 self._hf_state["section"] = chapter_title
@@ -438,8 +439,15 @@ class NovelTemplate(BookTemplate):
             # First chapter: no separator needed (starts after preface)
             # Subsequent chapters: conditional page break — only if less
             # than 80mm remains on the page. Otherwise, visual separator.
+            # Exception: always force a page break after a volume preface
+            # (titles starting with "Before Volume") so the first chapter
+            # of the volume begins on its own page.
             if idx > 0:
-                story.append(CondPageBreak(80 * mm))
+                if prev_title and prev_title.startswith("Before Volume"):
+                    story.append(PageBreak())
+                else:
+                    story.append(CondPageBreak(80 * mm))
+            prev_title = chapter_title
 
             # Prevent orphaned chapter titles: wrap the H1 with its first
             # content flowable in a KeepTogether so a large opening block

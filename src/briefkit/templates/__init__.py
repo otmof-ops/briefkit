@@ -99,6 +99,7 @@ from briefkit.templates.report import ReportTemplate
 from briefkit.templates.resume import ResumeTemplate
 from briefkit.templates.sop import SOPTemplate
 from briefkit.templates.whitepaper import WhitepaperTemplate
+from briefkit.templates.witness import WitnessTemplate
 
 _REGISTRY: dict[str, type] = {
     "briefing":  BriefingTemplate,
@@ -129,6 +130,7 @@ _REGISTRY: dict[str, type] = {
     "guide":        GuideTemplate,
     "deep-research": DeepResearchTemplate,
     "magazine":     MagazineTemplate,
+    "witness":      WitnessTemplate,
 }
 
 
@@ -198,6 +200,7 @@ __all__ = [
     "GuideTemplate",
     "DeepResearchTemplate",
     "MagazineTemplate",
+    "WitnessTemplate",
     "get_template",
     "list_templates",
 ]

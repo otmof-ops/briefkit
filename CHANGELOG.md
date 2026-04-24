@@ -6,6 +6,25 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- 23 new templates brought the registry from 6 to 29 total: novel, letter, contract, proposal, policy, whitepaper, sop, resume, magazine, memo, invoice, quote, certificate, minutes, datasheet, evaluation, newsletter, deck, playbook, guide, deep-research, register, witness.
+  - Most recent: **witness** — legal witness statement template (formal header, paragraph-numbered body, execution block; no briefing chrome).
+- Universal template guard rails: skip flags, orphan protection, empty-page collapse.
+- Novel template: `skip_preface` option; forced page break after volume preface; orphaned chapter-title fix.
+- 10 additional colour presets (total 20): crimson, slate, royal, sunset, mono, midnight, and others.
+
+### Changed
+
+- Template registry auto-discovery now covers all 29 templates.
+- Novel and book template typography reflow for long-form narrative flow.
+
+### Docs
+
+- `README.md` template count updated (28 → 29) with `briefkit templates` hint.
+- `docs/templates-guide.md` summary table expanded from 10 to all 29 templates.
+- `docs/templates.md` redirects to `templates-guide.md` for the full catalogue.
+
 ## [1.0.0] — 2026-03-31
 
 ### Added

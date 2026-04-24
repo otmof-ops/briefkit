@@ -69,7 +69,7 @@ Unlike general-purpose converters like Pandoc or WeasyPrint, BriefKit is purpose
 
 ## Features
 
-- **28 built-in templates** — briefing, report, book, manual, academic, minimal, letter, contract, proposal, policy, and 18 more
+- **29 built-in templates** — briefing, report, book, manual, academic, minimal, novel, letter, contract, proposal, policy, witness, and 17 more (run `briefkit templates` for the full list)
 - **12 domain-aware variants** — AI/ML, legal, medical, engineering, research, API, gaming, finance, species, historical, hardware, religion — auto-detected or configured
 - **20 color presets** — switch the entire look with one line
 - **Auto-extracted bibliography** — 6 citation formats + legislation + RFCs + case law
@@ -292,7 +292,7 @@ briefkit presets                List color presets with hex values
 ### Key Flags
 
 ```
---template / -t    Override template (briefing, book, report, manual, academic, minimal)
+--template / -t    Override template (any of 29 — see `briefkit templates` for the full list)
 --preset / -p      Override color preset (navy, charcoal, ocean, etc.)
 --variant / -v     Force a specific variant (aiml, legal, medical, etc.)
 --output / -o      Output path override

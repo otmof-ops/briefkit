@@ -1,0 +1,5 @@
+# Fonts downloaded by install-fonts.sh (not redistributed)
+fonts/
+# Generated PDFs from samples
+sample/**/*.pdf
+*.pdf

@@ -19,6 +19,11 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Template registry auto-discovery now covers all 29 templates.
 - Novel and book template typography reflow for long-form narrative flow.
 
+### Fixed
+
+- **Callouts no longer abort a whole document on wrapped emphasis.** `build_callout_box` splits its body on newlines and makes each line a separate `Paragraph`. Markdown emphasis is converted to ReportLab tags upstream (`**x**` → `<b>x</b>`), so a bold or italic span crossing a line break was torn in half — one line receiving `<b>`, the next `</b>` — and raw `Paragraph` raised `parse ended with 1 unclosed tags` at layout time, failing the entire build rather than degrading one callout. Callout bodies, pull-quote text and pull-quote attribution now route through the existing `_safe_para` sanitizer, which closes open tags and escapes bare `<`, `>` and `&`. Any source document with emphasis wrapping inside a blockquote was affected.
+- New `tests/test_callout.py` covers the callout module, which previously had none. The tests force a layout pass (`wrap()` plus a real `doc.build()`) because `Paragraph` defers parsing until layout — assertions on construction alone pass even with the bug present.
+
 ### Docs
 
 - `README.md` template count updated (28 → 29) with `briefkit templates` hint.

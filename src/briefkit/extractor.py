@@ -171,6 +171,47 @@ def _strip_inline(s: str) -> str:
 # Markdown parser
 # ---------------------------------------------------------------------------
 
+def markdown_to_plain(s: str) -> str:
+    """
+    Reduce Markdown to plain prose.
+
+    For derived text — abstracts, recommendations, keywords — which is
+    assembled by slicing raw source and is rendered as ordinary prose rather
+    than parsed into blocks. Without this, `**Taxpayer**` and `[label](url)`
+    reach the page verbatim.
+
+    Unlike ``_strip_inline`` this emits no markup at all: emphasis is removed
+    rather than converted, because the result is a summary sentence, not a
+    formatted block.
+    """
+    if not s:
+        return ""
+    s = _RE_INLINE_CODE.sub(r"\1", s)
+    s = _RE_MD_LINK.sub(r"\1", s)
+    s = _RE_STRIKETHROUGH.sub(r"\1", s)
+    s = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", s)          # images
+    s = re.sub(r"\*{2,3}(.+?)\*{2,3}", r"\1", s)        # bold / bold-italic
+    s = re.sub(r"_{2,3}(.+?)_{2,3}", r"\1", s)
+    s = re.sub(r"(?<![\w*])\*(?!\s)(.+?)(?<!\s)\*(?![\w*])", r"\1", s)   # italic
+    s = re.sub(r"(?<![\w_])_(?!\s)(.+?)(?<!\s)_(?![\w_])", r"\1", s)
+    s = re.sub(r"^\s{0,3}#{1,6}\s+", "", s, flags=re.MULTILINE)          # headings
+    s = re.sub(r"^\s{0,3}>\s?", "", s, flags=re.MULTILINE)               # quotes
+    s = re.sub(r"^\s{0,3}([-*+]|\d+[.)])\s+", "", s, flags=re.MULTILINE)  # bullets
+    s = re.sub(r"^\s*\|.*\|\s*$", "", s, flags=re.MULTILINE)             # table rows
+    s = re.sub(r"^\s*[-=]{3,}\s*$", "", s, flags=re.MULTILINE)           # rules
+    return re.sub(r"\s+", " ", s).strip()
+
+
+def truncate_words(s: str, limit: int) -> str:
+    """Cut to at most `limit` characters on a word boundary, not mid-word."""
+    s = s.strip()
+    if len(s) <= limit:
+        return s
+    cut = s[:limit]
+    sp = cut.rfind(" ")
+    return (cut[:sp] if sp > limit // 2 else cut).rstrip(" ,;:-") + "…"
+
+
 def parse_markdown(text: str) -> list[dict]:
     """
     Parse a Markdown string into a list of content block dicts.

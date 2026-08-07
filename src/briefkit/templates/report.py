@@ -22,7 +22,7 @@ import re
 from reportlab.lib.units import mm
 from reportlab.platypus import PageBreak, Paragraph, Spacer
 
-from briefkit.extractor import parse_markdown
+from briefkit.extractor import markdown_to_plain, parse_markdown, truncate_words
 from briefkit.generator import (
     BaseBriefingTemplate,
     build_callout_box,
@@ -178,16 +178,19 @@ class ReportTemplate(BaseBriefingTemplate):
         if not abstract_parts and orientation:
             m = re.search(r'^(?!#)(.{60,})', orientation, re.MULTILINE)
             if m:
-                abstract_parts.append(m.group(1).strip())
+                abstract_parts.append(markdown_to_plain(m.group(1)))
 
         # Extract one key finding per subsystem (first meaningful sentence)
         findings: list[str] = []
         for sub in subsystems[:4]:
-            raw = sub.get("content", "").replace("\n", " ")
+            # Reduce to plain prose first — this text is rendered as a
+            # sentence, so Markdown emphasis would otherwise reach the page
+            # verbatim as **bold**.
+            raw = markdown_to_plain(sub.get("content", ""))
             for s in re.split(r'(?<=[.!?])\s+', raw):
-                s = s.strip().lstrip("#- *>`|")
-                if len(s) > 40 and not s.startswith("```"):
-                    findings.append(s[:150])
+                s = s.strip()
+                if len(s) > 40:
+                    findings.append(truncate_words(s, 150))
                     break
 
         if findings:
@@ -407,7 +410,7 @@ class ReportTemplate(BaseBriefingTemplate):
 
         recommendations: list[str] = []
         for sub in content.get("subsystems", []):
-            raw = sub.get("content", "")
+            raw = markdown_to_plain(sub.get("content", ""))
             for m in rec_pattern.finditer(raw):
                 rec = m.group(1).strip()
                 if 20 < len(rec) < 300:
@@ -416,7 +419,7 @@ class ReportTemplate(BaseBriefingTemplate):
                 break
 
         # Also scan overview
-        for m in rec_pattern.finditer(content.get("overview", "")):
+        for m in rec_pattern.finditer(markdown_to_plain(content.get("overview", ""))):
             rec = m.group(1).strip()
             if 20 < len(rec) < 300:
                 recommendations.append(("Overview", rec))

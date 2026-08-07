@@ -9,7 +9,7 @@ from reportlab.lib.colors import HexColor
 from reportlab.lib.units import mm
 from reportlab.platypus import Paragraph, Spacer, Table, TableStyle
 
-from briefkit.styles import CONTENT_WIDTH, _get_brand, _hex, _ps, build_styles
+from briefkit.styles import CONTENT_WIDTH, _get_brand, _hex, _ps, _safe_para, build_styles
 
 
 def build_callout_box(text, box_type="insight", brand=None, content_width=None):
@@ -79,7 +79,11 @@ def build_callout_box(text, box_type="insight", brand=None, content_width=None):
         if stripped:
             if stripped.startswith("- ") or stripped.startswith("\u2022 "):
                 stripped = "\u2022 " + stripped.lstrip("-\u2022 ")
-            paragraphs.append(Paragraph(stripped, content_style))
+            # Callout bodies come from arbitrary markdown blockquotes, so the
+            # text may contain bare < or & (e.g. "< 2 km", "<$20m", "R&D").
+            # ReportLab's paraparser reads those as markup and raises
+            # "parse ended with N unclosed tags", so sanitize before building.
+            paragraphs.append(_safe_para(stripped, content_style))
         else:
             paragraphs.append(Spacer(1, 3))
 
@@ -169,7 +173,7 @@ def build_pull_quote(text, attribution="", brand=None, content_width=None):
     flowables.append(rule_wrapper)
     flowables.append(Spacer(1, 4 * mm))
 
-    flowables.append(Paragraph(f"\u201c{text}\u201d", pull_style))
+    flowables.append(_safe_para(f"\u201c{text}\u201d", pull_style))
 
     if attribution:
         attr_style = _ps(
@@ -177,7 +181,7 @@ def build_pull_quote(text, attribution="", brand=None, content_width=None):
             fontSize=9, textColor=caption,
             alignment=1, fontName=b.get("font_caption", "Helvetica-Oblique"),
         )
-        flowables.append(Paragraph(f"\u2014 {attribution}", attr_style))
+        flowables.append(_safe_para(f"\u2014 {attribution}", attr_style))
 
     flowables.append(Spacer(1, 4 * mm))
     flowables.append(rule_wrapper)

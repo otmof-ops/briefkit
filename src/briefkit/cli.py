@@ -801,7 +801,7 @@ def _build_parser() -> argparse.ArgumentParser:
     gen_flags.add_argument(
         "--variant", "-v",
         metavar="NAME",
-        help="Output variant (e.g. aiml, legal, medical, engineering, hardware)",
+        help="Output variant (e.g. aiml, legal, medical, engineering, hardware). Use 'none' to suppress variant sections entirely; omit to auto-detect.",
     )
     gen_flags.add_argument(
         "--output", "-o",

@@ -186,7 +186,19 @@ class ReportTemplate(BaseBriefingTemplate):
             # Reduce to plain prose first — this text is rendered as a
             # sentence, so Markdown emphasis would otherwise reach the page
             # verbatim as **bold**.
-            raw = markdown_to_plain(sub.get("content", ""))
+            # Keep only lines that are actually prose before flattening.
+            # Documents commonly open with a title and a metadata block
+            # ("Taxpayer  Jay Taylor", "Income year  1 July 2025 ...").
+            # Those lines are long but never terminate, so once whitespace is
+            # collapsed they merge into the first real sentence and surface as
+            # a "key finding". Requiring terminal punctuation per line drops
+            # headings, frontmatter, table rows and bare list labels.
+            prose = [
+                ln.strip() for ln in sub.get("content", "").splitlines()
+                if ln.strip().endswith((".", "!", "?"))
+                and not ln.lstrip().startswith(("|", "#", ">", "```"))
+            ]
+            raw = markdown_to_plain(" ".join(prose))
             for s in re.split(r'(?<=[.!?])\s+', raw):
                 s = s.strip()
                 if len(s) > 40:
@@ -369,7 +381,8 @@ class ReportTemplate(BaseBriefingTemplate):
             flowables.append(Spacer(1, 1.5 * mm))
             for name, text in insights[:6]:
                 flowables.append(build_callout_box(
-                    f"From {name}: {text[:300]}", "insight", brand=self.brand, content_width=self.content_width
+                    f"From {name}: {truncate_words(text, 300)}", "insight", brand=self.brand,
+                    content_width=self.content_width, already_escaped=True
                 ))
 
         # All-table summary for cross-section comparisons
@@ -386,7 +399,8 @@ class ReportTemplate(BaseBriefingTemplate):
             for name, tbl in all_tables[:3]:
                 flowables.append(Paragraph(name, self.styles["STYLE_H3"]))
                 flowables.extend(build_data_table(
-                    tbl["headers"], tbl["rows"], brand=self.brand, content_width=self.content_width
+                    tbl["headers"], tbl["rows"], brand=self.brand,
+                    content_width=self.content_width, already_escaped=True
                 ))
                 flowables.append(Spacer(1, 1.5 * mm))
 

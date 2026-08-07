@@ -19,7 +19,16 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Template registry auto-discovery now covers all 29 templates.
 - Novel and book template typography reflow for long-form narrative flow.
 
+### Added
+
+- **`--variant none`** suppresses variant sections entirely. Previously the only way to avoid an unwanted variant was to name a different one, so a document matching no variant still received whichever one keyword-matched — a tax submission picking up the finance variant's investment-advice disclaimer and risk register, for instance. Omitting `--variant` still auto-detects.
+
 ### Fixed
+
+- **XML entities no longer double-escape.** `extractor._strip_inline` escapes `&`, `<` and `>` and emits real `<b>` / `<i>` tags; `_safe_text` then escaped the result a second time, so `&amp;` became `&amp;amp;` and reached the page as literal text — "Pine Accounting &amp; Tax Services", "taxable income &lt; $250,000". `_safe_text` and `_safe_para` now take `already_escaped`, and `render_blocks` sets it for the block types the extractor pre-escapes (heading, paragraph, list_item, table, blockquote). Code blocks are unaffected, being deliberately raw. `build_data_table` and `build_callout_box` thread the same flag; table headers were escaping three times.
+- **Markdown no longer leaks into generated prose.** The Abstract and Recommendations sections slice raw source and render it as sentences, so `**Taxpayer**` and `[label](url)` appeared verbatim. Both now pass through a new `extractor.markdown_to_plain()`, which strips emphasis rather than converting it.
+- **Excerpts no longer break mid-word.** Derived text was cut with a bare `[:150]`, producing endings like `**Ac;`. New `extractor.truncate_words()` cuts on a word boundary and drops a trailing function word, so an excerpt does not end on a dangling "of…" or "the…".
+- **Abstract key-findings no longer quote document frontmatter.** The heuristic took the first 40-character run from each source; documents commonly open with a metadata block ("Taxpayer  Jay Taylor", "Income year  1 July 2025 …") whose lines are long but never terminate, so they merged into the first real sentence once whitespace was collapsed. Extraction now considers only lines that end in terminal punctuation.
 
 - **Long documents no longer lose their tail silently.** A source document past roughly six pages rendered its opening sections and then simply stopped, with nothing in the PDF or on stderr to say the rest had been dropped. A 41,000-word set of technical memoranda emitted 18,300 words across 50 pages; the same input now emits 40,700 across 105. Two layers were responsible:
   - `content.max_words_per_section` defaulted to **3000**. `extractor.py` already carried a 12000 fallback with a comment explaining the raise, but the value declared in `DEFAULTS` always won, so the fallback never applied. The default is now **12000**, and **0 means unlimited**.

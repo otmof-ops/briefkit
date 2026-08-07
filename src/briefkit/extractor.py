@@ -202,14 +202,31 @@ def markdown_to_plain(s: str) -> str:
     return re.sub(r"\s+", " ", s).strip()
 
 
+_DANGLING = {
+    "a", "an", "the", "of", "to", "in", "on", "at", "by", "for", "from", "with",
+    "and", "or", "but", "as", "is", "was", "are", "were", "be", "that", "which",
+    "if", "it", "its", "this", "these", "those", "than", "then", "so", "into",
+}
+
+
 def truncate_words(s: str, limit: int) -> str:
-    """Cut to at most `limit` characters on a word boundary, not mid-word."""
+    """
+    Cut to at most `limit` characters on a word boundary, never mid-word.
+
+    Trailing function words are dropped so an excerpt does not end on a
+    dangling "of…" or "the…".
+    """
     s = s.strip()
     if len(s) <= limit:
         return s
     cut = s[:limit]
     sp = cut.rfind(" ")
-    return (cut[:sp] if sp > limit // 2 else cut).rstrip(" ,;:-") + "…"
+    if sp > limit // 2:
+        cut = cut[:sp]
+    words = cut.split()
+    while len(words) > 3 and words[-1].strip(".,;:-").lower() in _DANGLING:
+        words.pop()
+    return " ".join(words).rstrip(" ,;:-") + "…"
 
 
 def parse_markdown(text: str) -> list[dict]:

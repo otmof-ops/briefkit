@@ -100,3 +100,61 @@ class TestBodyBlockLimit:
 
         _, dropped = tpl.render_body_blocks(blocks, limit=5)
         assert dropped > 0, "a cap that bites must report the loss"
+
+
+class TestVariantOptOut:
+    """`--variant none` must suppress variant sections entirely.
+
+    Previously the only way to avoid an unwanted variant was to name a
+    different one, so a document matching no variant still received whichever
+    keyword-matched — a tax pack picking up the finance variant's
+    investment-advice disclaimer, for instance.
+    """
+
+    @pytest.fixture
+    def finance_ish(self, tmp_path):
+        """Content that reliably trips the finance variant's keywords."""
+        (tmp_path / "README.md").write_text(
+            "# Quarterly Review\n\nRevenue, EBITDA, cash flow, portfolio risk "
+            "exposure, investment return and balance sheet analysis.\n",
+            encoding="utf-8",
+        )
+        (tmp_path / "01-summary.md").write_text(
+            "# Summary\n\nRevenue and EBITDA rose. Portfolio risk exposure fell. "
+            "Investment return improved against the balance sheet forecast.\n",
+            encoding="utf-8",
+        )
+        return tmp_path
+
+    def _pdf_text(self, path):
+        import subprocess
+        return subprocess.run(["pdftotext", str(path), "-"],
+                              capture_output=True, text=True).stdout
+
+    def _build(self, src, variant, out_name):
+        from briefkit.config import DEFAULTS
+        from briefkit.templates.report import ReportTemplate
+        import copy
+        cfg = copy.deepcopy(DEFAULTS)
+        cfg["_cli"] = {"variant": variant}
+        out = src / out_name
+        ReportTemplate(src, level=3, config=cfg, output_path=out).generate()
+        return out
+
+    def test_autodetect_adds_a_variant_section(self, finance_ish):
+        out = self._build(finance_ish, None, "auto.pdf")
+        assert out.exists()
+        assert "Variant Sections" in self._pdf_text(out), (
+            "expected auto-detection to inject a variant section"
+        )
+
+    def test_none_suppresses_all_variant_sections(self, finance_ish):
+        out = self._build(finance_ish, "none", "none.pdf")
+        assert out.exists()
+        text = self._pdf_text(out)
+        assert "Variant Sections" not in text
+        assert "Financial Metrics" not in text
+
+    def test_none_is_case_insensitive(self, finance_ish):
+        out = self._build(finance_ish, "NONE", "upper.pdf")
+        assert "Variant Sections" not in self._pdf_text(out)

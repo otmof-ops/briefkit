@@ -1440,9 +1440,17 @@ class BaseBriefingTemplate:
 
         story = self.build_story(content)
 
-        # Apply variant-specific sections if detected
+        # Apply variant-specific sections if detected.
+        #
+        # ``--variant none`` suppresses them entirely. Without an explicit
+        # opt-out the only way to avoid an unwanted variant was to name a
+        # different one, so a document that fits no variant still received
+        # whichever one happened to keyword-match — a tax pack picking up the
+        # finance variant's investment-advice disclaimer, for instance.
         variant_name = self.config.get("_cli", {}).get("variant")
-        if not variant_name:
+        if isinstance(variant_name, str) and variant_name.strip().lower() == "none":
+            variant_name = None
+        elif not variant_name:
             # Auto-detect from content text
             parts = [content.get("overview", ""), content.get("title", "")]
             parts.extend(sub.get("content", "") for sub in content.get("subsystems", []))

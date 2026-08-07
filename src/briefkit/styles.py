@@ -144,7 +144,7 @@ def get_layout(page_size=None):
 # TEXT UTILITIES
 # =============================================================================
 
-def _safe_text(text):
+def _safe_text(text, already_escaped: bool = False):
     """Sanitize text for ReportLab's XML parser.
 
     ReportLab's Paragraph uses an XML parser that chokes on:
@@ -154,6 +154,14 @@ def _safe_text(text):
     - Very long words (URLs, hex strings) with no whitespace
 
     This function escapes raw text to be safe for Paragraph().
+
+    ``already_escaped`` — set for text that has already been through the
+    extractor's ``_strip_inline``, which escapes ``&``, ``<`` and ``>`` and
+    emits real ``<b>`` / ``<i>`` / ``<font>`` tags. Escaping such text a
+    second time turned every ``&amp;`` into ``&amp;amp;``, so "Pine
+    Accounting & Tax Services" rendered as "Pine Accounting &amp; Tax
+    Services" in the PDF. Tag sanitisation and long-word breaking below
+    still run either way; only the escape pass is skipped.
     """
     if not text:
         return ""
@@ -162,24 +170,25 @@ def _safe_text(text):
         text = unicodedata.normalize("NFC", text)
     except (ValueError, TypeError):
         pass
-    # Escape bare < > that aren't part of allowed ReportLab tags.
-    # Strategy: escape ALL < > then unescape the allowed ones.
-    text = xml.sax.saxutils.escape(text)
-    # Restore allowed tags
-    for tag in ['b', 'i', 'u', 'br/', 'br', 'super', 'sub', 'strike']:
-        text = text.replace(f'&lt;{tag}&gt;', f'<{tag}>')
-        text = text.replace(f'&lt;/{tag}&gt;', f'</{tag}>')
-    # Restore font tags with attributes.
-    # The attribute class must allow ``&`` (e.g. inside escaped URLs in
-    # href attributes on link tags, or &quot;-escaped name values) so
-    # we use a non-greedy ``.+?`` bounded by ``&gt;`` instead of the
-    # old ``[^&]+`` which silently dropped tags whose attribute values
-    # contained ampersands.
-    text = re.sub(r'&lt;font (.+?)&gt;', r'<font \1>', text)
-    text = text.replace('&lt;/font&gt;', '</font>')
-    # Restore link tags (clickable URLs from markdown links)
-    text = re.sub(r'&lt;link (.+?)&gt;', r'<link \1>', text)
-    text = text.replace('&lt;/link&gt;', '</link>')
+    if not already_escaped:
+        # Escape bare < > that aren't part of allowed ReportLab tags.
+        # Strategy: escape ALL < > then unescape the allowed ones.
+        text = xml.sax.saxutils.escape(text)
+        # Restore allowed tags
+        for tag in ['b', 'i', 'u', 'br/', 'br', 'super', 'sub', 'strike']:
+            text = text.replace(f'&lt;{tag}&gt;', f'<{tag}>')
+            text = text.replace(f'&lt;/{tag}&gt;', f'</{tag}>')
+        # Restore font tags with attributes.
+        # The attribute class must allow ``&`` (e.g. inside escaped URLs in
+        # href attributes on link tags, or &quot;-escaped name values) so
+        # we use a non-greedy ``.+?`` bounded by ``&gt;`` instead of the
+        # old ``[^&]+`` which silently dropped tags whose attribute values
+        # contained ampersands.
+        text = re.sub(r'&lt;font (.+?)&gt;', r'<font \1>', text)
+        text = text.replace('&lt;/font&gt;', '</font>')
+        # Restore link tags (clickable URLs from markdown links)
+        text = re.sub(r'&lt;link (.+?)&gt;', r'<link \1>', text)
+        text = text.replace('&lt;/link&gt;', '</link>')
 
     # After restoring font tags, sanitize attributes to allowlist
     def _sanitize_font_attrs(match):
@@ -219,10 +228,14 @@ def _safe_text(text):
     return text
 
 
-def _safe_para(text, style):
-    """Create a Paragraph with sanitized text. Never raises on bad markup."""
+def _safe_para(text, style, already_escaped: bool = False):
+    """Create a Paragraph with sanitized text. Never raises on bad markup.
+
+    Pass ``already_escaped=True`` for extractor-produced text, which has
+    already had its XML special characters escaped — see ``_safe_text``.
+    """
     try:
-        return Paragraph(_safe_text(text), style)
+        return Paragraph(_safe_text(text, already_escaped), style)
     except Exception:
         clean = re.sub(r'<[^>]+>', '', text)
         clean = clean.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')

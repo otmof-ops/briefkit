@@ -347,27 +347,32 @@ class BaseBriefingTemplate:
         for block in blocks:
             btype = block.get("type")
 
+            # Blocks from parse_markdown have already been through
+            # _strip_inline, which escapes &, < and > and emits real <b>/<i>
+            # tags. Escaping them again turns &amp; into &amp;amp;, which
+            # renders literally — so these paths pass already_escaped=True.
+            # Code blocks are the exception: they are deliberately kept raw.
             if btype == "heading":
                 level = block["level"]
                 text  = block["text"]
                 if level == 1:
-                    flowables.append(_safe_para(text, self.styles["STYLE_H1"]))
+                    flowables.append(_safe_para(text, self.styles["STYLE_H1"], True))
                 elif level == 2:
-                    flowables.append(_safe_para(text, self.styles["STYLE_H2"]))
+                    flowables.append(_safe_para(text, self.styles["STYLE_H2"], True))
                 else:
-                    flowables.append(_safe_para(text, self.styles["STYLE_H3"]))
+                    flowables.append(_safe_para(text, self.styles["STYLE_H3"], True))
 
             elif btype == "paragraph":
                 text = block.get("text", "").strip()
                 if text:
-                    flowables.append(_safe_para(text, self.styles["STYLE_BODY"]))
+                    flowables.append(_safe_para(text, self.styles["STYLE_BODY"], True))
 
             elif btype == "list_item":
                 text    = block.get("text", "")
                 ordered = block.get("ordered", False)
                 idx     = block.get("index", 0)
                 bullet  = f"{idx}. " if ordered else "\u2022 "
-                flowables.append(_safe_para(f"{bullet}{text}", self.styles["STYLE_LIST_ITEM"]))
+                flowables.append(_safe_para(f"{bullet}{text}", self.styles["STYLE_LIST_ITEM"], True))
 
             elif btype == "code":
                 # Code blocks: preserve whitespace + prevent right-margin
@@ -420,7 +425,8 @@ class BaseBriefingTemplate:
 
             elif btype == "blockquote":
                 text = block.get("text", "")
-                callout = build_callout_box(text, "insight", brand=self.brand, content_width=self.content_width)
+                callout = build_callout_box(text, "insight", brand=self.brand,
+                                            content_width=self.content_width, already_escaped=True)
                 # Wrap in KeepTogether so a mid-callout page break can't
                 # leave half a coloured left border on one page.
                 if isinstance(callout, list):
@@ -431,7 +437,8 @@ class BaseBriefingTemplate:
             elif btype == "table":
                 headers = block.get("headers", [])
                 rows    = block.get("rows", [])
-                flowables.extend(build_data_table(headers, rows, brand=self.brand, content_width=self.content_width))
+                flowables.extend(build_data_table(headers, rows, brand=self.brand,
+                                                  content_width=self.content_width, already_escaped=True))
 
             elif btype == "rule":
                 rule_data = [[""]]

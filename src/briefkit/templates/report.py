@@ -316,22 +316,16 @@ class ReportTemplate(BaseBriefingTemplate):
             flowables.append(Paragraph(overview[:2000], self.styles["STYLE_BODY"]))
             return flowables
 
+        limit = self.body_block_limit()
         for idx, sub in enumerate(subsystems, start=1):
             flowables.append(Paragraph(f"{idx}. {sub['name']}", self.styles["STYLE_H2"]))
             flowables.append(Spacer(1, 1.5 * mm))
 
             blocks = sub.get("blocks") or parse_markdown(sub.get("content", ""))
-            rendered = 0
-            for block in blocks:
-                if block["type"] == "heading" and block["level"] <= 2:
-                    continue
-                for fl in self.render_blocks([block]):
-                    flowables.append(fl)
-                    rendered += 1
-                    if rendered >= 80:
-                        break
-                if rendered >= 80:
-                    break
+            rendered, dropped = self.render_body_blocks(blocks, limit)
+            flowables.extend(rendered)
+            if dropped:
+                self.note_truncation(sub.get("filename", sub["name"]), dropped)
 
             flowables.append(Spacer(1, 2 * mm))
 

@@ -368,12 +368,20 @@ def _extract_doc_set_content(path: Path, config: dict) -> dict:
     and inline citations.
     """
     content_cfg = config.get("content", {})
+    # Per-source-document word budget. 0 (or None) means unlimited.
+    #
     # Default raised from 3000 to 12000 after real-world testing showed
     # technical manuals (workshop guides, SOPs, reference docs) routinely
     # exceeded the lower limit, silently truncating tables and dropping
     # content from the Reference Tables section. 12000 covers ~95% of
-    # technical chapters in practice; users still override via config.
+    # technical chapters in practice; users still override via config,
+    # and `max_words_per_section: 0` disables the budget entirely.
+    #
+    # Any document actually cut is recorded in metrics.truncated_sections so
+    # the loss is reported rather than silent.
     max_words   = content_cfg.get("max_words_per_section", 12000)
+    if not max_words:              # 0 or None -> unlimited
+        max_words = float("inf")
     max_terms   = content_cfg.get("max_terms_in_index", 40)
     max_refs    = content_cfg.get("max_cross_refs", 30)
     ori_pattern = content_cfg.get("orientation_doc_pattern", "00-what-is-*.md")
@@ -401,6 +409,9 @@ def _extract_doc_set_content(path: Path, config: dict) -> dict:
             "citation_count":   0,
             "table_count":      0,
             "has_orientation":  False,
+            # Documents whose body was cut by max_words_per_section.
+            # Empty when nothing was dropped. Reported by the CLI.
+            "truncated_sections": [],
         },
         "source_type_info": {},
     }
@@ -497,6 +508,16 @@ def _extract_doc_set_content(path: Path, config: dict) -> dict:
                 break
             truncated_lines.append(ln)
         raw_for_parse = "\n".join(truncated_lines) if needs_truncation else raw
+
+        if needs_truncation:
+            # Record the loss so it can be surfaced rather than discovered
+            # later in the rendered PDF.
+            result["metrics"]["truncated_sections"].append({
+                "filename":   fp.name,
+                "words_kept": _count_words(raw_for_parse),
+                "words_total": _count_words(raw),
+                "limit":      max_words,
+            })
 
         stem     = fp.stem
         name_part = re.sub(r'^\d+-', '', stem).replace("-", " ").title()

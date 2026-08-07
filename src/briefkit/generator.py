@@ -259,6 +259,67 @@ class BaseBriefingTemplate:
         return self.content
 
     # ------------------------------------------------------------------
+    # Body renderer
+    # ------------------------------------------------------------------
+
+    def body_block_limit(self, default: int = 0) -> int:
+        """
+        Flowable budget for one source document in the body section.
+
+        Returns 0 for unlimited, which is the default for document-oriented
+        templates. Fixed-format templates (deck, resume, certificate) pass
+        their own `default`, since a slide or a one-page resume genuinely
+        cannot grow.
+
+        Read from `content.max_blocks_per_section`; an explicit config value
+        always wins over the caller's default.
+        """
+        configured = self.config.get("content", {}).get("max_blocks_per_section")
+        if configured is None:
+            return default
+        return int(configured)
+
+    def note_truncation(self, source: str, dropped: int) -> None:
+        """
+        Record that `dropped` blocks of `source` were not rendered.
+
+        Collected on the template and merged into the generation result so the
+        CLI can report it. Nothing here changes the PDF — it exists so that a
+        template-side cap is visible to the caller instead of being discovered
+        later in the output.
+        """
+        if not hasattr(self, "_render_truncations"):
+            self._render_truncations: list[dict] = []
+        self._render_truncations.append({"source": source, "blocks_dropped": dropped})
+
+    def render_body_blocks(self, blocks: list[dict], limit: int = 0,
+                           skip_top_headings: bool = True) -> tuple[list, int]:
+        """
+        Render a source document's blocks for the body section.
+
+        Returns `(flowables, dropped)` where `dropped` is the number of source
+        blocks not rendered because `limit` was reached — 0 when everything was
+        emitted. Callers should surface a non-zero `dropped` rather than
+        discard it silently.
+
+        `limit` of 0 means unlimited, which is the default. Truncating body
+        content by default is what caused long documents to lose their tails
+        with no indication in the output.
+        """
+        flowables: list = []
+        rendered = 0
+        for idx, block in enumerate(blocks):
+            if (skip_top_headings and block.get("type") == "heading"
+                    and block.get("level", 99) <= 2):
+                continue
+            if limit and rendered >= limit:
+                return flowables, len(blocks) - idx
+            for fl in self.render_blocks([block]):
+                flowables.append(fl)
+                rendered += 1
+        return flowables, 0
+
+    # ------------------------------------------------------------------
     # Block renderer
     # ------------------------------------------------------------------
 

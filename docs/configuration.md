@@ -70,7 +70,8 @@ layout:
 
 ```yaml
 content:
-  max_words_per_section: 3000
+  max_words_per_section: 12000   # 0 = unlimited
+  max_blocks_per_section: 0      # 0 = unlimited
   max_terms_in_index: 40
   max_bibliography_entries: 100
   max_cross_refs: 30

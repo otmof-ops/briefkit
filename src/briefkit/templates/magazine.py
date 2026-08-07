@@ -317,6 +317,7 @@ class MagazineTemplate(BaseBriefingTemplate):
             story.append(Spacer(1, 3 * mm))
 
             blocks = sub.get("blocks") or parse_markdown(sub.get("content", ""))
+            limit = self.body_block_limit()
             rendered = 0
             for block in blocks:
                 if block["type"] == "heading" and block["level"] <= 1:
@@ -324,9 +325,9 @@ class MagazineTemplate(BaseBriefingTemplate):
                 for fl in self.render_blocks([block]):
                     story.append(fl)
                     rendered += 1
-                    if rendered >= 100:
+                    if limit and rendered >= limit:
                         break
-                if rendered >= 100:
+                if limit and rendered >= limit:
                     break
 
             story.append(Spacer(1, 6 * mm))

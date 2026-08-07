@@ -385,6 +385,7 @@ class ContractTemplate(BaseBriefingTemplate):
 
             blocks = sub.get("blocks") or parse_markdown(sub.get("content", ""))
             sub_clause_counter = 0
+            limit = self.body_block_limit()
             rendered = 0
 
             for block in blocks:
@@ -415,7 +416,7 @@ class ContractTemplate(BaseBriefingTemplate):
                 for fl in self.render_blocks([block]):
                     flowables.append(fl)
                     rendered += 1
-                if rendered >= 80:
+                if limit and rendered >= limit:
                     break
 
             flowables.append(Spacer(1, 4 * mm))

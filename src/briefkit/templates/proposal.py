@@ -374,6 +374,7 @@ class ProposalTemplate(BaseBriefingTemplate):
             flowables.extend(self._heading_with_rule(f"{idx}. {name}", "STYLE_H2"))
 
             blocks = sub.get("blocks") or parse_markdown(sub.get("content", ""))
+            limit = self.body_block_limit()
             rendered = 0
             for block in blocks:
                 btype = block.get("type", "")
@@ -382,9 +383,9 @@ class ProposalTemplate(BaseBriefingTemplate):
                 for fl in self.render_blocks([block]):
                     flowables.append(fl)
                     rendered += 1
-                    if rendered >= 80:
+                    if limit and rendered >= limit:
                         break
-                if rendered >= 80:
+                if limit and rendered >= limit:
                     break
 
             flowables.append(Spacer(1, 3 * mm))

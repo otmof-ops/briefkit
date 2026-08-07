@@ -260,7 +260,7 @@ template:
   preset: "novel"
 
 content:
-  max_words_per_section: 10000
+  max_words_per_section: 0      # unlimited
 
 hierarchy:
   root_level: 3
@@ -282,7 +282,7 @@ hierarchy:
 
 **`template.preset`** — Must be `"novel"` for the novel template. Using `"book"` will lose continuous flow pagination and narrative formatting.
 
-**`content.max_words_per_section`** — BriefKit's default is 3000 words per section. A single chapter of a novel can easily exceed this, causing content truncation mid-chapter. Set this to 10000 or higher for novel projects. There is no practical upper limit.
+**`content.max_words_per_section`** — BriefKit's default is 12000 words per section, and `0` disables the budget entirely. A single novel chapter can still exceed 12000, so set `0` (or a generous figure) for novel projects. BriefKit names any file it truncates on stderr, so you will not discover the loss by reading the PDF.
 
 **`hierarchy.root_level`** — Tells BriefKit to treat the docs directory as a Level 3 (doc set) rather than attempting to resolve it as a higher-level aggregate. Without this, BriefKit will attempt to recurse into subdirectories and extract 0 subsystems from the flat novel directory.
 
@@ -463,13 +463,13 @@ hierarchy:
 
 **Symptom:** Chapters appear in the PDF but end abruptly before the actual content ends.
 
-**Cause:** BriefKit's default `max_words_per_section` is 3000 words. A single chapter file for a novel frequently exceeds this.
+**Cause:** A chapter file exceeded `content.max_words_per_section`. The default is 12000 words; long novel chapters can still pass it. Check the generation output — BriefKit names any file it truncated and reports the words kept against the words available.
 
 **Fix:** Set the limit higher in `briefkit.yml`:
 
 ```yaml
 content:
-  max_words_per_section: 10000
+  max_words_per_section: 0      # unlimited
 ```
 
 For very long chapters, increase this further. There is no practical upper limit.
@@ -611,7 +611,7 @@ template:
   preset: "novel"
 
 content:
-  max_words_per_section: 10000
+  max_words_per_section: 0      # unlimited
 
 hierarchy:
   root_level: 3

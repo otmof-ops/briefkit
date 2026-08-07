@@ -368,6 +368,7 @@ class MinutesTemplate(BaseBriefingTemplate):
             flowables.append(Spacer(1, 2 * mm))
 
             blocks = sub.get("blocks") or parse_markdown(sub.get("content", ""))
+            limit = self.body_block_limit()
             rendered = 0
             for block in blocks:
                 if block["type"] == "heading" and block["level"] == 1:
@@ -375,7 +376,7 @@ class MinutesTemplate(BaseBriefingTemplate):
                 for fl in self.render_blocks([block]):
                     flowables.append(fl)
                     rendered += 1
-                if rendered >= 60:
+                if limit and rendered >= limit:
                     break
 
             flowables.append(Spacer(1, 4 * mm))

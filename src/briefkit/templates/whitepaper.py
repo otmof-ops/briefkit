@@ -303,6 +303,7 @@ class WhitepaperTemplate(BaseBriefingTemplate):
             # Render blocks with alpha-numeric sub-section numbering
             blocks = sub.get("blocks") or parse_markdown(sub.get("content", ""))
             sub_counter = 0
+            limit = self.body_block_limit()
             rendered = 0
 
             for block in blocks:
@@ -343,7 +344,7 @@ class WhitepaperTemplate(BaseBriefingTemplate):
                         flowables.append(fl)
                         rendered += 1
 
-                if rendered >= 100:
+                if limit and rendered >= limit:
                     break
 
             # Generous spacing between sections

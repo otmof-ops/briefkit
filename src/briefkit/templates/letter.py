@@ -134,6 +134,7 @@ class LetterTemplate(BaseBriefingTemplate):
                 story.append(_safe_para(name, h_style))
 
             blocks = sub.get("blocks") or parse_markdown(sub.get("content", ""))
+            limit = self.body_block_limit()
             rendered = 0
             for block in blocks:
                 btype = block.get("type", "")
@@ -142,7 +143,7 @@ class LetterTemplate(BaseBriefingTemplate):
                 for fl in self.render_blocks([block]):
                     story.append(fl)
                     rendered += 1
-                if rendered >= 60:
+                if limit and rendered >= limit:
                     break
 
             story.append(Spacer(1, 2 * mm))

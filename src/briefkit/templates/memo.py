@@ -150,6 +150,7 @@ class MemoTemplate(BaseBriefingTemplate):
             blocks = sub.get("blocks") or parse_markdown(
                 sub.get("content", ""),
             )
+            limit = self.body_block_limit()
             rendered = 0
             for block in blocks:
                 btype = block.get("type", "")
@@ -157,7 +158,7 @@ class MemoTemplate(BaseBriefingTemplate):
                     continue
                 story.extend(self._render_flat([block], body_style))
                 rendered += 1
-                if rendered >= 40:
+                if limit and rendered >= limit:
                     break
 
         # ================================================================

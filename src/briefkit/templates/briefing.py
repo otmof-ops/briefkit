@@ -99,6 +99,7 @@ class BriefingTemplate(BaseBriefingTemplate):
                 flowables.append(Spacer(1, 2 * mm))
 
                 blocks = sub.get("blocks") or parse_markdown(sub.get("content", ""))
+                limit = self.body_block_limit()
                 rendered = 0
                 for block in blocks:
                     if block["type"] == "heading" and block["level"] <= 2:
@@ -106,9 +107,9 @@ class BriefingTemplate(BaseBriefingTemplate):
                     for fl in self.render_blocks([block]):
                         flowables.append(fl)
                         rendered += 1
-                        if rendered >= 80:
+                        if limit and rendered >= limit:
                             break
-                    if rendered >= 80:
+                    if limit and rendered >= limit:
                         break
 
                 insights = sub.get("insights", [])
@@ -180,6 +181,7 @@ class BriefingTemplate(BaseBriefingTemplate):
             ))
             flowables.append(Spacer(1, 3 * mm))
             brill_blocks = parse_markdown(brilliance)
+            limit = self.body_block_limit()
             rendered = 0
             pull_count = 0
             for block in brill_blocks:
@@ -193,7 +195,7 @@ class BriefingTemplate(BaseBriefingTemplate):
                             text[:200], "Engineering Brilliance Essay", brand=self.brand, content_width=self.content_width
                         ))
                         pull_count += 1
-                if rendered >= 50:
+                if limit and rendered >= limit:
                     break
         else:
             flowables.append(Paragraph(

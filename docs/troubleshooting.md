@@ -214,16 +214,21 @@ Warning: Skipping oversized file (15000000 bytes): docs/my-topic/01-huge.md
 
 **Symptom:** A chapter in the PDF seems to cut off mid-way.
 
-**Cause:** The extractor truncates individual files to `max_words_per_section` (default: 3000 words). Tables and blockquotes are preserved through truncation.
+**Cause:** One of two budgets. The extractor truncates each source file to `max_words_per_section` (default: 12000 words; tables and blockquotes are preserved through truncation), and document templates cap the rendered body at `max_blocks_per_section` flowables per source (default: 0, unlimited).
 
-**Fix:** Increase the limit in `briefkit.yml`:
+BriefKit names any file it truncates on stderr, so check the generation output first — the warning reports the words kept against the words available.
+
+**Fix:** Raise or remove the limit in `briefkit.yml`. `0` means unlimited:
 
 ```yaml
 content:
-  max_words_per_section: 5000
+  max_words_per_section: 0
+  max_blocks_per_section: 0
 ```
 
 Or split large files into multiple numbered files.
+
+> **If you are carrying an older `briefkit.yml`, check this setting.** `max_words_per_section` previously defaulted to **3000** and truncation was silent — a long document rendered its opening sections and stopped, with nothing in the output to say so. A config that pins 3000 still gets the old behaviour, though it will now warn. Remove the line or set it to 0.
 
 ---
 

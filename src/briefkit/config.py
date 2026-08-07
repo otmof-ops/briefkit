@@ -64,7 +64,20 @@ DEFAULTS: dict[str, Any] = {
         },
     },
     "content": {
-        "max_words_per_section": 3000,
+        # Per-source-document word budget applied during extraction.
+        # 0 means unlimited — emit the document in full.
+        #
+        # This previously defaulted to 3000, which silently discarded the tail
+        # of any document longer than roughly six pages. extractor.py already
+        # carried a 12000 fallback with a comment explaining the raise, but the
+        # value declared here always won, so the fallback never applied.
+        # Truncation is now recorded in metrics.truncated_sections and reported
+        # by the CLI, so it can never be silent again.
+        "max_words_per_section": 12000,
+        # Per-source-document cap on rendered flowables in the body section.
+        # 0 means unlimited. Document-oriented templates default to unlimited;
+        # fixed-format templates (deck, resume, certificate) set their own.
+        "max_blocks_per_section": 0,
         "max_terms_in_index": 40,
         "max_bibliography_entries": 100,
         "max_cross_refs": 30,
@@ -192,6 +205,7 @@ def _validate_config(cfg: dict[str, Any]) -> list[str]:
     content = cfg.get("content", {})
     for int_key in (
         "max_words_per_section",
+        "max_blocks_per_section",
         "max_terms_in_index",
         "max_bibliography_entries",
         "max_cross_refs",

@@ -157,6 +157,9 @@ def cmd_generate(args: argparse.Namespace) -> int:
         _print_empty_extraction_error(path, cfg)
         return 2
 
+    if pre is not None:
+        _warn_on_truncation(pre, cfg)
+
     result = _generate_one(path, cfg, dry_run=False)
 
     if result["status"] == "error":
@@ -173,6 +176,38 @@ _EMPTY_OVERVIEW_SENTINELS = (
     "No analysis documents found",
     "Overview not available",
 )
+
+
+def _warn_on_truncation(content: dict, cfg: dict) -> None:
+    """
+    Report any source document whose body was cut by the word budget.
+
+    Truncation used to be silent: a long document would render its opening
+    sections and simply stop, with nothing in the output to say so. Anything
+    dropped is now named, with the words kept against the words available and
+    the setting responsible.
+    """
+    dropped = content.get("metrics", {}).get("truncated_sections") or []
+    if not dropped:
+        return
+
+    limit = cfg.get("content", {}).get("max_words_per_section")
+    print(
+        f"WARNING: {len(dropped)} document(s) exceeded "
+        f"content.max_words_per_section ({limit}) and were truncated:",
+        file=sys.stderr,
+    )
+    for d in dropped:
+        print(
+            f"  {d['filename']}: kept {d['words_kept']:,} of "
+            f"{d['words_total']:,} words",
+            file=sys.stderr,
+        )
+    print(
+        "  Set content.max_words_per_section to 0 in briefkit.yml to emit "
+        "documents in full.",
+        file=sys.stderr,
+    )
 
 
 def _extraction_is_empty(content: dict) -> bool:

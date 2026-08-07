@@ -20,7 +20,8 @@ _RED_BG   = HexColor("#fdeaea")
 _GOLD_BG  = HexColor("#fef9e7")
 
 
-def build_data_table(headers, rows, title=None, brand=None, content_width=None, header_color=None):
+def build_data_table(headers, rows, title=None, brand=None, content_width=None, header_color=None,
+                     already_escaped=False):
     """
     Build a standard data table with colored header and alternating rows.
 
@@ -65,7 +66,8 @@ def build_data_table(headers, rows, title=None, brand=None, content_width=None, 
     col_count = len(headers)
 
     header_row = [
-        _safe_para(f"<b>{_safe_text(str(h))}</b>", styles["STYLE_TABLE_HEADER"])
+        _safe_para(f"<b>{str(h) if already_escaped else _safe_text(str(h))}</b>",
+                   styles["STYLE_TABLE_HEADER"], already_escaped)
         for h in headers
     ]
 
@@ -78,7 +80,7 @@ def build_data_table(headers, rows, title=None, brand=None, content_width=None, 
         padded    = list(sanitised) + [""] * max(0, col_count - len(sanitised))
         padded    = padded[:col_count]
         table_data.append([
-            _safe_para(str(cell), styles["STYLE_TABLE_BODY"]) for cell in padded
+            _safe_para(str(cell), styles["STYLE_TABLE_BODY"], already_escaped) for cell in padded
         ])
 
     # Content-aware column widths based on both headers and the widest
@@ -134,7 +136,8 @@ def build_data_table(headers, rows, title=None, brand=None, content_width=None, 
     return flowables
 
 
-def build_comparison_table(headers, rows, brand=None, content_width=None):
+def build_comparison_table(headers, rows, brand=None, content_width=None,
+                           already_escaped=False):
     """
     Build a comparison table with color-coded cells.
 
@@ -179,7 +182,8 @@ def build_comparison_table(headers, rows, brand=None, content_width=None):
     col_width = cw / col_count
 
     header_row = [
-        _safe_para(f"<b>{_safe_text(str(h))}</b>", styles["STYLE_TABLE_HEADER"])
+        _safe_para(f"<b>{str(h) if already_escaped else _safe_text(str(h))}</b>",
+                   styles["STYLE_TABLE_HEADER"], already_escaped)
         for h in headers
     ]
     table_data = [header_row]
@@ -192,7 +196,7 @@ def build_comparison_table(headers, rows, brand=None, content_width=None):
         padded    = list(sanitised) + [""] * max(0, col_count - len(sanitised))
         padded    = padded[:col_count]
         table_data.append([
-            _safe_para(str(c), styles["STYLE_TABLE_BODY"]) for c in padded
+            _safe_para(str(c), styles["STYLE_TABLE_BODY"], already_escaped) for c in padded
         ])
 
     # Weight the first (label) column ~2× the others for comparison

@@ -12,7 +12,8 @@ from reportlab.platypus import Paragraph, Spacer, Table, TableStyle
 from briefkit.styles import CONTENT_WIDTH, _get_brand, _hex, _ps, _safe_para, build_styles
 
 
-def build_callout_box(text, box_type="insight", brand=None, content_width=None):
+def build_callout_box(text, box_type="insight", brand=None, content_width=None,
+                      already_escaped=False):
     """
     Build a callout box Table flowable.
 
@@ -83,7 +84,7 @@ def build_callout_box(text, box_type="insight", brand=None, content_width=None):
             # text may contain bare < or & (e.g. "< 2 km", "<$20m", "R&D").
             # ReportLab's paraparser reads those as markup and raises
             # "parse ended with N unclosed tags", so sanitize before building.
-            paragraphs.append(_safe_para(stripped, content_style))
+            paragraphs.append(_safe_para(stripped, content_style, already_escaped))
         else:
             paragraphs.append(Spacer(1, 3))
 

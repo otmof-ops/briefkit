@@ -125,3 +125,7 @@ jobs:
       - run: python -m pip install --upgrade pip build twine
       - run: python -m build
       - run: twine check --strict dist/*
+      - name: Verify LICENSE and NOTICE.txt travel in every artifact
+        run: |
+          unzip -l dist/*.whl | grep -E 'dist-info/licenses/(LICENSE|NOTICE\.txt)$'
+          tar tzf dist/*.tar.gz | grep -E '^briefkit-[^/]+/(LICENSE|NOTICE\.txt)$'

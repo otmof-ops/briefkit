@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Jay Taylor (https://github.com/otmof-ops/briefkit)
+# SPDX-License-Identifier: BSD-3-Clause
 """Every variant renders; every briefing level renders; the matcher counts whole words."""
 
 from __future__ import annotations

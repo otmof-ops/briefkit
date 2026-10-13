@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Jay Taylor (https://github.com/otmof-ops/briefkit)
+# SPDX-License-Identifier: BSD-3-Clause
 """Registering templates and variants from outside the package, and selecting variants by path rule."""
 
 from __future__ import annotations

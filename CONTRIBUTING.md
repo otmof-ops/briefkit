@@ -1,6 +1,6 @@
 # Contributing to BriefKit
 
-Copyright (c) 2026 OFFTRACKMEDIA Studios. All rights reserved.
+Copyright (c) 2026 Jay Taylor (https://github.com/otmof-ops/briefkit)
 
 ---
 
@@ -189,9 +189,11 @@ All contributors are expected to behave professionally and respectfully. We do n
 |----------|---------|
 | [README.md](README.md) | Project overview and quickstart |
 | [CHANGELOG.md](CHANGELOG.md) | Version history |
-| [LICENSE](LICENSE) | CC BY-NC-SA 4.0 license text |
-| [NOTICE.txt](NOTICE.txt) | Copyright, trademarks, third-party acknowledgments |
-| [EULA](EULA/OFFTRACKMEDIA_EULA_2025.txt) | End User License Agreement |
+| [LICENSE](LICENSE) | BSD 3-Clause license text (the code) |
+| [LICENSES/](LICENSES/) | CC BY 4.0 (documentation) and CC0 1.0 (examples) texts |
+| [REUSE.toml](REUSE.toml) | Which license applies to which path |
+| [NOTICE.txt](NOTICE.txt) | Copyright line, license map, third-party components |
+| [TRADEMARKS.md](TRADEMARKS.md) | Name policy: what forks may be called |
 | [SAFETY.md](SAFETY.md) | Safety framework |
 | [SECURITY.md](SECURITY.md) | Vulnerability reporting policy |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | This document |
@@ -199,4 +201,4 @@ All contributors are expected to behave professionally and respectfully. We do n
 
 ---
 
-(c) 2026 OFFTRACKMEDIA Studios · ABN 84 290 819 896
+Copyright (c) 2026 Jay Taylor (https://github.com/otmof-ops/briefkit)

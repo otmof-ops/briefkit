@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Jay Taylor (https://github.com/otmof-ops/briefkit)
+# SPDX-License-Identifier: BSD-3-Clause
 """Tests for the content extractor."""
 
 from briefkit.extractor import extract_content

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Jay Taylor (https://github.com/otmof-ops/briefkit)
+# SPDX-License-Identifier: BSD-3-Clause
 """The template layer's architectural contract: traits and hooks, not generate() overrides."""
 
 from __future__ import annotations

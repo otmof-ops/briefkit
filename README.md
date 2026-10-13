@@ -5,7 +5,7 @@
 **Generate professional PDF briefings from a folder of Markdown. One command. Zero config.**
 
 [![CI](https://github.com/otmof-ops/briefkit/actions/workflows/test.yml/badge.svg)](https://github.com/otmof-ops/briefkit/actions/workflows/test.yml)
-[![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-blue.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+[![License: BSD-3-Clause](https://img.shields.io/badge/License-BSD--3--Clause-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
@@ -251,7 +251,7 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Al
 
 ## Safety
 
-BriefKit reads Markdown files from the local filesystem and generates PDFs. Before processing directories containing sensitive, regulated, or third-party content, read [SAFETY.md](SAFETY.md). This is a condition of use under the [EULA](EULA/OFFTRACKMEDIA_EULA_2025.txt).
+BriefKit reads Markdown files from the local filesystem and generates PDFs. Before processing directories containing sensitive, regulated, or third-party content, read [SAFETY.md](SAFETY.md).
 
 ---
 
@@ -265,12 +265,14 @@ Instead, report it following the process in [SECURITY.md](SECURITY.md). We will 
 
 ## License
 
-Copyright (c) 2026 OFFTRACKMEDIA Studios. All rights reserved.
-ABN 84 290 819 896.
+BSD 3-Clause, the standard permissive license with a non-endorsement clause. In plain words: use, copy, change and sell BriefKit freely, including inside a product; every copy, source or binary, keeps the copyright line, which names **Jay Taylor** and links to https://github.com/otmof-ops/briefkit; and that name may not be used to endorse or promote whatever you build from it. Full text in [LICENSE](LICENSE).
 
-This work is licensed under the [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+- **Code** (`src/`, `tests/`, the build and CI files): [BSD-3-Clause](LICENSE).
+- **Documentation** (`docs/`, this README and the other pages at the root): [CC BY 4.0](LICENSES/CC-BY-4.0.txt). Reuse and adapt with credit.
+- **Examples** (`examples/`): [CC0 1.0](LICENSES/CC0-1.0.txt). Paste them into your own projects; no attribution needed.
+- **The name.** BriefKit is a trademark of Jay Taylor; [TRADEMARKS.md](TRADEMARKS.md) says what forks may be called.
 
-Commercial use, redistribution, and derivative works for commercial purposes require prior written consent. See the [EULA](EULA/OFFTRACKMEDIA_EULA_2025.txt) and [NOTICE.txt](NOTICE.txt) for full terms.
+[REUSE.toml](REUSE.toml) records the license per path. Version 1.0.0 was published under CC BY-NC-SA 4.0 and stays available under it; this layout applies from 1.1.0.
 
 ---
 

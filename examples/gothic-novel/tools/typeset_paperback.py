@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Jay Taylor (https://github.com/otmof-ops/briefkit)
+# SPDX-License-Identifier: CC0-1.0
 """Paperback volume typesetter — 5.5 × 8.5" pocket-prayer-book aesthetic.
 
 Mass-market trim, restrained Gothic Orthodox vocabulary:

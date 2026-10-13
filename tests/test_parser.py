@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Jay Taylor (https://github.com/otmof-ops/briefkit)
+# SPDX-License-Identifier: BSD-3-Clause
 """Tests for the markdown parser."""
 
 from briefkit.extractor import parse_markdown

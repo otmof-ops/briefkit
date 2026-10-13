@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-FileCopyrightText: 2026 Jay Taylor (https://github.com/otmof-ops/briefkit)
+# SPDX-License-Identifier: CC0-1.0
 # Download the three TTF fonts the gothic-novel typesetter expects.
 # Idempotent — safe to re-run.
 #

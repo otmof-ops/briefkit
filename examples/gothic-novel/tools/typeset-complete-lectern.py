@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Jay Taylor (https://github.com/otmof-ops/briefkit)
+# SPDX-License-Identifier: CC0-1.0
 """Complete-edition lectern typesetter — 9 × 12" two-column hardcover.
 
 Renders all 7 volumes + The Scribe into a single lectern Bible:

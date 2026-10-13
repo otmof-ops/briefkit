@@ -15,4 +15,8 @@ jobs:
           python-version: "3.12"
       - run: pip install build
       - run: python -m build
+      - name: Verify LICENSE and NOTICE.txt travel in every artifact
+        run: |
+          unzip -l dist/*.whl | grep -E 'dist-info/licenses/(LICENSE|NOTICE\.txt)$'
+          tar tzf dist/*.tar.gz | grep -E '^briefkit-[^/]+/(LICENSE|NOTICE\.txt)$'
       - uses: pypa/gh-action-pypi-publish@release/v1

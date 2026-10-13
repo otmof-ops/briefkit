@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Jay Taylor (https://github.com/otmof-ops/briefkit)
+# SPDX-License-Identifier: BSD-3-Clause
 """``briefkit status --check`` for CI, and aggregate directories recognized by their contents."""
 
 from __future__ import annotations

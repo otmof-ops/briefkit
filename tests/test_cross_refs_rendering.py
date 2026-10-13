@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Jay Taylor (https://github.com/otmof-ops/briefkit)
+# SPDX-License-Identifier: BSD-3-Clause
 """Cross-references: extracted from relative links, rendered as a map, never read through symlinks."""
 
 from __future__ import annotations

@@ -1,5 +1,7 @@
 # BriefKit Examples
 
+Everything under `examples/` is dedicated to the public domain under [CC0 1.0](../LICENSES/CC0-1.0.txt): paste any of it into your own project, no attribution needed.
+
 Complete example projects, one per directory. Each holds a `briefkit.yml` and a documentation set you can generate straight away.
 
 ---

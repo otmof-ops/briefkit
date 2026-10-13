@@ -1,0 +1,23 @@
+# REUSE specification (https://reuse.software). One license per path.
+version = 1
+SPDX-PackageName = "briefkit"
+SPDX-PackageSupplier = "Jay Taylor"
+SPDX-PackageDownloadLocation = "https://github.com/otmof-ops/briefkit"
+
+[[annotations]]
+path = ["src/**", "tests/**", "pyproject.toml", "Makefile", ".pre-commit-config.yaml", "REUSE.toml", ".gitignore", ".github/**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Jay Taylor (https://github.com/otmof-ops/briefkit)"
+SPDX-License-Identifier = "BSD-3-Clause"
+
+[[annotations]]
+path = ["docs/**", "README.md", "CHANGELOG.md", "CONTRIBUTING.md", "TRADEMARKS.md", "SECURITY.md", "SAFETY.md", "NOTICE.txt"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Jay Taylor (https://github.com/otmof-ops/briefkit)"
+SPDX-License-Identifier = "CC-BY-4.0"
+
+[[annotations]]
+path = ["examples/**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Jay Taylor (https://github.com/otmof-ops/briefkit)"
+SPDX-License-Identifier = "CC0-1.0"

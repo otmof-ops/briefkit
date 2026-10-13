@@ -200,3 +200,43 @@ class TestRegistryLock:
         all_ids = [next(iter(ids)) for ids in ids_by_target.values()]
         assert len(all_ids) == len(set(all_ids)), "every target must get a distinct ID"
         assert not list((root / ".briefkit").glob("*.lock"))
+
+
+class TestRegistryLockContention:
+    def test_permission_error_on_the_lock_file_is_retried(self, tmp_path, monkeypatch):
+        """Windows reports a lock file mid-deletion as PermissionError; the lock must retry, not die."""
+        import os
+
+        from briefkit.doc_ids import _registry_lock
+
+        registry = tmp_path / ".briefkit" / "registry.json"
+        real_open = os.open
+        calls = {"n": 0}
+
+        def flaky_open(path, flags, *args, **kwargs):
+            if str(path).endswith(".lock") and calls["n"] < 2:
+                calls["n"] += 1
+                raise PermissionError(13, "Permission denied", str(path))
+            return real_open(path, flags, *args, **kwargs)
+
+        monkeypatch.setattr(os, "open", flaky_open)
+        with _registry_lock(registry, timeout=5.0):
+            assert (registry.parent / "registry.json.lock").exists()
+        assert calls["n"] == 2
+        assert not list(registry.parent.glob("*.lock"))
+
+    def test_lock_held_past_the_timeout_raises(self, tmp_path):
+        import os
+        import time
+
+        from briefkit.doc_ids import _registry_lock
+
+        registry = tmp_path / ".briefkit" / "registry.json"
+        registry.parent.mkdir(parents=True)
+        lock = registry.parent / "registry.json.lock"
+        lock.touch()
+        future = time.time() + 3600  # fresh forever: never treated as stale
+        os.utime(lock, (future, future))
+        with pytest.raises(TimeoutError):
+            with _registry_lock(registry, timeout=0.2):
+                pass

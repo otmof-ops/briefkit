@@ -61,6 +61,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
+- The document-ID registry lock retries when Windows reports a lock file that another process is deleting as `PermissionError`; a contended writer used to exit with a traceback instead of waiting its turn.
 - **`--output`, `output.output_dir` and `preview` work.** The CLI printed the requested path, then wrote `<source dir>/executive-briefing.pdf` regardless; `batch` could never skip current output when `output_dir` was set; `preview` reported its own file missing. One resolver (`briefkit.output.resolve_output_path`) serves `generate`, `batch`, `status`, `preview` and every template; `--output` may name a file or a directory, and is the mirror directory for `batch`.
 - **`--title`, `--org`, `project.org`, `project.tagline`, `project.url`, `project.abn` and `project.copyright` reach the PDF.** The cover, running head, back cover and `/Author` read `brand.*`, which was never fed from `project.*`; it is now, with an explicit `brand.*` still winning.
 - **Zero-config level detection.** A folder of numbered documents is a documentation set at any depth, so `briefkit generate ./chapters` with no `briefkit.yml` no longer produces a chapter-less briefing.

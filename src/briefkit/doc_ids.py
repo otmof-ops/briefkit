@@ -41,7 +41,9 @@ def _registry_lock(registry_path: Path, timeout: float = 10.0):
     Eight concurrent ``briefkit batch`` runs issued 156 duplicate IDs across
     200 documents without this. The lock is an ``O_EXCL`` file beside the
     registry, which works on every platform; a lock older than *timeout*
-    seconds is treated as left behind by a crashed writer.
+    seconds is treated as left behind by a crashed writer. Windows reports
+    a lock file that another process is deleting as ``PermissionError``
+    rather than ``FileExistsError``; both mean "held, try again".
     """
     lock = registry_path.with_name(registry_path.name + ".lock")
     registry_path.parent.mkdir(parents=True, exist_ok=True)
@@ -50,7 +52,7 @@ def _registry_lock(registry_path: Path, timeout: float = 10.0):
         try:
             fd = os.open(str(lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
             break
-        except FileExistsError:
+        except (FileExistsError, PermissionError):
             try:
                 if time.time() - lock.stat().st_mtime > timeout:
                     lock.unlink()

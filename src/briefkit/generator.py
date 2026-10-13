@@ -73,6 +73,7 @@ from briefkit.styles import (
     _safe_text,
     build_styles,
     esc,
+    slugify,
 )
 from briefkit.variants import auto_detect_variant, get_variant
 
@@ -102,6 +103,70 @@ class BriefkitDocTemplate(SimpleDocTemplate):
         self.final_path = Path(filename)
         self.part_path = self.final_path.with_name(f".{self.final_path.name}.{os.getpid()}.part")
         super().__init__(str(self.part_path), **kw)
+        self._anchor_keys: set[str] = set()
+        self._used_keys: set[str] = set()
+        self._outline_level = -1
+        self._outline_entries = 0
+
+    # -- navigation ------------------------------------------------------
+
+    def _collect_anchor_keys(self, flowables) -> None:
+        """Every ``#key`` referenced by a link in the story."""
+        for fl in flowables:
+            text = getattr(fl, "text", None)
+            if isinstance(text, str):
+                self._anchor_keys.update(re.findall(r'href="#([^"]+)"', text))
+            for attr in ("_content", "_flowables"):
+                inner = getattr(fl, attr, None)
+                if isinstance(inner, (list, tuple)):
+                    self._collect_anchor_keys(inner)
+            cells = getattr(fl, "_cellvalues", None)
+            if isinstance(cells, (list, tuple)):
+                for row in cells:
+                    if isinstance(row, (list, tuple)):
+                        for cell in row:
+                            self._collect_anchor_keys(cell if isinstance(cell, (list, tuple)) else [cell])
+
+    def handle_documentBegin(self):
+        super().handle_documentBegin()
+        # Pre-register every referenced anchor on page 1. A heading that is
+        # bookmarked later overwrites its entry, so a link whose target never
+        # renders lands on page 1 instead of aborting the build at save time
+        # with "undefined destination target".
+        for key in sorted(self._anchor_keys):
+            self.canv.bookmarkPage(key)
+
+    def afterFlowable(self, flowable):
+        """Bookmark every heading paragraph and add it to the document outline."""
+        style = getattr(flowable, "style", None)
+        level = getattr(style, "outlineLevel", None)
+        if not isinstance(flowable, Paragraph) or level is None:
+            return
+        try:
+            title = flowable.getPlainText().strip()
+        except Exception:  # noqa: BLE001 — a paragraph that cannot render its text has nothing to bookmark
+            return
+        if not title:
+            return
+        keys = [slugify(title)]
+        plain = slugify(title, drop_numbering=True)
+        if plain != keys[0]:
+            keys.append(plain)
+        primary_key = None
+        for key in keys:
+            candidate, n = key, 1
+            while candidate in self._used_keys:
+                n += 1
+                candidate = f"{key}-{n}"
+            self._used_keys.add(candidate)
+            self.canv.bookmarkPage(candidate)
+            primary_key = primary_key or candidate
+        level = max(0, min(int(level), self._outline_level + 1))
+        self._outline_level = level
+        self._outline_entries += 1
+        self.canv.addOutlineEntry(title, primary_key, level=level, closed=False)
+        if self._outline_entries == 1:
+            self.canv.showOutline()
 
     def _commit(self) -> None:
         os.replace(self.part_path, self.final_path)
@@ -112,6 +177,7 @@ class BriefkitDocTemplate(SimpleDocTemplate):
 
     def build(self, flowables, **kw):
         self.final_path.parent.mkdir(parents=True, exist_ok=True)
+        self._collect_anchor_keys(flowables)
         try:
             super().build(flowables, **kw)
         except BaseException:
@@ -121,6 +187,7 @@ class BriefkitDocTemplate(SimpleDocTemplate):
 
     def multiBuild(self, story, **kw):
         self.final_path.parent.mkdir(parents=True, exist_ok=True)
+        self._collect_anchor_keys(story)
         try:
             result = super().multiBuild(story, **kw)
         except BaseException:
@@ -1460,6 +1527,8 @@ class BaseBriefingTemplate:
             # when SOURCE_DATE_EPOCH is exported. project.disable_determinism
             # restores wall-clock stamps for this document only.
             "invariant": not project.get("disable_determinism", False),
+            # Viewers show the document title in the window bar, not the file name.
+            "displayDocTitle": True,
         }
         merged = {**defaults, **kwargs}
         out_path = Path(output_path) if output_path else self.output_path

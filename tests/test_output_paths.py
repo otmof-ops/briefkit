@@ -160,3 +160,61 @@ class TestCommandsHonourTheResolver:
         result = get_template("minimal")(basic_fixture, config=cfg).generate()
         assert result.is_relative_to(tmp_path / "pdfs")
         assert result.exists()
+
+
+class TestZeroConfigLevel:
+    """A folder of numbered docs is a documentation set, with or without a project root."""
+
+    def test_numbered_docs_without_project_root_generate_a_doc_set(self, tmp_path, monkeypatch, capsys):
+        from briefkit.cli import main
+
+        docs = tmp_path / "chapters"
+        docs.mkdir()
+        (docs / "01-first.md").write_text(
+            "# First\n\nThe first chapter has enough text to extract.\n", encoding="utf-8"
+        )
+        (docs / "02-second.md").write_text("# Second\n\nThe second chapter also has text.\n", encoding="utf-8")
+        elsewhere = tmp_path / "cwd"
+        elsewhere.mkdir()
+        monkeypatch.chdir(elsewhere)
+        out = tmp_path / "chapters.pdf"
+        rc = main(["generate", str(docs), "--no-ids", "--quiet", "--output", str(out)])
+        assert rc == 0, capsys.readouterr().err
+        from pypdf import PdfReader
+
+        text = "\n".join((p.extract_text() or "") for p in PdfReader(str(out)).pages)
+        assert "first chapter" in text and "second chapter" in text
+
+    def test_project_root_inside_the_doc_set_is_still_a_doc_set(self, tmp_path):
+        from briefkit.generator import detect_level
+
+        docs = tmp_path / "set"
+        docs.mkdir()
+        (docs / "briefkit.yml").touch()
+        (docs / "01-only.md").write_text("# Only\n\nText.\n", encoding="utf-8")
+        assert detect_level(docs, docs, copy.deepcopy(DEFAULTS)) == 3
+
+    def test_depth_rule_still_applies_to_structured_projects(self, tmp_path):
+        from briefkit.generator import detect_level
+
+        root = tmp_path / "project"
+        subject = root / "division" / "subject"
+        docset = subject / "set"
+        docset.mkdir(parents=True)
+        (docset / "01-a.md").write_text("# A\n", encoding="utf-8")
+        cfg = copy.deepcopy(DEFAULTS)
+        assert detect_level(root / "division", root, cfg) == 2
+        assert detect_level(subject, root, cfg) == 3  # depth 2 -> level 3 per the default map
+        assert detect_level(docset, root, cfg) == 3
+
+    def test_subject_and_division_are_inferred_without_a_root(self, tmp_path):
+        from briefkit.generator import detect_level
+
+        division = tmp_path / "division"
+        docset = division / "subject" / "set"
+        docset.mkdir(parents=True)
+        (docset / "01-a.md").write_text("# A\n", encoding="utf-8")
+        cfg = copy.deepcopy(DEFAULTS)
+        assert detect_level(division / "subject", None, cfg) == 2
+        assert detect_level(division, None, cfg) == 1
+        assert detect_level(tmp_path, None, cfg) == 4

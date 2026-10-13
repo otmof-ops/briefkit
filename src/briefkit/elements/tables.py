@@ -12,7 +12,7 @@ from reportlab.lib.colors import HexColor, white
 from reportlab.lib.units import mm
 from reportlab.platypus import Spacer, Table, TableStyle
 
-from briefkit.styles import CONTENT_WIDTH, _get_brand, _hex, _safe_para, _safe_text, build_styles
+from briefkit.styles import CONTENT_WIDTH, _get_brand, _hex, _safe_para, build_styles
 
 # Semantic tint colors for comparison table cell coding
 _GREEN_BG = HexColor("#eafaf1")
@@ -66,12 +66,7 @@ def build_data_table(
 
     col_count = len(headers)
 
-    header_row = [
-        _safe_para(
-            f"<b>{str(h) if already_escaped else _safe_text(str(h))}</b>", styles["STYLE_TABLE_HEADER"], already_escaped
-        )
-        for h in headers
-    ]
+    header_row = [_safe_para(f"<b>{h}</b>", styles["STYLE_TABLE_HEADER"], already_escaped) for h in headers]
 
     if not rows:
         rows = [["No data available"] + [""] * (col_count - 1)]
@@ -184,12 +179,7 @@ def build_comparison_table(headers, rows, brand=None, content_width=None, alread
     col_count = len(headers)
     col_width = cw / col_count
 
-    header_row = [
-        _safe_para(
-            f"<b>{str(h) if already_escaped else _safe_text(str(h))}</b>", styles["STYLE_TABLE_HEADER"], already_escaped
-        )
-        for h in headers
-    ]
+    header_row = [_safe_para(f"<b>{h}</b>", styles["STYLE_TABLE_HEADER"], already_escaped) for h in headers]
     table_data = [header_row]
 
     if not rows:

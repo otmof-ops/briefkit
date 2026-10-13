@@ -177,6 +177,35 @@ class HierarchyTreeFlowable(Flowable):
 # ---------------------------------------------------------------------------
 
 
+def _has_numbered_docs(directory: Path, pattern: str) -> bool:
+    try:
+        return any(entry.is_file() for entry in directory.glob(pattern))
+    except OSError:
+        return False
+
+
+def _infer_level_from_children(target: Path, pattern: str, root_level: int) -> int:
+    """
+    Without a project root, read the tree: children that are doc sets make
+    *target* a subject (level 2); grandchildren that are doc sets make it a
+    division (level 1); otherwise it is a root-level briefing.
+    """
+    try:
+        children = [c for c in target.iterdir() if c.is_dir() and not c.is_symlink() and not c.name.startswith(".")]
+    except OSError:
+        return root_level
+    if any(_has_numbered_docs(c, pattern) for c in children):
+        return 2
+    for child in children:
+        try:
+            grandchildren = [g for g in child.iterdir() if g.is_dir() and not g.is_symlink()]
+        except OSError:
+            continue
+        if any(_has_numbered_docs(g, pattern) for g in grandchildren):
+            return 1
+    return root_level
+
+
 def detect_level(
     target_path: str | Path,
     project_root: str | Path | None,
@@ -198,8 +227,17 @@ def detect_level(
 
     target = Path(target_path).resolve()
 
+    # A directory that holds numbered documents is a documentation set,
+    # whatever its depth: that is what "one command, zero config" means for
+    # a user who points briefkit at a folder of chapters. Divisions and
+    # subjects never carry numbered documents themselves, so the depth rule
+    # below is unaffected for a structured project.
+    pattern = config.get("content", {}).get("numbered_doc_pattern", "[0-9][0-9]-*.md")
+    if _has_numbered_docs(target, pattern):
+        return 3
+
     if project_root is None:
-        return root_level
+        return _infer_level_from_children(target, pattern, root_level)
 
     root = Path(project_root).resolve()
 

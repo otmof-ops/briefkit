@@ -140,6 +140,7 @@ class TestVariantOptOut:
         from briefkit.templates.report import ReportTemplate
 
         cfg = copy.deepcopy(DEFAULTS)
+        cfg["doc_ids"]["enabled"] = False  # the fixture has no project marker; never touch a real registry
         cfg["_cli"] = {"variant": variant}
         out = src / out_name
         ReportTemplate(src, level=3, config=cfg, output_path=out).generate()

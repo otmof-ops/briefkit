@@ -52,9 +52,13 @@ jobs:
       - run: pip install -e ".[dev]"
       - run: pytest --cov=briefkit --cov-report=xml --cov-report=term --cov-fail-under=72
       - run: briefkit selftest --no-ids
-      # The suite must leave the checkout exactly as it found it.
+      # The suite must leave the checkout as it found it: no modified or new
+      # tracked-looking files, and none of the artefacts .gitignore would hide
+      # (generated PDFs, doc-ID registries, a stray briefkit.yml).
       - run: |
-          git status --porcelain --ignored -- . ':!.pytest_cache' ':!**/__pycache__' ':!coverage.xml' ':!.coverage*' ':!*.egg-info' | tee /tmp/dirty
+          git status --porcelain | tee /tmp/dirty
+          git ls-files --others --ignored --exclude-standard -- '*.pdf' 'briefkit.yml' | tee -a /tmp/dirty
+          git ls-files --others --ignored --exclude-standard --directory | grep -E '(^|/)\.briefkit/$' | tee -a /tmp/dirty || true
           test ! -s /tmp/dirty
         shell: bash
 

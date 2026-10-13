@@ -63,7 +63,6 @@ class TestLinkSchemes:
             "smb://attacker/share/x",
             "ms-msdt:/id%20PCWDiagnostic",
             "cmd:calc",
-            "#section-1",
             "other-doc.md",
             "//evil.example/x",
         ],
@@ -74,7 +73,9 @@ class TestLinkSchemes:
         assert "<link" not in html
         assert "the label" in html
 
-    @pytest.mark.parametrize("url", ["https://example.org/a?b=1&c=2", "http://example.org", "mailto:a@example.org"])
+    @pytest.mark.parametrize(
+        "url", ["https://example.org/a?b=1&c=2", "http://example.org", "mailto:a@example.org", "#installation"]
+    )
     def test_allowed_targets_become_links(self, url):
         assert safe_href(url) == url
         html = _strip_inline(f"See [the label]({url}) here.")
@@ -105,6 +106,9 @@ class TestLinkSchemes:
         pdf = _build(docs, "minimal")
         assert pdf.stat().st_size > 1000
         assert "the section" in _text(pdf)
+        # the anchor is a real internal link now, resolved to the heading's page
+        dests = [a.get_object().get("/Dest") for p in PdfReader(str(pdf)).pages for a in (p.get("/Annots") or [])]
+        assert any(d is not None for d in dests)
 
     def test_parenthesised_urls_survive(self):
         html = _strip_inline("[w](https://en.wikipedia.org/wiki/Foo_(bar)) tail")

@@ -6,6 +6,12 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- **A document outline.** Every H1, H2 and H3 heading in every template is bookmarked and listed in the PDF outline (the sidebar in Acrobat, Preview and browsers), nested by level, and the file opens with the outline showing. The viewer window bar shows the document title instead of the file name.
+- **A clickable table of contents.** Each TOC entry is an internal link to the heading it names, in all 29 templates.
+- **Resolvable `#anchors`.** A Markdown link such as `[see](#installation)` jumps to the heading whose slug matches (GitHub-style: lower-case, hyphens; a leading "3.1 " section number is ignored). Every anchor referenced in a document is pre-registered on page 1, so a link to a heading that does not exist lands on page 1 instead of aborting the build, which is what an unresolved destination used to do.
+
 ### Security
 
 - **Link targets are allowlisted.** Markdown links became PDF link actions whatever their scheme, so `[x](javascript:…)`, `[x](file:///…)`, `[x](smb://…)` and custom handlers such as `ms-msdt:` were live in the output. Only `http`, `https` and `mailto` are kept; everything else renders as its label text. The sanitiser in `styles._safe_text` re-validates every `<link>` on both escaping paths.

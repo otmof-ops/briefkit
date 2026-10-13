@@ -139,7 +139,7 @@ Each numbered file becomes a `subsystem` dict:
 
 ### Level 2: Subject (Aggregation)
 
-A directory of doc sets. Each subdirectory with numbered docs is aggregated.
+A directory of doc sets. Each subdirectory with numbered docs is aggregated. The level is read from the tree, so a subject is recognized at any depth below the project root; `README.md` is optional here too, and without it the title is the directory name.
 
 ```
 education/                         --> Subject-level briefing
@@ -156,7 +156,7 @@ education/                         --> Subject-level briefing
 
 ### Level 1: Division (Higher Aggregation)
 
-A directory of subjects.
+A directory of subjects, recognized by its grandchildren holding numbered docs.
 
 ```
 sciences/                          --> Division-level briefing

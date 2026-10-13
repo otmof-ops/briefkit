@@ -34,14 +34,16 @@ git checkout -b feat/your-feature-name
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
+pre-commit install          # optional: ruff and ruff-format on every commit
 ```
 
 Verify:
 
 ```bash
-pytest --tb=short
-briefkit selftest
+make check                  # ruff check, ruff format --check, pytest, briefkit selftest
 ```
+
+The `Makefile` targets are `install`, `test`, `lint`, `format`, `format-check`, `check`, `selftest`, `audit` (pip-audit), `build` and `clean`.
 
 ### 3. Make Changes
 
@@ -63,7 +65,7 @@ git commit -m "feat(scope): add new feature description"
 git push origin feat/your-feature-name
 ```
 
-Open a Pull Request on GitHub against the `main` branch. Fill out the PR template completely.
+Open a Pull Request on GitHub against the `main` branch. Fill out the PR template completely. CI runs ruff, the test suite on Linux, macOS and Windows across Python 3.10 to 3.13 (3.14 is informational), a package build, pip-audit and a clean-tree check, and fails if coverage drops below the floor set in `.github/workflows/test.yml`.
 
 ---
 
@@ -72,12 +74,12 @@ Open a Pull Request on GitHub against the `main` branch. Fill out the PR templat
 | Contribution Type | Notes |
 |-------------------|-------|
 | Bug fixes | Must include a regression test |
-| New templates | Must include selftest fixture and documentation |
-| New variants | Must include `auto_detect_keywords` list |
-| New color presets | Must pass hex validation; all 7 keys required |
-| Documentation fixes | American English spelling required |
+| New templates | Must include a test and a section in `docs/templates-guide.md` |
+| New variants | Must include `auto_detect_keywords` and a row in `docs/variants.md` |
+| New color presets | All 16 keys, 6-digit hex colors; regenerate `docs/color-presets.md` |
+| Documentation fixes | American English spelling required; `tests/test_docs.py` checks commands, links and spelling |
 | Test improvements | Coverage increases are always welcome |
-| Performance improvements | Must include benchmark comparison |
+| Performance improvements | Must include a benchmark comparison |
 
 ## What We Do Not Accept
 
@@ -89,6 +91,7 @@ Open a Pull Request on GitHub against the `main` branch. Fill out the PR templat
 | British English spelling | Project standard is American English |
 | Large-scale reformatting PRs | Must justify the churn in an issue first |
 | Features duplicating existing functionality | Open an issue to discuss first |
+| A third-party CLI framework or logging framework | See `docs/adr/001` and `docs/adr/004` |
 
 ---
 
@@ -98,29 +101,33 @@ Open a Pull Request on GitHub against the `main` branch. Fill out the PR templat
 pytest                          # All tests
 pytest --cov=briefkit           # With coverage
 pytest tests/test_parser.py     # Single module
-briefkit selftest               # Smoke test
+briefkit selftest               # Smoke test in a temporary directory
 ```
+
+Tests never write into the source tree: fixtures are copied into a temporary project with document IDs disabled (see `tests/conftest.py`). Set `SOURCE_DATE_EPOCH` when a test compares PDF bytes.
 
 ---
 
 ## Adding Templates
 
-1. Create a new file in `src/briefkit/templates/`
-2. Subclass `BaseBriefingTemplate`
-3. Override `build_story()` to define section order
-4. Register in `src/briefkit/templates/__init__.py`
-5. Add a test fixture under `tests/fixtures/`
+1. Create a module in `src/briefkit/templates/` (snake_case file name)
+2. Subclass `BaseBriefingTemplate`; implement `build_story()`; declare traits (`pdf_subject`, `design_page_size`, `design_margins_mm`, `supports_variants`) and any hooks you need (`prepare`, `header_footer`, `before_build`). Do not override `generate()`; it is final and a subclass that overrides it gets a `DeprecationWarning`.
+3. Use brand lookups (`self.brand["font_body"]`, `self.styles["STYLE_H1"]`) rather than font or color literals, so presets apply
+4. Register it in the `_REGISTRY` dict in `src/briefkit/templates/__init__.py` and export the class in `__all__`
+5. Add a test in `tests/test_templates.py` (every registered template is built once by the contract tests) and a section in `docs/templates-guide.md`
+
+The hook and trait API: [docs/custom-templates.md](docs/custom-templates.md).
 
 ## Adding Variants
 
-1. Create a new file in `src/briefkit/variants/`
-2. Subclass `DocSetVariant`
-3. Set `name`, `auto_detect_keywords`, implement `build_variant_sections()`
-4. Register in `src/briefkit/variants/__init__.py`
+1. Create a module in `src/briefkit/variants/`
+2. Subclass `DocSetVariant`; set `name` and `auto_detect_keywords`; implement `build_variant_sections()`; decorate the class with `@_register`
+3. Add the module to the import list in `_ensure_registry_populated()` in `src/briefkit/variants/__init__.py`
+4. Add a row to `docs/variants.md` and a test in `tests/test_variants.py`
 
 ## Adding Color Presets
 
-Add a new entry to the `PRESETS` dict in `src/briefkit/presets/colors.py`. All seven keys are required: `primary`, `secondary`, `accent`, `body_text`, `caption`, `background`, `rule`. Values must be 6-digit hex codes (e.g., `#1B2A4A`).
+Add an entry to the `PRESETS` dict in `src/briefkit/presets/colors.py`. All sixteen keys are required: twelve colors (`primary`, `secondary`, `accent`, `body_text`, `caption`, `background`, `rule`, `success`, `warning`, `danger`, `code_bg`, `table_alt`) as 6-digit hex codes, and four fonts (`font_body`, `font_heading`, `font_mono`, `font_caption`) from the PDF base fourteen. Then add the preset to `docs/presets-guide.md` and regenerate `docs/color-presets.md`.
 
 ---
 
@@ -128,11 +135,14 @@ Add a new entry to the `PRESETS` dict in `src/briefkit/presets/colors.py`. All s
 
 | Rule | Standard |
 |------|----------|
-| File naming | Kebab-case |
-| Spelling | American English |
-| Imports | stdlib, third-party, local — separated by blank lines |
-| Secrets | None — no hardcoded API keys or passwords |
-| Input validation | At all system boundaries |
+| Formatting and lint | `ruff format` and `ruff check` (configured in `pyproject.toml`); CI fails on either |
+| File naming | snake_case for Python modules, kebab-case for documentation |
+| Spelling | American English in code, documentation and user-facing strings |
+| Imports | stdlib, third-party, local, separated by blank lines (ruff's isort rules) |
+| Output | `print()` to stdout for results and stderr for warnings; no logging framework (ADR-004) |
+| Data strings in PDF markup | Escape with `briefkit.styles.esc` or build paragraphs with `safe_para`; never interpolate raw text into ReportLab markup |
+| Secrets | None; no hardcoded API keys or passwords |
+| Input validation | At all system boundaries (configuration, paths, Markdown) |
 
 ---
 
@@ -152,7 +162,7 @@ Add a new entry to the `PRESETS` dict in `src/briefkit/presets/colors.py`. All s
 
 ## Pull Request Checklist
 
-- [ ] All tests pass (`pytest`)
+- [ ] `make check` passes (lint, format, tests, selftest)
 - [ ] Coverage does not decrease
 - [ ] New public API has docstrings
 - [ ] `CHANGELOG.md` updated under `[Unreleased]`
@@ -185,6 +195,7 @@ All contributors are expected to behave professionally and respectfully. We do n
 | [SAFETY.md](SAFETY.md) | Safety framework |
 | [SECURITY.md](SECURITY.md) | Vulnerability reporting policy |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | This document |
+| [docs/adr/](docs/adr/) | Architecture decision records |
 
 ---
 

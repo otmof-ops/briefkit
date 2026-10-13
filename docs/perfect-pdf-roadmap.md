@@ -2,6 +2,8 @@
 
 **Deep-research report. 2026-04-08.**
 
+> **Status at 1.1.0 (2026-10-13).** This report is kept as written; it is the plan of record for typography and PDF-standard work. Shipped since it was written: P0-1 (one `generate()` applies the guard rails to all 29 templates), P0-2 (an empty extraction exits 2 with a diagnosis), P0-3 and P0-4 (links and `&`, `<`, `>` reach ReportLab safely, with link schemes allowlisted), P0-5 (a misspelled skip flag is a configuration error), P1-1 (one owner for document construction and page geometry), P1-2 (`--dry-run` runs the extraction), P1-4 (unknown configuration keys warn with the closest match), and from Phase 4 the document outline, the clickable table of contents and resolvable `#anchors`. P1-3 (a logging framework) was declined; see ADR-004. Everything else, including `briefkit watch`, embedded fonts, page labels and PDF/A, is still a plan and not a feature.
+
 This document is the synthesized output of a four-track audit of briefkit's
 entire PDF production pipeline — typography, layout/flow, PDF output
 integrity, and content extraction / config ergonomics — cross-validated
@@ -236,7 +238,7 @@ introduced in Phase 4.
 Correctness-class fixes that are independent of the typography /
 layout / PDF-integrity work. Ship these before anything cosmetic.
 
-### P1-1. Centralise `SimpleDocTemplate` construction
+### P1-1. Centralize `SimpleDocTemplate` construction
 
 **Severity: MAJOR. Effort: M (3–5 hours).**
 
@@ -688,7 +690,7 @@ Front matter and body share arabic numbering. Acrobat's "go to page
 5" means physical page 5, not body page 5.
 
 **Fix.** In `_build_doc`, after building the story, write a
-`/PageLabels` dict to the catalogue assigning roman to front matter
+`/PageLabels` dict to the catalog assigning roman to front matter
 (cover through TOC) and arabic restart at the first chapter. The
 phase-1 refactor puts this in one place.
 
@@ -890,7 +892,7 @@ fails CI.
 **Severity: POLISH. Effort: S (after P4-7).**
 
 After PDF/A lands, run `verapdf` against a representative output in
-CI. verapdf is a Java tool but ships containerised.
+CI. verapdf is a Java tool but ships containerized.
 
 ### P6-6. CMYK preset option and print-safety docs
 
@@ -960,7 +962,7 @@ Phase 0  Critical regressions                         1 day
   P0-7   "(unspecified)" placeholder in 3 templates
 
 Phase 1  Correctness bedrock                          1-2 days
-  P1-1   Centralise SimpleDocTemplate construction
+  P1-1   Centralize SimpleDocTemplate construction
   P1-2   Make --dry-run actually run extraction
   P1-3   Introduce logging module
   P1-4   Config schema with closest-match suggestions
@@ -1039,7 +1041,7 @@ Phase 1 is upgrade, not repair.
 | P0-5 | Skip-flag typo silently ignored | BLOCKER | S | 0 |
 | P0-6 | Cover title auto-shrink dead code | BLOCKER | S | 0 |
 | P0-7 | `(unspecified)` placeholder ships | MAJOR | S | 0 |
-| P1-1 | Centralise SimpleDocTemplate | MAJOR | M | 1 |
+| P1-1 | Centralize SimpleDocTemplate | MAJOR | M | 1 |
 | P1-2 | `--dry-run` is a stub | MAJOR | S | 1 |
 | P1-3 | No `logging` module | MAJOR | M | 1 |
 | P1-4 | Config schema has no unknown-key detection | MAJOR | S | 1 |

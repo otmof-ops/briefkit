@@ -25,11 +25,10 @@ import re
 from reportlab.lib.units import mm
 from reportlab.platypus import CondPageBreak, KeepTogether, PageBreak, Paragraph, Spacer
 
-from briefkit.templates._helpers import should_skip
-
 from briefkit.extractor import parse_markdown
 from briefkit.generator import build_toc
 from briefkit.styles import CONTENT_WIDTH, _hex, _ps, _safe_para
+from briefkit.templates._helpers import should_skip
 from briefkit.templates.book import BookTemplate
 
 # Pattern categories

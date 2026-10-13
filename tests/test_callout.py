@@ -33,7 +33,6 @@ from reportlab.platypus import SimpleDocTemplate
 
 from briefkit.elements.callout import build_callout_box, build_pull_quote
 
-
 # The real trigger: inline markup left open, as produced by splitting a
 # blockquote whose emphasis spans a line break.
 UNCLOSED_TAG_CASES = [

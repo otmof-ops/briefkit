@@ -21,13 +21,6 @@ from reportlab import rl_config
 from reportlab.lib.colors import HexColor
 from reportlab.lib.pagesizes import A3, A4, legal, letter
 from reportlab.lib.units import mm
-
-# Byte-reproducible builds: set ReportLab's global invariant flag at
-# import time so every Canvas / PDF produced by briefkit has a stable
-# /ID and (when SOURCE_DATE_EPOCH is set) a stable /CreationDate /
-# ModDate. Users who genuinely need timestamped output can unset this
-# flag before calling briefkit, or set disable_determinism in config.
-rl_config.invariant = 1
 from reportlab.platypus import (
     CondPageBreak,
     Flowable,
@@ -51,7 +44,7 @@ from briefkit.elements.dashboard import build_metric_dashboard  # noqa: F401 —
 # ---------------------------------------------------------------------------
 # Re-export _hf_state for templates that mutate section headers directly
 from briefkit.elements.header_footer import (  # noqa: F401 — re-exported
-    _hf_state,  # noqa: F401, E402
+    _hf_state,
     build_classification_banner,
     make_header_footer,
 )
@@ -75,6 +68,13 @@ from briefkit.styles import (
     compute_content_width,
 )
 from briefkit.variants import auto_detect_variant, get_variant
+
+# Byte-reproducible builds: set ReportLab's global invariant flag at
+# import time so every Canvas / PDF produced by briefkit has a stable
+# /ID and (when SOURCE_DATE_EPOCH is set) a stable /CreationDate /
+# ModDate. Users who genuinely need timestamped output can unset this
+# flag before calling briefkit, or set disable_determinism in config.
+rl_config.invariant = 1
 
 _PAGE_SIZES = {
     "A4": A4,
@@ -1164,7 +1164,7 @@ class BaseBriefingTemplate:
         self,
         output_path: str | Path | None = None,
         **kwargs: Any,
-    ) -> "SimpleDocTemplate":
+    ) -> SimpleDocTemplate:
         """
         Construct a ``SimpleDocTemplate`` with briefkit's standard
         metadata, determinism, language, and producer defaults applied.

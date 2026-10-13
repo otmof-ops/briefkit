@@ -258,14 +258,12 @@ def _dry_run_report(path: Path, cfg: dict) -> int:
     """
     try:
         from briefkit.extractor import extract_content
-        from briefkit.templates import get_template
-        from briefkit.templates._helpers import SKIPPABLE_SECTIONS, should_skip
     except Exception as exc:
         print(f"dry-run failed to import briefkit internals: {exc}", file=sys.stderr)
         return 1
 
     tpl_name = cfg.get("template", {}).get("preset", "briefing")
-    print(f"\n--- briefkit dry-run ---")
+    print("\n--- briefkit dry-run ---")
     print(f"Source:   {path}")
     print(f"Template: {tpl_name}")
     layout = cfg.get("layout", {})
@@ -282,15 +280,15 @@ def _dry_run_report(path: Path, cfg: dict) -> int:
     terms = content.get("terms", {}) or {}
     metrics = content.get("metrics", {}) or {}
 
-    print(f"\nExtracted:")
+    print("\nExtracted:")
     print(f"  Subsystems:    {len(subsystems)}")
     print(f"  Words total:   {metrics.get('word_count', 'n/a')}")
     print(f"  Bibliography:  {len(bibliography)}")
     print(f"  Terms (index): {len(terms)}")
     if content.get("orientation"):
-        print(f"  Orientation:   present")
+        print("  Orientation:   present")
     if content.get("overview"):
-        print(f"  Overview:      present")
+        print("  Overview:      present")
 
     if _extraction_is_empty(content):
         print()
@@ -303,9 +301,9 @@ def _dry_run_report(path: Path, cfg: dict) -> int:
     if active_skips:
         print(f"\nActive skip flags: {', '.join(active_skips)}")
     else:
-        print(f"\nActive skip flags: (none)")
+        print("\nActive skip flags: (none)")
 
-    print(f"\n(dry-run — no PDF written)\n")
+    print("\n(dry-run — no PDF written)\n")
     return 0
 
 

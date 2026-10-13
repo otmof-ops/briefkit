@@ -32,7 +32,6 @@ from reportlab.lib.units import mm
 from reportlab.platypus import (
     PageBreak,
     Paragraph,
-    SimpleDocTemplate,
     Spacer,
     Table,
     TableStyle,

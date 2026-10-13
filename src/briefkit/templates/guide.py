@@ -48,7 +48,6 @@ from reportlab.lib.units import mm
 from reportlab.platypus import (
     PageBreak,
     Paragraph,
-    SimpleDocTemplate,
     Spacer,
     Table,
     TableStyle,
@@ -478,9 +477,9 @@ class GuideTemplate(BaseBriefingTemplate):
         page_size = A4
         self.content_width = compute_content_width(page_size, margins)
 
-        b = self.brand
-        subject = guide_cfg.get("subject", f"Technical guide: {title}")
-        author = guide_cfg.get("author", b.get("org", "Claude Code"))
+        meta = {"subject": guide_cfg.get("subject") or f"Technical guide: {title}"}
+        if guide_cfg.get("author"):
+            meta["author"] = guide_cfg["author"]
 
         doc = self._build_doc(
             pagesize=page_size,
@@ -488,6 +487,7 @@ class GuideTemplate(BaseBriefingTemplate):
             bottomMargin=bottom_m,
             leftMargin=left_m,
             rightMargin=right_m,
+            **meta,
         )
 
         story = self.build_story(content)

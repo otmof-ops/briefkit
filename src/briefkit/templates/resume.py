@@ -26,7 +26,6 @@ from reportlab.lib.colors import HexColor, black
 from reportlab.lib.pagesizes import A3, A4, legal, letter
 from reportlab.lib.units import mm
 from reportlab.platypus import (
-    SimpleDocTemplate,
     Spacer,
     Table,
     TableStyle,

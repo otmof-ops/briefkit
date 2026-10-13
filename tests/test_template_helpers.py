@@ -5,9 +5,9 @@ Tests for briefkit.templates._helpers — universal architectural controls.
 from __future__ import annotations
 
 import pytest
+from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.platypus import CondPageBreak, KeepTogether, PageBreak, Paragraph, Spacer
-from reportlab.lib.styles import ParagraphStyle
 
 from briefkit.templates._helpers import (
     DEFAULT_MAX_SPACER_MM,
@@ -23,7 +23,6 @@ from briefkit.templates._helpers import (
     section_break_mode,
     should_skip,
 )
-
 
 # ---------------------------------------------------------------------------
 # should_skip

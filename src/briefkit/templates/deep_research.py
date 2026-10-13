@@ -47,7 +47,6 @@ from reportlab.lib.units import mm
 from reportlab.platypus import (
     PageBreak,
     Paragraph,
-    SimpleDocTemplate,
     Spacer,
     Table,
     TableStyle,
@@ -352,9 +351,18 @@ class DeepResearchTemplate(BaseBriefingTemplate):
         page_size = A4
         self.content_width = compute_content_width(page_size, margins)
 
-        cfg_author = dr_cfg.get("author", "(anonymous)")
-        cfg_subject = dr_cfg.get("subject", "(unspecified)")
-        cfg_title = dr_cfg.get("pdf_title", "(anonymous)")
+        # Per-template metadata overrides. Unset keys fall through to the
+        # project-wide metadata that _build_doc derives from config, so no
+        # placeholder text ever reaches the PDF info dictionary.
+        meta = {
+            key: value
+            for key, value in (
+                ("author", dr_cfg.get("author")),
+                ("subject", dr_cfg.get("subject")),
+                ("title", dr_cfg.get("pdf_title")),
+            )
+            if value
+        }
 
         doc = self._build_doc(
             pagesize=page_size,
@@ -362,6 +370,7 @@ class DeepResearchTemplate(BaseBriefingTemplate):
             bottomMargin=bottom_m,
             leftMargin=left_m,
             rightMargin=right_m,
+            **meta,
         )
 
         story = self.build_story(content)

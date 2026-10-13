@@ -134,9 +134,10 @@ class TestVariantOptOut:
         return subprocess.run(["pdftotext", str(path), "-"], capture_output=True, text=True).stdout
 
     def _build(self, src, variant, out_name):
+        import copy
+
         from briefkit.config import DEFAULTS
         from briefkit.templates.report import ReportTemplate
-        import copy
 
         cfg = copy.deepcopy(DEFAULTS)
         cfg["_cli"] = {"variant": variant}

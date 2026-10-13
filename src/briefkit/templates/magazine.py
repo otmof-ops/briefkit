@@ -44,7 +44,6 @@ from reportlab.lib.units import mm
 from reportlab.platypus import (
     PageBreak,
     Paragraph,
-    SimpleDocTemplate,
     Spacer,
     Table,
     TableStyle,
@@ -442,8 +441,9 @@ class MagazineTemplate(BaseBriefingTemplate):
         page_size = A4
         self.content_width = compute_content_width(page_size, margins)
 
-        cfg_author = mag_cfg.get("author", "Research Compilation")
-        cfg_subject = mag_cfg.get("subject", title)
+        meta = {"subject": mag_cfg.get("subject") or title}
+        if mag_cfg.get("author"):
+            meta["author"] = mag_cfg["author"]
 
         doc = self._build_doc(
             pagesize=page_size,
@@ -451,6 +451,7 @@ class MagazineTemplate(BaseBriefingTemplate):
             bottomMargin=bottom_m,
             leftMargin=left_m,
             rightMargin=right_m,
+            **meta,
         )
 
         story = self.build_story(content)

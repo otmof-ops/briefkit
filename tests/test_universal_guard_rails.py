@@ -11,9 +11,8 @@ instrumentation.
 from __future__ import annotations
 
 from reportlab.lib.styles import ParagraphStyle
-from reportlab.platypus import CondPageBreak, KeepTogether, PageBreak, Paragraph, Spacer
 from reportlab.lib.units import mm
-
+from reportlab.platypus import CondPageBreak, KeepTogether, PageBreak, Paragraph, Spacer
 
 # ---------------------------------------------------------------------------
 # Minimal stub template exposing just enough surface for the two methods

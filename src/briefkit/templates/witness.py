@@ -19,28 +19,24 @@ Key differences:
 
 from __future__ import annotations
 
+import html
 from pathlib import Path
 
 from reportlab.lib.colors import HexColor
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.platypus import (
-    PageBreak,
     Paragraph,
-    SimpleDocTemplate,
     Spacer,
     Table,
     TableStyle,
 )
-
-import html
 
 from briefkit.extractor import parse_markdown
 from briefkit.generator import BaseBriefingTemplate
 from briefkit.styles import (
     _hex,
     _ps,
-    _safe_para,
 )
 
 
@@ -57,7 +53,6 @@ def _witness_header_footer(canvas, doc):
     pw, ph = doc.pagesize
     lm = doc.leftMargin
     rm = doc.rightMargin
-    content_w = pw - lm - rm
 
     # Header: thin crimson rule
     canvas.setStrokeColor(HexColor("#8B0000"))
@@ -155,7 +150,6 @@ class WitnessTemplate(BaseBriefingTemplate):
 
         # --- Body: render every subsystem ---
         for idx, sub in enumerate(subsystems):
-            name = sub.get("name", f"Section {idx + 1}")
             blocks = sub.get("blocks") or parse_markdown(sub.get("content", ""))
 
             # Render all blocks — no limit, no separate section heading

@@ -24,13 +24,7 @@ from __future__ import annotations
 from reportlab.lib.pagesizes import A3, A4, legal, letter
 from reportlab.lib.units import mm
 from reportlab.pdfbase.pdfmetrics import stringWidth
-from reportlab.platypus import KeepTogether, PageBreak, Paragraph, SimpleDocTemplate, Spacer
-
-from briefkit.templates._helpers import (
-    optional_section,
-    section_break,
-    should_skip,
-)
+from reportlab.platypus import KeepTogether, PageBreak, Paragraph, Spacer
 
 from briefkit.elements.header_footer import make_header_footer
 from briefkit.extractor import parse_markdown
@@ -43,6 +37,9 @@ from briefkit.styles import (
     _hex,
     _ps,
     _safe_para,
+)
+from briefkit.templates._helpers import (
+    should_skip,
 )
 
 

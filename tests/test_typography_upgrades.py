@@ -13,7 +13,6 @@ import pytest
 
 from briefkit.extractor import _strip_inline, parse_markdown
 
-
 # ---------------------------------------------------------------------------
 # Smart punctuation
 # ---------------------------------------------------------------------------

@@ -30,7 +30,6 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     Paragraph,
-    SimpleDocTemplate,
     Spacer,
     Table,
     TableStyle,

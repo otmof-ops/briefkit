@@ -50,8 +50,17 @@ jobs:
           cache-dependency-path: pyproject.toml
       - run: python -m pip install --upgrade pip
       - run: pip install -e ".[dev]"
-      - run: pytest --cov=briefkit --cov-report=xml --cov-report=term
+      - run: pytest --cov=briefkit --cov-report=xml --cov-report=term --cov-fail-under=72
       - run: briefkit selftest --no-ids
+      # The suite must leave the checkout as it found it: no modified or new
+      # tracked-looking files, and none of the artefacts .gitignore would hide
+      # (generated PDFs, doc-ID registries, a stray briefkit.yml).
+      - run: |
+          git status --porcelain | tee /tmp/dirty
+          git ls-files --others --ignored --exclude-standard -- '*.pdf' 'briefkit.yml' | tee -a /tmp/dirty
+          git ls-files --others --ignored --exclude-standard --directory | grep -E '(^|/)\.briefkit/$' | tee -a /tmp/dirty || true
+          test ! -s /tmp/dirty
+        shell: bash
 
   # Informational until the suite has a Windows history: a failure here
   # is reported on the job but does not fail the workflow.
@@ -59,6 +68,8 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 20
     continue-on-error: true
+    env:
+      PYTHONUTF8: "1"
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -70,6 +81,20 @@ jobs:
       - run: pip install -e ".[dev]"
       - run: pytest
       - run: briefkit selftest --no-ids
+
+  # Informational: the next Python, until every dependency publishes wheels for it.
+  test-next-python:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e ".[dev]"
+      - run: pytest -q
 
   security:
     runs-on: ubuntu-latest

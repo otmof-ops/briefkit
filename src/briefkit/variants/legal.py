@@ -149,7 +149,9 @@ class LegalVariant(DocSetVariant):
         flowables.append(Spacer(1, 2 * mm))
 
         # Pattern: "Plaintiff v Defendant" (both title-cased)
-        case_pat = re.compile(r"([A-Z][a-z]+(?:\s+[A-Z]?[a-z]+)*)\s+v\.?\s+([A-Z][a-z]+(?:\s+[A-Z]?[a-z]+)*)")
+        # Bounded: an unbounded run of capitalised words made this quadratic on
+        # long capitalised lists (25 s on 100 kB).
+        case_pat = re.compile(r"([A-Z][a-z]+(?:\s+[A-Z]?[a-z]+){0,6})\s+v\.?\s+([A-Z][a-z]+(?:\s+[A-Z]?[a-z]+){0,6})")
         found_cases = []
         seen_cases = set()
         for m in case_pat.finditer(all_content):

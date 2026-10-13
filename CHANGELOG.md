@@ -12,6 +12,14 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - **A clickable table of contents.** Each TOC entry is an internal link to the heading it names, in all 29 templates.
 - **Resolvable `#anchors`.** A Markdown link such as `[see](#installation)` jumps to the heading whose slug matches (GitHub-style: lower-case, hyphens; a leading "3.1 " section number is ignored). Every anchor referenced in a document is pre-registered on page 1, so a link to a heading that does not exist lands on page 1 instead of aborting the build, which is what an unresolved destination used to do.
 
+### Fixed
+
+- **Variant auto-detection counts whole words, case-insensitively.** "loss" inside "Glossary" and "gradient" inside a preset description used to select the AI/ML variant for a getting-started guide, and upper-case keywords such as `EBITDA`, `REST` and `GET` could never match lower-cased text.
+- **Cross-reference labels.** An authored link label (`[the sibling set](../sibling-set/README.md)`) was discarded in favour of a title-cased path; the label wins now, and the scan skips symlinks and oversized files like the extractor does.
+- Two citation patterns (the "A, B, and C (2020)" author list and the legal variant's case-name scan) were quadratic on long capitalised lists (25 s on 100 kB); both are bounded.
+- `briefkit generate` no longer extracts the source directory twice; the pre-check's extraction is reused by the template. `--version` reads the package version directly.
+- The historical variant's timeline drawing uses the brand fonts.
+
 ### Security
 
 - **Link targets are allowlisted.** Markdown links became PDF link actions whatever their scheme, so `[x](javascript:…)`, `[x](file:///…)`, `[x](smb://…)` and custom handlers such as `ms-msdt:` were live in the output. Only `http`, `https` and `mailto` are kept; everything else renders as its label text. The sanitiser in `styles._safe_text` re-validates every `<link>` on both escaping paths.

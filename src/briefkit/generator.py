@@ -530,11 +530,15 @@ class BaseBriefingTemplate:
         Delegates to briefkit.extractor.extract_content().
         Caches the result in self.content.
         """
-        self.content = _extract_content(
-            self.target_path,
-            level=self.level,
-            config=self.config,
-        )
+        preloaded = getattr(self, "preloaded_content", None)
+        if isinstance(preloaded, dict):
+            self.content = preloaded
+        else:
+            self.content = _extract_content(
+                self.target_path,
+                level=self.level,
+                config=self.config,
+            )
         # --title names the document; it beats the README heading everywhere
         # the title is shown (cover, running head, /Title).
         cli_title = (self.config.get("_cli", {}) or {}).get("title")

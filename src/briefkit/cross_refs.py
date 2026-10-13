@@ -40,7 +40,14 @@ def extract_cross_refs(path, known_groups=None):
         )
 
     def _read(fp):
+        # Same guards as the extractor's reader: a symlink in a cloned tree
+        # must not pull an outside file into the cross-reference scan, and a
+        # giant file must not be read whole.
+        if fp.is_symlink():
+            return ""
         try:
+            if fp.stat().st_size > 10 * 1024 * 1024:
+                return ""
             return fp.read_text(encoding="utf-8", errors="replace")
         except OSError:
             return ""
@@ -49,14 +56,7 @@ def extract_cross_refs(path, known_groups=None):
     for md_file in all_md:
         raw = _read(md_file)
 
-        for match in _CROSS_REF_PAREN.finditer(raw):
-            ref = match.group(1).strip("/")
-            if ref and ref not in cross_refs_seen:
-                cross_refs.append(ref)
-                cross_refs_seen.add(ref)
-                if ref not in cross_ref_labels:
-                    cross_ref_labels[ref] = ref.split("/")[-1].replace("-", " ").title()
-
+        # Markdown links first: an authored label beats a title-cased path.
         for match in _CROSS_REF_MD_LINK.finditer(raw):
             label, ref = match.group(1), match.group(2).strip("/")
             if ref and ref not in cross_refs_seen:
@@ -64,6 +64,14 @@ def extract_cross_refs(path, known_groups=None):
                 cross_refs_seen.add(ref)
             if ref and ref not in cross_ref_labels:
                 cross_ref_labels[ref] = label
+
+        for match in _CROSS_REF_PAREN.finditer(raw):
+            ref = match.group(1).strip("/")
+            if ref and ref not in cross_refs_seen:
+                cross_refs.append(ref)
+                cross_refs_seen.add(ref)
+                if ref not in cross_ref_labels:
+                    cross_ref_labels[ref] = ref.split("/")[-1].replace("-", " ").title()
 
         if cross_ref_abs:
             for match in cross_ref_abs.finditer(raw):

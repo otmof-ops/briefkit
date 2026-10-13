@@ -14,6 +14,8 @@ Use ``auto_detect_variant(text)`` to pick a variant based on content keywords.
 
 from __future__ import annotations
 
+import re
+
 # ---------------------------------------------------------------------------
 # Shared utilities
 # ---------------------------------------------------------------------------
@@ -26,6 +28,22 @@ def collect_text(content: dict) -> str:
         parts.append(sub.get("content", ""))
         parts.append(sub.get("name", ""))
     return " ".join(parts)
+
+
+_KEYWORD_PATTERNS: dict[str, re.Pattern[str]] = {}
+
+
+def _count_keyword_hits(text: str, keywords: list[str]) -> int:
+    """Count keywords present in *text* as whole words, ignoring case."""
+    hits = 0
+    for keyword in keywords:
+        pattern = _KEYWORD_PATTERNS.get(keyword)
+        if pattern is None:
+            pattern = re.compile(r"(?<!\w)" + re.escape(keyword) + r"(?!\w)", re.IGNORECASE)
+            _KEYWORD_PATTERNS[keyword] = pattern
+        if pattern.search(text):
+            hits += 1
+    return hits
 
 
 # ---------------------------------------------------------------------------
@@ -45,14 +63,20 @@ class DocSetVariant:
     name: str = "base"
     auto_detect_keywords: list[str] = []
 
+    def keyword_hits(self, text: str) -> int:
+        """
+        How many of the variant's keywords occur in *text* as whole words,
+        case-insensitively.
+
+        Substring matching used to count "loss" inside "Glossary" and
+        "gradient" inside a colour preset's description, and never matched an
+        upper-case keyword such as "EBITDA" or "REST" against lower-cased text.
+        """
+        return _count_keyword_hits(text, self.auto_detect_keywords)
+
     def matches_content(self, text: str) -> bool:
-        """
-        Return True when at least 2 of the variant's keywords are present in
-        *text* (case-insensitive).  Override for custom matching logic.
-        """
-        text_lower = text.lower()
-        matches = sum(1 for kw in self.auto_detect_keywords if kw in text_lower)
-        return matches >= 2
+        """Return True when at least 2 of the variant's keywords are present in *text*."""
+        return self.keyword_hits(text) >= 2
 
     def build_variant_sections(
         self,
@@ -130,12 +154,11 @@ def auto_detect_variant(text: str) -> DocSetVariant | None:
         Raw document text used for keyword scoring.
     """
     _ensure_registry_populated()
-    text_lower = text.lower()
     best: DocSetVariant | None = None
     best_count = 1  # require at least 2 to beat this seed
 
     for variant in _REGISTRY.values():
-        count = sum(1 for kw in variant.auto_detect_keywords if kw in text_lower)
+        count = variant.keyword_hits(text)
         if count > best_count:
             best_count = count
             best = variant

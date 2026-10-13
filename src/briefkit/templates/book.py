@@ -38,6 +38,7 @@ from briefkit.styles import (
     _hex,
     _ps,
     _safe_para,
+    _safe_text,
 )
 from briefkit.templates._helpers import (
     should_skip,
@@ -144,14 +145,18 @@ class BookTemplate(BaseBriefingTemplate):
         story.append(Spacer(1, 120 * mm))
         story.append(Paragraph(f"First published {year}", cp_style))
         story.append(Paragraph(copyright_str, cp_style))
-        story.append(
-            Paragraph(
+        # A configured license (license.preset or license.notice) is the rights
+        # statement; the all-rights-reserved text is only the default without one.
+        rights_text = (
+            _safe_text(self.license_notice)
+            if self.license_notice
+            else (
                 "All rights reserved. No part of this publication may be reproduced, "
                 "stored in a retrieval system, or transmitted in any form or by any means, "
-                "without the prior written permission of the publisher.",
-                cp_style,
+                "without the prior written permission of the publisher."
             )
         )
+        story.append(Paragraph(rights_text, cp_style))
         story.append(Spacer(1, 10 * mm))
         if self.doc_id:
             story.append(Paragraph(f"Document ID: {self.doc_id}", cp_style))

@@ -22,4 +22,4 @@ Content is divided into eight major parts:
 | Edition | 1.0 |
 | Publication date | Example |
 | Format | BriefKit manual template, navy preset |
-| License | CC BY-NC-SA 4.0 |
+| License | CC0 1.0 |

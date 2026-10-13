@@ -14,7 +14,7 @@
 #   - manual template (procedural rendering of numbered list items)
 #   - high max_words_per_section so deep chapters are not truncated
 #   - slate or navy color preset for technical look
-#   - CC-BY-NC-SA license appropriate for community knowledge
+#   - CC0-1.0 license preset, so the manual's own license prints on the back cover
 
 project:
   name: "Vehicle Rebuild Workshop Manual"
@@ -33,7 +33,7 @@ content:
   max_words_per_section: 20000
 
 license:
-  preset: "CC-BY-NC-SA-4.0"
+  preset: "CC0-1.0"
 
 document:
   classification: "TECHNICAL MANUAL"

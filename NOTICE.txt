@@ -9,8 +9,10 @@ Taylor; see TRADEMARKS.md for what that does and does not restrict.
 
 Licenses, per path (REUSE.toml): the code is BSD-3-Clause (LICENSE); the
 documentation is CC-BY-4.0 (LICENSES/CC-BY-4.0.txt); the examples are
-CC0-1.0 (LICENSES/CC0-1.0.txt). Version 1.0.0 was published under
-CC-BY-NC-SA-4.0 and that grant stands for copies of 1.0.0.
+CC0-1.0 (LICENSES/CC0-1.0.txt), except the two legal sets, which are
+Codex content under CC-BY-NC-SA-4.0, and the two narrative samples, which
+are CC-BY-NC-ND-4.0 (both texts in LICENSES/). Version 1.0.0 was published
+under CC-BY-NC-SA-4.0 and that grant stands for copies of 1.0.0.
 
 Third-party components, installed separately by pip and not bundled in this
 repository or in its packages:

@@ -199,6 +199,14 @@ LICENSE_PRESETS: dict[str, dict[str, str | bool | None]] = {
         "notice": "Licensed under CC BY-NC-SA 4.0. Non-commercial use only.",
         "commercial": False,
     },
+    "CC-BY-NC-ND-4.0": {
+        "spdx": "CC-BY-NC-ND-4.0",
+        "name": "Creative Commons Attribution-NonCommercial-NoDerivatives 4.0",
+        "url": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
+        "category": "creative-commons",
+        "notice": "Licensed under CC BY-NC-ND 4.0. Non-commercial use only; no derivatives.",
+        "commercial": False,
+    },
     "CC-BY-ND-4.0": {
         "spdx": "CC-BY-ND-4.0",
         "name": "Creative Commons Attribution-NoDerivatives 4.0",
@@ -284,6 +292,7 @@ LICENSE_CATEGORIES: list[tuple[str, list[str]]] = [
             "CC-BY-SA-4.0",
             "CC-BY-NC-4.0",
             "CC-BY-NC-SA-4.0",
+            "CC-BY-NC-ND-4.0",
             "CC-BY-ND-4.0",
         ],
     ),

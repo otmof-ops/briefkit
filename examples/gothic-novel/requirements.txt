@@ -4,4 +4,4 @@
 reportlab>=4.0.0     # PDF generation pipeline
 #
 # Optional (for audit checks and verification):
-PyMuPDF>=1.23.0      # text extraction from rendered PDFs (used by audit)
+pypdf>=5.0           # text extraction from rendered PDFs (used by the audit)

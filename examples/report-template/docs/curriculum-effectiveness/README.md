@@ -3,7 +3,7 @@
 ## Abstract
 
 This report presents the findings of a controlled assessment evaluating curriculum
-design methodologies across 34 pilot schools within the National Education Board's
+design methodologies across 34 pilot schools within the Example Education Board's
 jurisdiction. The study compared backward design frameworks, as articulated by
 Wiggins and McTighe (2005), against traditional content-first curriculum approaches.
 A parallel investigation examined the integration of active learning strategies into

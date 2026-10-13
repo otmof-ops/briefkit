@@ -269,7 +269,7 @@ BSD 3-Clause, the standard permissive license with a non-endorsement clause. In 
 
 - **Code** (`src/`, `tests/`, the build and CI files): [BSD-3-Clause](LICENSE).
 - **Documentation** (`docs/`, this README and the other pages at the root): [CC BY 4.0](LICENSES/CC-BY-4.0.txt). Reuse and adapt with credit.
-- **Examples** (`examples/`): [CC0 1.0](LICENSES/CC0-1.0.txt). Paste them into your own projects; no attribution needed.
+- **Examples** (`examples/`): [CC0 1.0](LICENSES/CC0-1.0.txt). Paste them into your own projects; no attribution needed. Two exceptions, recorded in [REUSE.toml](REUSE.toml): the two legal sets are Codex content under [CC BY-NC-SA 4.0](LICENSES/CC-BY-NC-SA-4.0.txt), and the two narrative samples are under [CC BY-NC-ND 4.0](LICENSES/CC-BY-NC-ND-4.0.txt).
 - **The name.** BriefKit is a trademark of Jay Taylor; [TRADEMARKS.md](TRADEMARKS.md) says what forks may be called.
 
 [REUSE.toml](REUSE.toml) records the license per path. Version 1.0.0 was published under CC BY-NC-SA 4.0 and stays available under it; this layout applies from 1.1.0.

@@ -29,7 +29,7 @@ from reportlab.platypus import CondPageBreak, KeepTogether, PageBreak, Paragraph
 
 from briefkit.extractor import parse_markdown
 from briefkit.generator import build_toc
-from briefkit.styles import CONTENT_WIDTH, _hex, _ps, _safe_para
+from briefkit.styles import CONTENT_WIDTH, _hex, _ps, _safe_para, _safe_text
 from briefkit.templates._helpers import should_skip
 from briefkit.templates.book import BookTemplate
 
@@ -422,15 +422,19 @@ class NovelTemplate(BookTemplate):
         story.append(Spacer(1, 4 * mm))
         story.append(Paragraph(copyright_str, cp_style))
         story.append(Spacer(1, 4 * mm))
-        story.append(
-            Paragraph(
+        # A configured license (license.preset or license.notice) is the rights
+        # statement; the all-rights-reserved text is only the default without one.
+        rights_text = (
+            _safe_text(self.license_notice)
+            if self.license_notice
+            else (
                 "All rights reserved. No part of this publication may be reproduced, "
                 "stored in a retrieval system, or transmitted in any form or by any means, "
                 "electronic, mechanical, photocopying, recording, or otherwise, without "
-                "the prior written permission of the publisher.",
-                cp_style,
+                "the prior written permission of the publisher."
             )
         )
+        story.append(Paragraph(rights_text, cp_style))
         story.append(PageBreak())
 
         # Pre-build sections — every optional one honours project.skip_<section>

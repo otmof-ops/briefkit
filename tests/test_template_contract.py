@@ -223,3 +223,36 @@ class TestNumberingAndStructure:
         )
         pdf = _build(name, docs, tmp_path / f"{name}.pdf", _cfg())
         assert "Finance Variant Sections" not in self._text(pdf)
+
+
+def _manuscript(tmp_path: Path) -> Path:
+    src = tmp_path / "manuscript"
+    src.mkdir()
+    (src / "README.md").write_text(
+        "# A Synthetic Book\n\nA short manuscript for the copyright-page test.\n", encoding="utf-8"
+    )
+    (src / "01-one.md").write_text(
+        "# One\n\nThe first chapter has a paragraph.\n\n## A scene\n\nAnd a scene.\n", encoding="utf-8"
+    )
+    (src / "02-two.md").write_text("# Two\n\nThe second chapter has another.\n", encoding="utf-8")
+    return src
+
+
+def _text(pdf: Path) -> str:
+    return "\n".join((page.extract_text() or "") for page in PdfReader(str(pdf)).pages)
+
+
+@pytest.mark.parametrize("name", ["novel", "book"])
+def test_copyright_page_prints_the_configured_license(tmp_path, name):
+    """license.preset / license.notice is the rights statement on the copyright page."""
+    notice = "Licensed under CC BY-NC-ND 4.0. Non-commercial use only; no derivatives."
+    out = _build(name, _manuscript(tmp_path), tmp_path / f"{name}-licensed.pdf", _cfg(license={"notice": notice}))
+    text = _text(out)
+    assert "CC BY-NC-ND 4.0" in text
+    assert "All rights reserved" not in text
+
+
+@pytest.mark.parametrize("name", ["novel", "book"])
+def test_copyright_page_defaults_to_all_rights_reserved(tmp_path, name):
+    out = _build(name, _manuscript(tmp_path), tmp_path / f"{name}-default.pdf", _cfg())
+    assert "All rights reserved" in _text(out)

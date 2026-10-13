@@ -3,7 +3,7 @@
 **OFFTRACKMEDIA Studios** — ABN 84 290 819 896
 **Applies to:** All use of the BriefKit software, templates, variants, and generated output
 
-> **You are required to read and understand this safety documentation before using BriefKit to process directories containing sensitive, regulated, or third-party content.** This is a condition of use under the EULA (Section 3).
+> **You are required to read and understand this safety documentation before using BriefKit to process directories containing sensitive, regulated, or third-party content.**
 
 ---
 
@@ -105,8 +105,8 @@ OFFTRACKMEDIA Studios accepts no liability for injury, damage, or loss arising f
 - Obtaining appropriate professional advice where required
 - Maintaining access controls on generated output
 
-See the EULA (Section 9 — Warranty Disclaimer, Section 10 — Limitation of Liability) for full terms.
+See the warranty disclaimer in [LICENSE](LICENSE).
 
 ---
 
-(c) 2026 OFFTRACKMEDIA Studios · ABN 84 290 819 896
+Copyright (c) 2026 Jay Taylor (https://github.com/otmof-ops/briefkit)

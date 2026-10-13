@@ -92,4 +92,4 @@ Responsible disclosures are acknowledged in the changelog. Reporters who wish to
 
 ---
 
-(c) 2026 OFFTRACKMEDIA Studios · ABN 84 290 819 896
+Copyright (c) 2026 Jay Taylor (https://github.com/otmof-ops/briefkit)

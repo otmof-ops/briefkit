@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Jay Taylor (https://github.com/otmof-ops/briefkit)
+# SPDX-License-Identifier: CC0-1.0
 """Multi-chapter paperback typesetter — renders a full volume at 5.5 × 8.5".
 
 Imports the per-chapter rendering logic from typeset-paperback.py but adds:

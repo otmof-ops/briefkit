@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Jay Taylor (https://github.com/otmof-ops/briefkit)
+# SPDX-License-Identifier: BSD-3-Clause
 """Byte-reproducible output: the same input gives the same bytes, and every printed date follows SOURCE_DATE_EPOCH."""
 
 from __future__ import annotations

@@ -46,6 +46,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Cross-reference labels: an authored link label (`[the sibling set](../sibling-set/README.md)`) is kept instead of a title-cased path.
 - Documentation rewritten against the code: README, CLI reference, configuration reference (every key with its default), custom templates and variants (examples that run), document IDs, CI integration, variants, examples, contributing, security and safety pages. Installation is from this repository (`pip install "git+https://github.com/otmof-ops/briefkit.git"`) until the first PyPI release. `tests/test_docs.py` parses every documented command, resolves every relative link, checks every template, preset and variant name and rejects British spellings.
 
+- **License.** The code is licensed under the BSD 3-Clause License from this version; the documentation under CC BY 4.0 and the examples under CC0 1.0, recorded per path in [REUSE.toml](REUSE.toml), with the name policy in [TRADEMARKS.md](TRADEMARKS.md). Version 1.0.0 was published under CC BY-NC-SA 4.0 and that grant stands for copies of 1.0.0.
+
 ### Deprecated
 
 - Overriding `BaseBriefingTemplate.generate()`. A subclass that does so still works and gets a `DeprecationWarning`; use the traits and hooks instead.
@@ -55,6 +57,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - The configuration keys `layout.font_family`, `layout.font_size`, `template.sections`, `template.custom_sections`, `output.report_format` and `constraints`. Nothing read them; a file that still carries one gets an unknown-key warning. Fonts are `brand.font_*`; sections are suppressed with `project.skip_*`.
 - `briefkit.version_check`, the only code path that made a network request.
 - The module-level header/footer state (`briefkit.elements._hf_state`) and the bare `header_footer()` callback ([ADR-005](docs/adr/005-closure-based-header-footer.md), now complete). Templates keep page state in `self.hf_ctx`.
+- The end-user license agreement (`EULA/`) and the non-commercial terms in `NOTICE.txt` and the README. The BSD 3-Clause License in `LICENSE` is the whole license for the code.
 
 ### Fixed
 

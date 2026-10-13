@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Jay Taylor (https://github.com/otmof-ops/briefkit)
+# SPDX-License-Identifier: BSD-3-Clause
 """PDF navigation: a document outline, a clickable table of contents, resolvable #anchors."""
 
 from __future__ import annotations

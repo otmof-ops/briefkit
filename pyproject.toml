@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68.0"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,9 +7,10 @@ name = "briefkit"
 version = "1.1.0"
 description = "Generate professional PDF briefings from a folder of Markdown. Templates, domain variants and color presets included. One command, zero config."
 readme = "README.md"
-license = {text = "CC-BY-NC-SA-4.0"}
+license = "BSD-3-Clause"
+license-files = ["LICENSE", "NOTICE.txt"]
 requires-python = ">=3.10"
-authors = [{name = "Jay @ OFFTRACKMEDIA Studios"}]
+authors = [{name = "Jay Taylor"}]
 keywords = [
     "pdf", "markdown", "documentation", "briefing", "report",
     "generator", "markdown-to-pdf", "document-generator",
@@ -20,7 +21,6 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
-    "License :: Other/Proprietary License",
     "Topic :: Documentation",
     "Topic :: Office/Business",
     "Topic :: Printing",

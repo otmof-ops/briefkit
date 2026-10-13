@@ -18,10 +18,10 @@ Key differences:
 
 from __future__ import annotations
 
+import functools
 import string
 
 from reportlab.lib.colors import HexColor
-from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     PageBreak,
@@ -41,7 +41,6 @@ from briefkit.styles import (
     _ps,
     _safe_para,
     _safe_text,
-    compute_content_width,
 )
 from briefkit.templates._helpers import should_skip
 
@@ -49,24 +48,20 @@ from briefkit.templates._helpers import should_skip
 # Module-level state for custom header / footer
 # ---------------------------------------------------------------------------
 
-_wp_state: dict = {
-    "brand": {},
-}
 
-
-def _wp_header_footer(canvas, doc):
+def _wp_header_footer(canvas, doc, state):
     """
     White paper header/footer.
 
     No top header.  Page number bottom-center only.
     """
     canvas.saveState()
-    b = _get_brand(_wp_state.get("brand"))
+    b = _get_brand(state.get("brand"))
     page_width = doc.pagesize[0]
 
     # Footer — page number centered
     bottom_y = doc.bottomMargin - 6 * mm
-    canvas.setFont(b.get("font_body", "Helvetica"), 8)
+    canvas.setFont(b.get("font_body", b.get("font_body", "Helvetica")), 8)
     canvas.setFillColor(HexColor(b.get("caption", "#666666")))
     canvas.drawCentredString(
         page_width / 2,
@@ -102,6 +97,10 @@ class WhitepaperTemplate(BaseBriefingTemplate):
     justified body text, and generous whitespace.  Suitable for
     position papers, technical white papers, and policy papers.
     """
+
+    pdf_subject = "White Paper"
+    design_page_size = "Letter"
+    supports_variants = False
 
     # ------------------------------------------------------------------
     # Story assembly
@@ -167,7 +166,7 @@ class WhitepaperTemplate(BaseBriefingTemplate):
             "WPLabel",
             brand=self.brand,
             fontSize=24,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=_hex(self.brand, "primary"),
             alignment=1,
             spaceAfter=4,
@@ -180,7 +179,7 @@ class WhitepaperTemplate(BaseBriefingTemplate):
             "WPFor",
             brand=self.brand,
             fontSize=12,
-            fontName="Helvetica-Oblique",
+            fontName=self.brand.get("font_caption", "Helvetica-Oblique"),
             textColor=_hex(self.brand, "caption"),
             alignment=1,
             spaceAfter=4,
@@ -193,7 +192,7 @@ class WhitepaperTemplate(BaseBriefingTemplate):
             "WPTitle",
             brand=self.brand,
             fontSize=18,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=_hex(self.brand, "primary"),
             alignment=1,
             spaceAfter=6,
@@ -208,7 +207,7 @@ class WhitepaperTemplate(BaseBriefingTemplate):
                 "WPSubtitle",
                 brand=self.brand,
                 fontSize=12,
-                fontName="Helvetica-Oblique",
+                fontName=self.brand.get("font_caption", "Helvetica-Oblique"),
                 textColor=_hex(self.brand, "caption"),
                 alignment=1,
                 spaceAfter=4,
@@ -319,7 +318,7 @@ class WhitepaperTemplate(BaseBriefingTemplate):
                 f"WPH1_{idx}",
                 brand=self.brand,
                 fontSize=14,
-                fontName="Helvetica-Bold",
+                fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                 textColor=_hex(self.brand, "primary"),
                 spaceBefore=6,
                 spaceAfter=4,
@@ -349,7 +348,7 @@ class WhitepaperTemplate(BaseBriefingTemplate):
                         f"WPH2_{idx}_{sub_counter}",
                         brand=self.brand,
                         fontSize=12,
-                        fontName="Helvetica-Bold",
+                        fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                         textColor=_hex(self.brand, "primary"),
                         spaceBefore=4,
                         spaceAfter=2,
@@ -389,60 +388,12 @@ class WhitepaperTemplate(BaseBriefingTemplate):
 
         return flowables
 
-    # ------------------------------------------------------------------
-    # Override generate() for Letter page size and custom header/footer
-    # ------------------------------------------------------------------
+    def prepare(self, content: dict) -> None:
+        self.hf_ctx["brand"] = self.brand
 
-    def generate(self):
-        """Generate the whitepaper PDF with Letter size and custom footer."""
-        self.output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        content = self.extract_content()
-        title = content.get("title", self.target_path.name.replace("-", " ").title())
-
-        # Doc ID (optional)
-        doc_ids_cfg = self.config.get("doc_ids", {})
-        if doc_ids_cfg.get("enabled", True):
-            from briefkit.doc_ids import get_or_assign_doc_id
-
-            self.doc_id = get_or_assign_doc_id(
-                self.target_path,
-                self.level,
-                title,
-                config=self.config,
-            )
-
-        # Populate module-level state for header/footer
-        _wp_state["brand"] = self.brand
-
-        # Recalculate content width for Letter
-        layout = self.config.get("layout", {})
-        margins = layout.get("margins", {})
-        self.content_width = compute_content_width(letter, margins)
-
-        top_m = margins.get("top", 25) * mm
-        bottom_m = margins.get("bottom", 22) * mm
-        left_m = margins.get("left", 20) * mm
-        right_m = margins.get("right", 20) * mm
-
-        doc = self._build_doc(
-            pagesize=letter,
-            topMargin=top_m,
-            bottomMargin=bottom_m,
-            leftMargin=left_m,
-            rightMargin=right_m,
-            subject="White Paper",
-        )
-
-        story = self.build_story(content)
-        story = self._finalize_story(story)
-        doc.build(
-            story,
-            onFirstPage=_wp_header_footer,
-            onLaterPages=_wp_header_footer,
-        )
-
-        return self.output_path
+    def header_footer(self, content: dict):
+        callback = functools.partial(_wp_header_footer, state=self.hf_ctx)
+        return callback, callback
 
     # ------------------------------------------------------------------
     # Suppress unused base section builders

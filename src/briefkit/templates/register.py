@@ -22,10 +22,9 @@ asset registers, audit logs.
 
 from __future__ import annotations
 
-from pathlib import Path
+import functools
 
 from reportlab.lib.colors import HexColor, white
-from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     PageBreak,
@@ -52,13 +51,8 @@ from briefkit.styles import (
 # Custom header / footer
 # ---------------------------------------------------------------------------
 
-_register_state: dict = {
-    "title": "",
-    "brand": {},
-}
 
-
-def _register_header_footer(canvas, doc):
+def _register_header_footer(canvas, doc, state):
     """
     Register template header/footer.
 
@@ -66,15 +60,15 @@ def _register_header_footer(canvas, doc):
     Footer: "Page X of Y" centered.
     """
     canvas.saveState()
-    b = _get_brand(_register_state.get("brand"))
+    b = _get_brand(state.get("brand"))
     page_width, page_height = doc.pagesize
 
     # Header — register name right-aligned
-    title = _register_state.get("title", "")
+    title = state.get("title", "")
     if title:
         caption_c = HexColor(b.get("caption", "#666666"))
         top_y = page_height - doc.topMargin + 8 * mm
-        canvas.setFont(b.get("font_body", "Helvetica"), 8)
+        canvas.setFont(b.get("font_body", b.get("font_body", "Helvetica")), 8)
         canvas.setFillColor(caption_c)
         canvas.drawRightString(page_width - doc.rightMargin, top_y, title)
 
@@ -86,7 +80,7 @@ def _register_header_footer(canvas, doc):
 
     # Footer — "Page X of Y" centered
     bottom_y = doc.bottomMargin - 6 * mm
-    canvas.setFont(b.get("font_body", "Helvetica"), 7)
+    canvas.setFont(b.get("font_body", b.get("font_body", "Helvetica")), 7)
     canvas.setFillColor(HexColor(b.get("caption", "#666666")))
     canvas.drawCentredString(
         page_width / 2,
@@ -107,6 +101,10 @@ class RegisterTemplate(BaseBriefingTemplate):
 
     If no tables are found the content is rendered as regular prose instead.
     """
+
+    pdf_subject = "Register"
+    design_page_size = "A4"
+    supports_variants = False
 
     def build_story(self, content: dict) -> list:
         """
@@ -150,7 +148,7 @@ class RegisterTemplate(BaseBriefingTemplate):
             "RegisterTitle",
             brand=self.brand,
             fontSize=26,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=_hex(self.brand, "primary"),
             alignment=1,
             spaceAfter=8,
@@ -255,7 +253,7 @@ class RegisterTemplate(BaseBriefingTemplate):
                     [
                         ("BACKGROUND", (0, 0), (-1, 0), primary),
                         ("TEXTCOLOR", (0, 0), (-1, 0), white),
-                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                        ("FONTNAME", (0, 0), (-1, 0), self.brand.get("font_heading", "Helvetica-Bold")),
                         ("FONTSIZE", (0, 0), (-1, 0), 9),
                         ("VALIGN", (0, 0), (-1, -1), "TOP"),
                         ("TOPPADDING", (0, 0), (-1, -1), 4),
@@ -353,58 +351,13 @@ class RegisterTemplate(BaseBriefingTemplate):
 
         return flowables
 
-    # ------------------------------------------------------------------
-    # Override generate() for custom header/footer
-    # ------------------------------------------------------------------
+    def prepare(self, content: dict) -> None:
+        self.hf_ctx["title"] = content.get("title", self.target_path.name.replace("-", " ").title())
+        self.hf_ctx["brand"] = self.brand
 
-    def generate(self) -> Path:
-        """Generate the register PDF with custom header/footer."""
-        self.output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        content = self.extract_content()
-        title = content.get("title", self.target_path.name.replace("-", " ").title())
-
-        # Doc ID (optional)
-        doc_ids_cfg = self.config.get("doc_ids", {})
-        if doc_ids_cfg.get("enabled", True):
-            from briefkit.doc_ids import get_or_assign_doc_id
-
-            self.doc_id = get_or_assign_doc_id(
-                self.target_path,
-                self.level,
-                title,
-                config=self.config,
-            )
-
-        # Populate register header/footer state
-        _register_state["title"] = title
-        _register_state["brand"] = self.brand
-
-        layout = self.config.get("layout", {})
-        margins = layout.get("margins", {})
-        top_m = margins.get("top", 25) * mm
-        bottom_m = margins.get("bottom", 22) * mm
-        left_m = margins.get("left", 20) * mm
-        right_m = margins.get("right", 20) * mm
-
-        doc = self._build_doc(
-            pagesize=A4,
-            topMargin=top_m,
-            bottomMargin=bottom_m,
-            leftMargin=left_m,
-            rightMargin=right_m,
-            subject="Register",
-        )
-
-        story = self.build_story(content)
-        story = self._finalize_story(story)
-        doc.build(
-            story,
-            onFirstPage=_register_header_footer,
-            onLaterPages=_register_header_footer,
-        )
-
-        return self.output_path
+    def header_footer(self, content: dict):
+        callback = functools.partial(_register_header_footer, state=self.hf_ctx)
+        return callback, callback
 
     # ------------------------------------------------------------------
     # Suppress all unused base section builders

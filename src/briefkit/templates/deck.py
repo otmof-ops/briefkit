@@ -23,10 +23,8 @@ Design norms:
 from __future__ import annotations
 
 import re
-from pathlib import Path
 
 from reportlab.lib.colors import HexColor, white
-from reportlab.lib.pagesizes import A3, A4, legal, letter
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     PageBreak,
@@ -50,16 +48,6 @@ from briefkit.styles import (
 # ---------------------------------------------------------------------------
 # Page size helpers
 # ---------------------------------------------------------------------------
-
-_PAGE_SIZES = {"A4": A4, "A3": A3, "Letter": letter, "Legal": legal}
-
-
-def _landscape(size: tuple) -> tuple:
-    """Return the page size rotated to landscape orientation."""
-    w, h = size
-    if w < h:
-        return (h, w)
-    return (w, h)
 
 
 # ---------------------------------------------------------------------------
@@ -110,6 +98,11 @@ class DeckTemplate(BaseBriefingTemplate):
     slide sets.
     """
 
+    pdf_subject = "Deck"
+    orientation_lock = "landscape"
+    design_margins_mm = {"top": 15, "bottom": 15, "left": 25, "right": 25}
+    supports_variants = False
+
     # ------------------------------------------------------------------
     # Single slide builder
     # ------------------------------------------------------------------
@@ -126,7 +119,7 @@ class DeckTemplate(BaseBriefingTemplate):
             f"DKSlideTitle{slide_num}",
             brand=self.brand,
             fontSize=20,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=white,
             alignment=0,
             spaceBefore=0,
@@ -183,7 +176,7 @@ class DeckTemplate(BaseBriefingTemplate):
                     spaceAfter=6,
                     fontName=self.brand.get("font_body", "Helvetica"),
                 )
-                flowables.append(_safe_para(text, para_style))
+                flowables.append(_safe_para(text, para_style, True))
                 is_first_para = False
                 rendered += 1
                 continue
@@ -248,7 +241,7 @@ class DeckTemplate(BaseBriefingTemplate):
             f"DKTblH{slide_num}",
             brand=self.brand,
             fontSize=10,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=white,
             alignment=0,
         )
@@ -262,11 +255,11 @@ class DeckTemplate(BaseBriefingTemplate):
 
         data: list[list] = []
         if headers:
-            data.append([Paragraph(_safe_text(str(h)), header_style) for h in headers])
+            data.append([_safe_para(str(h), header_style, True) for h in headers])
 
         for row in rows:
             cells = row if isinstance(row, list) else row.get("cells", [])
-            data.append([Paragraph(_safe_text(str(c)), cell_style) for c in cells])
+            data.append([_safe_para(str(c), cell_style, True) for c in cells])
 
         if not data:
             return flowables
@@ -324,7 +317,7 @@ class DeckTemplate(BaseBriefingTemplate):
             "DKClosing",
             brand=self.brand,
             fontSize=28,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=primary,
             alignment=1,
             spaceAfter=10,
@@ -338,7 +331,7 @@ class DeckTemplate(BaseBriefingTemplate):
                 "DKCloseOrg",
                 brand=self.brand,
                 fontSize=16,
-                fontName="Helvetica-Bold",
+                fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                 textColor=primary,
                 alignment=1,
                 spaceAfter=4,
@@ -369,19 +362,8 @@ class DeckTemplate(BaseBriefingTemplate):
 
         return flowables
 
-    # ------------------------------------------------------------------
-    # generate() — fully overridden for landscape slide-format
-    # ------------------------------------------------------------------
-
-    def generate(self) -> Path:
-        """Generate a landscape slide-deck PDF."""
-        self.output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        content = self.extract_content()
-        title = content.get("title", self.target_path.name.replace("-", " ").title())
+    def prepare(self, content: dict) -> None:
         overview = content.get("overview", "")
-
-        # Subtitle from first sentence of overview
         subtitle = ""
         if overview:
             first_line = overview.strip().split("\n")[0]
@@ -391,66 +373,29 @@ class DeckTemplate(BaseBriefingTemplate):
                     first_line = first_line[: idx + 1]
                     break
             subtitle = first_line[:200]
+        self.hf_ctx["title"] = content.get("title", self.target_path.name.replace("-", " ").title())
+        self.hf_ctx["subtitle"] = subtitle
 
-        # Doc ID (optional)
-        doc_ids_cfg = self.config.get("doc_ids", {})
-        if doc_ids_cfg.get("enabled", True):
-            from briefkit.doc_ids import get_or_assign_doc_id
-
-            self.doc_id = get_or_assign_doc_id(
-                self.target_path,
-                self.level,
-                title,
-                config=self.config,
-            )
-
-        # Header/footer state
-
-        layout = self.config.get("layout", {})
-        margins = layout.get("margins", {})
-        top_m = margins.get("top", 15) * mm
-        bottom_m = margins.get("bottom", 15) * mm
-        left_m = margins.get("left", 25) * mm
-        right_m = margins.get("right", 25) * mm
-
-        page_size = _PAGE_SIZES.get(layout.get("page_size", "A4"), A4)
-        page_size = _landscape(page_size)
-
-        # Recompute content width for landscape
-        self.content_width = page_size[0] - left_m - right_m
-
-        doc = self._build_doc(
-            pagesize=page_size,
-            topMargin=top_m,
-            bottomMargin=bottom_m,
-            leftMargin=left_m,
-            rightMargin=right_m,
-            subject="Deck",
-        )
-
-        # Build story: cover + slides + closing
-        story: list = []
-
-        # Cover slide — content is drawn by canvas callback, just need spacer
-        story.append(Spacer(1, page_size[1] - top_m - bottom_m - 10 * mm))
-        story.append(PageBreak())
-
-        # Reorder subsystems by Sequoia flow
-        subsystems = content.get("subsystems", [])
-        ordered = _reorder_subsystems(subsystems)
-
-        # One slide per subsystem
+    def build_story(self, content: dict) -> list:
+        """Cover slide (drawn by the page callback), one slide per subsystem in Sequoia order, closing slide."""
+        story: list = [Spacer(1, self.geometry.frame_height - 10 * mm), PageBreak()]
+        ordered = _reorder_subsystems(content.get("subsystems", []))
         for slide_idx, sub in enumerate(ordered, 2):
             story.extend(self._build_slide(sub, slide_idx))
             story.append(PageBreak())
-
-        # Closing slide
         story.extend(self._build_closing_slide(content))
+        return story
 
-        # Canvas callbacks
+    def header_footer(self, content: dict):
+        title = self.hf_ctx.get("title", "")
+        subtitle = self.hf_ctx.get("subtitle", "")
         primary_color = HexColor(self.brand.get("primary", "#1B2A4A"))
         org = self.brand.get("org", "")
         caption_c = self.brand.get("caption", "#999999")
+        left_m = self.geometry.margins.left
+        right_m = self.geometry.margins.right
+        body_font = self.brand.get("font_body", "Helvetica")
+        heading_font = self.brand.get("font_heading", "Helvetica-Bold")
 
         def _cover(canvas, doc_inner):
             """Draw the cover slide — full primary background."""
@@ -464,18 +409,18 @@ class DeckTemplate(BaseBriefingTemplate):
             # Org name top-left
             if org:
                 canvas.setFillColor(white)
-                canvas.setFont("Helvetica", 12)
+                canvas.setFont(body_font, 12)
                 canvas.drawString(left_m, h - 20 * mm, org)
 
             # Title centered
             canvas.setFillColor(white)
-            canvas.setFont("Helvetica-Bold", 36)
+            canvas.setFont(heading_font, 36)
             title_y = h * 0.55
             canvas.drawCentredString(w / 2, title_y, title[:80])
 
             # Subtitle
             if subtitle:
-                canvas.setFont("Helvetica", 16)
+                canvas.setFont(body_font, 16)
                 canvas.drawCentredString(w / 2, title_y - 28, subtitle[:120])
 
             canvas.restoreState()
@@ -486,7 +431,7 @@ class DeckTemplate(BaseBriefingTemplate):
             w = doc_inner.pagesize[0]
             y = 8 * mm
 
-            canvas.setFont("Helvetica", 8)
+            canvas.setFont(body_font, 8)
             canvas.setFillColor(HexColor(caption_c))
 
             # Org name bottom-left
@@ -499,21 +444,11 @@ class DeckTemplate(BaseBriefingTemplate):
 
             canvas.restoreState()
 
-        story = self._finalize_story(story)
-        doc.build(
-            story,
-            onFirstPage=_cover,
-            onLaterPages=_slide_footer,
-        )
-
-        return self.output_path
+        return _cover, _slide_footer
 
     # ------------------------------------------------------------------
     # Suppress unused base section builders
     # ------------------------------------------------------------------
-
-    def build_story(self, content: dict) -> list:
-        return []
 
     def build_body(self, content: dict) -> list:
         return []

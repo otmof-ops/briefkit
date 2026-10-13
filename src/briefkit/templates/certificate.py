@@ -16,10 +16,7 @@ Key differences:
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from reportlab.lib.colors import HexColor
-from reportlab.lib.pagesizes import A3, A4, legal, letter
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     Spacer,
@@ -38,16 +35,6 @@ from briefkit.styles import (
     _safe_text,
 )
 
-_PAGE_SIZES = {"A4": A4, "A3": A3, "Letter": letter, "Legal": legal}
-
-
-def _landscape(size: tuple) -> tuple:
-    """Return the page size rotated to landscape orientation."""
-    w, h = size
-    if w < h:
-        return (h, w)
-    return (w, h)
-
 
 class CertificateTemplate(BaseBriefingTemplate):
     """
@@ -58,6 +45,11 @@ class CertificateTemplate(BaseBriefingTemplate):
     line.  Suitable for completion, achievement, and recognition
     certificates.
     """
+
+    pdf_subject = "Certificate"
+    orientation_lock = "landscape"
+    design_margins_mm = {"top": 20, "bottom": 20, "left": 25, "right": 25}
+    supports_variants = False
 
     def _detect_cert_type(self, title: str) -> str:
         """Derive certificate type from the content title."""
@@ -112,7 +104,7 @@ class CertificateTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=28,
             textColor=primary,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             alignment=1,
             spaceAfter=6,
         )
@@ -148,7 +140,7 @@ class CertificateTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=13,
             textColor=body_c,
-            fontName="Helvetica-Oblique",
+            fontName=self.brand.get("font_caption", "Helvetica-Oblique"),
             alignment=1,
             spaceAfter=4,
         )
@@ -161,7 +153,7 @@ class CertificateTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=24,
             textColor=primary,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             alignment=1,
             spaceAfter=4,
         )
@@ -175,7 +167,7 @@ class CertificateTemplate(BaseBriefingTemplate):
                 brand=b,
                 fontSize=11,
                 textColor=body_c,
-                fontName="Helvetica",
+                fontName=self.brand.get("font_body", "Helvetica"),
                 alignment=1,
                 spaceAfter=4,
                 leading=15,
@@ -202,7 +194,7 @@ class CertificateTemplate(BaseBriefingTemplate):
                 brand=b,
                 fontSize=11,
                 textColor=body_c,
-                fontName="Helvetica-Bold",
+                fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                 alignment=1,
                 spaceAfter=2,
             )
@@ -245,55 +237,7 @@ class CertificateTemplate(BaseBriefingTemplate):
 
         return story
 
-    # ------------------------------------------------------------------
-    # Override generate() — single-page landscape document
-    # ------------------------------------------------------------------
-
-    def generate(self) -> Path:
-        """Generate a single-page landscape certificate PDF."""
-        self.output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        content = self.extract_content()
-
-        # Doc ID (optional)
-        doc_ids_cfg = self.config.get("doc_ids", {})
-        if doc_ids_cfg.get("enabled", True):
-            from briefkit.doc_ids import get_or_assign_doc_id
-
-            self.doc_id = get_or_assign_doc_id(
-                self.target_path,
-                self.level,
-                content.get("title", ""),
-                config=self.config,
-            )
-
-        # Header/footer state — minimal for certificate
-
-        layout = self.config.get("layout", {})
-        margins = layout.get("margins", {})
-        top_m = margins.get("top", 20) * mm
-        bottom_m = margins.get("bottom", 20) * mm
-        left_m = margins.get("left", 25) * mm
-        right_m = margins.get("right", 25) * mm
-
-        page_size = _PAGE_SIZES.get(layout.get("page_size", "A4"), A4)
-        page_size = _landscape(page_size)
-
-        # Recompute content width for landscape
-        self.content_width = page_size[0] - left_m - right_m
-
-        doc = self._build_doc(
-            pagesize=page_size,
-            topMargin=top_m,
-            bottomMargin=bottom_m,
-            leftMargin=left_m,
-            rightMargin=right_m,
-            subject="Certificate",
-        )
-
-        story = self.build_story(content)
-        story = self._finalize_story(story)
-
+    def header_footer(self, content: dict):
         primary_color = HexColor(self.brand.get("primary", "#1B2A4A"))
         accent_color = HexColor(
             self.brand.get("accent", self.brand.get("primary", "#1B2A4A")),
@@ -316,13 +260,7 @@ class CertificateTemplate(BaseBriefingTemplate):
 
             canvas.restoreState()
 
-        doc.build(
-            story,
-            onFirstPage=_cert_border,
-            onLaterPages=_cert_border,
-        )
-
-        return self.output_path
+        return _cert_border, _cert_border
 
     # ------------------------------------------------------------------
     # Suppress all unused base section builders

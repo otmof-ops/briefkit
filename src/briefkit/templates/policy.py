@@ -24,10 +24,8 @@ Key differences:
 from __future__ import annotations
 
 import re
-from pathlib import Path
 
 from reportlab.lib.colors import HexColor
-from reportlab.lib.pagesizes import A3, A4, legal, letter
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     PageBreak,
@@ -50,12 +48,6 @@ from briefkit.templates._helpers import should_skip
 # Page sizes
 # ---------------------------------------------------------------------------
 
-_PAGE_SIZES = {
-    "A4": A4,
-    "A3": A3,
-    "Letter": letter,
-    "Legal": legal,
-}
 
 # ---------------------------------------------------------------------------
 # Bold term extraction for definitions
@@ -159,6 +151,10 @@ class PolicyTemplate(BaseBriefingTemplate):
     section, review schedule, and approval signatures.  Suitable for
     organizational policies, governance documents, and compliance frameworks.
     """
+
+    pdf_subject = "Policy Document"
+    design_margins_mm = {"top": 25, "bottom": 22, "left": 22, "right": 22}
+    supports_variants = False
 
     def build_story(self, content: dict) -> list:
         """
@@ -272,7 +268,7 @@ class PolicyTemplate(BaseBriefingTemplate):
                 brand=b,
                 fontSize=14,
                 textColor=primary,
-                fontName="Helvetica-Bold",
+                fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                 alignment=1,
                 spaceAfter=6,
             )
@@ -285,7 +281,7 @@ class PolicyTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=12,
             textColor=caption_c,
-            fontName="Helvetica",
+            fontName=self.brand.get("font_body", "Helvetica"),
             alignment=1,
             spaceAfter=6,
         )
@@ -312,7 +308,7 @@ class PolicyTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=24,
             textColor=primary,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             alignment=1,
             spaceAfter=8,
         )
@@ -364,8 +360,8 @@ class PolicyTemplate(BaseBriefingTemplate):
         tbl.setStyle(
             TableStyle(
                 [
-                    ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
-                    ("FONTNAME", (1, 0), (1, -1), "Helvetica"),
+                    ("FONTNAME", (0, 0), (0, -1), self.brand.get("font_heading", "Helvetica-Bold")),
+                    ("FONTNAME", (1, 0), (1, -1), self.brand.get("font_body", "Helvetica")),
                     ("FONTSIZE", (0, 0), (-1, -1), 9),
                     ("TEXTCOLOR", (0, 0), (0, -1), HexColor(b.get("primary", "#1B2A4A"))),
                     ("TEXTCOLOR", (1, 0), (1, -1), HexColor(b.get("body_text", "#333333"))),
@@ -597,7 +593,7 @@ class PolicyTemplate(BaseBriefingTemplate):
                 brand=b,
                 fontSize=11,
                 textColor=primary,
-                fontName="Helvetica-Bold",
+                fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                 spaceBefore=6,
                 spaceAfter=4,
             )
@@ -610,7 +606,7 @@ class PolicyTemplate(BaseBriefingTemplate):
                 tbl.setStyle(
                     TableStyle(
                         [
-                            ("FONTNAME", (0, 0), (0, 0), "Helvetica"),
+                            ("FONTNAME", (0, 0), (0, 0), self.brand.get("font_body", "Helvetica")),
                             ("FONTSIZE", (0, 0), (-1, -1), 9),
                             ("TEXTCOLOR", (0, 0), (0, 0), HexColor(b.get("caption", "#666666"))),
                             ("LINEBELOW", (1, 0), (1, 0), 0.5, rule_c),
@@ -661,55 +657,13 @@ class PolicyTemplate(BaseBriefingTemplate):
 
         return []
 
-    # ------------------------------------------------------------------
-    # Override generate() for policy header/footer
-    # ------------------------------------------------------------------
-
-    def generate(self) -> Path:
-        """Generate the policy PDF with document title header and page footer."""
-        self.output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        content = self.extract_content()
-        title = content.get("title", self.target_path.name.replace("-", " ").title())
-
-        # Doc ID (optional)
-        doc_ids_cfg = self.config.get("doc_ids", {})
-        if doc_ids_cfg.get("enabled", True):
-            from briefkit.doc_ids import get_or_assign_doc_id
-
-            self.doc_id = get_or_assign_doc_id(
-                self.target_path,
-                self.level,
-                title,
-                config=self.config,
-            )
-
-        # Header/footer state
-
-        layout = self.config.get("layout", {})
-        margins = layout.get("margins", {})
-        top_m = margins.get("top", 25) * mm
-        bottom_m = margins.get("bottom", 22) * mm
-        left_m = margins.get("left", 22) * mm
-        right_m = margins.get("right", 22) * mm
-
-        page_size = _PAGE_SIZES.get(layout.get("page_size", "A4"), A4)
-
-        doc = self._build_doc(
-            pagesize=page_size,
-            topMargin=top_m,
-            bottomMargin=bottom_m,
-            leftMargin=left_m,
-            rightMargin=right_m,
-            subject="Policy Document",
-        )
-
-        story = self.build_story(content)
-        story = self._finalize_story(story)
-
-        policy_title = title
+    def header_footer(self, content: dict):
+        policy_title = content.get("title", self.target_path.name.replace("-", " ").title())
         brand = self.brand
         doc_id = self.doc_id or ""
+        left_m = self.geometry.margins.left
+        right_m = self.geometry.margins.right
+        body_font = self.brand.get("font_body", "Helvetica")
 
         def _policy_first_page(canvas, doc_inner):
             """No header on cover page."""
@@ -722,7 +676,7 @@ class PolicyTemplate(BaseBriefingTemplate):
             page_w, page_h = doc_inner.pagesize
 
             # Header: policy title left, doc ID right
-            canvas.setFont("Helvetica", 8)
+            canvas.setFont(body_font, 8)
             canvas.setFillColor(HexColor(brand.get("caption", "#666666")))
             canvas.drawString(
                 left_m,
@@ -737,7 +691,7 @@ class PolicyTemplate(BaseBriefingTemplate):
                 )
 
             # Footer: page number centered
-            canvas.setFont("Helvetica", 7)
+            canvas.setFont(body_font, 7)
             canvas.setFillColor(HexColor(brand.get("caption", "#666666")))
             canvas.drawCentredString(
                 page_w / 2,
@@ -746,13 +700,7 @@ class PolicyTemplate(BaseBriefingTemplate):
             )
             canvas.restoreState()
 
-        doc.build(
-            story,
-            onFirstPage=_policy_first_page,
-            onLaterPages=_policy_later_pages,
-        )
-
-        return self.output_path
+        return _policy_first_page, _policy_later_pages
 
     # ------------------------------------------------------------------
     # Suppress unused base section builders

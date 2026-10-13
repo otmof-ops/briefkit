@@ -12,7 +12,7 @@ import sys
 from reportlab.platypus import PageBreak, Spacer
 
 from briefkit.elements.tables import build_data_table
-from briefkit.styles import _safe_para, build_styles
+from briefkit.styles import _get_brand, _safe_para, build_styles
 from briefkit.variants import DocSetVariant, _register
 
 try:
@@ -216,7 +216,7 @@ def _build_bar_chart(data, title="", brand=None):
     """Horizontal bar chart as a ReportLab Drawing, or fallback table."""
     from reportlab.lib.units import mm
 
-    from briefkit.styles import CONTENT_WIDTH, _get_brand, _hex
+    from briefkit.styles import CONTENT_WIDTH, _hex
 
     b = _get_brand(brand)
     styles = build_styles(b)
@@ -267,7 +267,7 @@ def _build_bar_chart(data, title="", brand=None):
                 label_width - 4,
                 y + bar_height * 0.35,
                 str(label)[:28],
-                fontName="Helvetica",
+                fontName=b.get("font_body", "Helvetica"),
                 fontSize=8,
                 fillColor=body_text,
                 textAnchor="end",
@@ -278,7 +278,7 @@ def _build_bar_chart(data, title="", brand=None):
                 label_width + bar_w + 4,
                 y + bar_height * 0.35,
                 str(value),
-                fontName="Helvetica-Bold",
+                fontName=b.get("font_heading", "Helvetica-Bold"),
                 fontSize=8,
                 fillColor=secondary,
                 textAnchor="start",

@@ -20,10 +20,8 @@ Key differences:
 from __future__ import annotations
 
 import re
-from pathlib import Path
 
 from reportlab.lib.colors import HexColor, black, white
-from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     Paragraph,
@@ -70,6 +68,11 @@ class InvoiceTemplate(BaseBriefingTemplate):
     Suitable for invoices, billing statements, and fee schedules.
     """
 
+    pdf_subject = "Invoice"
+    design_page_size = "A4"
+    design_margins_mm = {"top": 20, "bottom": 20, "left": 20, "right": 20}
+    supports_variants = False
+
     def build_story(self, content: dict) -> list:
         """
         Assemble the invoice story:
@@ -112,7 +115,7 @@ class InvoiceTemplate(BaseBriefingTemplate):
                 brand=b,
                 fontSize=9,
                 textColor=caption_c,
-                fontName="Helvetica-Bold",
+                fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                 spaceAfter=2,
             )
             story.append(Paragraph("BILL TO", bill_to_label))
@@ -145,7 +148,7 @@ class InvoiceTemplate(BaseBriefingTemplate):
                 brand=b,
                 fontSize=9,
                 textColor=caption_c,
-                fontName="Helvetica-Bold",
+                fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                 spaceAfter=3,
             )
             story.append(Paragraph("PAYMENT TERMS", terms_label))
@@ -194,7 +197,7 @@ class InvoiceTemplate(BaseBriefingTemplate):
                 brand=b,
                 fontSize=14,
                 textColor=black,
-                fontName="Helvetica-Bold",
+                fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             )
             left_parts.append(Paragraph(org, org_style))
 
@@ -224,7 +227,7 @@ class InvoiceTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=24,
             textColor=primary,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             alignment=2,
         )
         right_content = Paragraph("INVOICE", title_style)
@@ -284,7 +287,7 @@ class InvoiceTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=9,
             textColor=black,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
         )
         value_style = _ps(
             "InvoiceMetaValue",
@@ -430,14 +433,14 @@ class InvoiceTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=9,
             textColor=black,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
         )
         body_style = _ps(
             "InvTblBody",
             brand=b,
             fontSize=9,
             textColor=black,
-            fontName="Helvetica",
+            fontName=self.brand.get("font_body", "Helvetica"),
         )
 
         data_rows = self._build_line_items(tables)
@@ -468,10 +471,10 @@ class InvoiceTemplate(BaseBriefingTemplate):
                 [
                     ("BACKGROUND", (0, 0), (-1, 0), _HEADER_BG),
                     ("TEXTCOLOR", (0, 0), (-1, 0), black),
-                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("FONTNAME", (0, 0), (-1, 0), self.brand.get("font_heading", "Helvetica-Bold")),
                     ("FONTSIZE", (0, 0), (-1, 0), 9),
                     ("TEXTCOLOR", (0, 1), (-1, -1), black),
-                    ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+                    ("FONTNAME", (0, 1), (-1, -1), self.brand.get("font_body", "Helvetica")),
                     ("FONTSIZE", (0, 1), (-1, -1), 9),
                     ("VALIGN", (0, 0), (-1, -1), "TOP"),
                     ("TOPPADDING", (0, 0), (-1, -1), 4),
@@ -510,14 +513,14 @@ class InvoiceTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=9,
             textColor=black,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
         )
         body_style = _ps(
             "InvTblBody",
             brand=b,
             fontSize=9,
             textColor=black,
-            fontName="Helvetica",
+            fontName=self.brand.get("font_body", "Helvetica"),
         )
 
         header_row = [Paragraph(f"<b>{h}</b>", header_style) for h in _CANONICAL_HEADERS]
@@ -553,10 +556,10 @@ class InvoiceTemplate(BaseBriefingTemplate):
                 [
                     ("BACKGROUND", (0, 0), (-1, 0), _HEADER_BG),
                     ("TEXTCOLOR", (0, 0), (-1, 0), black),
-                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("FONTNAME", (0, 0), (-1, 0), self.brand.get("font_heading", "Helvetica-Bold")),
                     ("FONTSIZE", (0, 0), (-1, 0), 9),
                     ("TEXTCOLOR", (0, 1), (-1, -1), black),
-                    ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+                    ("FONTNAME", (0, 1), (-1, -1), self.brand.get("font_body", "Helvetica")),
                     ("FONTSIZE", (0, 1), (-1, -1), 9),
                     ("VALIGN", (0, 0), (-1, -1), "TOP"),
                     ("TOPPADDING", (0, 0), (-1, -1), 4),
@@ -655,7 +658,7 @@ class InvoiceTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=11,
             textColor=black,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
         )
         value_style = _ps(
             "InvoiceTotalValue",
@@ -669,7 +672,7 @@ class InvoiceTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=11,
             textColor=black,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             alignment=2,
         )
 
@@ -732,7 +735,7 @@ class InvoiceTemplate(BaseBriefingTemplate):
             brand=brand,
             fontSize=9,
             textColor=caption_c,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             spaceAfter=3,
         )
         detail_style = _ps(
@@ -765,56 +768,15 @@ class InvoiceTemplate(BaseBriefingTemplate):
         flowables.append(Spacer(1, 6 * mm))
         return flowables
 
-    # ------------------------------------------------------------------
-    # Override generate() for invoice-specific header/footer
-    # ------------------------------------------------------------------
-
-    def generate(self) -> Path:
-        """Generate the invoice PDF with minimal footer."""
-        self.output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        content = self.extract_content()
-
-        # Doc ID (optional)
-        doc_ids_cfg = self.config.get("doc_ids", {})
-        if doc_ids_cfg.get("enabled", True):
-            from briefkit.doc_ids import get_or_assign_doc_id
-
-            self.doc_id = get_or_assign_doc_id(
-                self.target_path,
-                self.level,
-                content.get("title", ""),
-                config=self.config,
-            )
-
-        # Header/footer state
-
-        layout = self.config.get("layout", {})
-        margins = layout.get("margins", {})
-        top_m = margins.get("top", 20) * mm
-        bottom_m = margins.get("bottom", 20) * mm
-        left_m = margins.get("left", 20) * mm
-        right_m = margins.get("right", 20) * mm
-
-        doc = self._build_doc(
-            pagesize=A4,
-            topMargin=top_m,
-            bottomMargin=bottom_m,
-            leftMargin=left_m,
-            rightMargin=right_m,
-            subject="Invoice",
-        )
-
-        story = self.build_story(content)
-        story = self._finalize_story(story)
-
+    def header_footer(self, content: dict):
         caption_color = HexColor(self.brand.get("caption", "#666666"))
         org = self.brand.get("org", "")
+        body_font = self.brand.get("font_body", "Helvetica")
 
         def _invoice_footer(canvas, doc_inner):
             """Footer: payment terms left, page number right."""
             canvas.saveState()
-            canvas.setFont("Helvetica", 8)
+            canvas.setFont(body_font, 8)
             canvas.setFillColor(caption_color)
 
             # Payment terms line
@@ -840,13 +802,7 @@ class InvoiceTemplate(BaseBriefingTemplate):
             )
             canvas.restoreState()
 
-        doc.build(
-            story,
-            onFirstPage=_invoice_footer,
-            onLaterPages=_invoice_footer,
-        )
-
-        return self.output_path
+        return _invoice_footer, _invoice_footer
 
     # ------------------------------------------------------------------
     # Suppress all unused base section builders

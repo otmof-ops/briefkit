@@ -22,10 +22,8 @@ Key differences:
 from __future__ import annotations
 
 import re
-from pathlib import Path
 
 from reportlab.lib.colors import HexColor
-from reportlab.lib.pagesizes import A3, A4, legal, letter
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     PageBreak,
@@ -47,12 +45,6 @@ from briefkit.styles import (
 # Page sizes
 # ---------------------------------------------------------------------------
 
-_PAGE_SIZES = {
-    "A4": A4,
-    "A3": A3,
-    "Letter": letter,
-    "Legal": legal,
-}
 
 # ---------------------------------------------------------------------------
 # Bold term extraction regex
@@ -107,6 +99,10 @@ class ContractTemplate(BaseBriefingTemplate):
     definitions, numbered operative clauses, schedules, and an
     execution block with signature lines.
     """
+
+    pdf_subject = "Agreement"
+    design_margins_mm = {"top": 25, "bottom": 22, "left": 22, "right": 22}
+    supports_variants = False
 
     def build_story(self, content: dict) -> list:
         """
@@ -184,7 +180,7 @@ class ContractTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=22,
             textColor=primary,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             alignment=1,
             spaceAfter=8,
         )
@@ -232,7 +228,7 @@ class ContractTemplate(BaseBriefingTemplate):
             fontSize=10,
             textColor=caption_c,
             alignment=1,
-            fontName="Helvetica-Oblique",
+            fontName=self.brand.get("font_caption", "Helvetica-Oblique"),
             spaceAfter=6,
         )
 
@@ -268,7 +264,7 @@ class ContractTemplate(BaseBriefingTemplate):
             fontSize=8,
             textColor=caption_c,
             alignment=1,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
         )
         flowables.append(Paragraph("CONFIDENTIAL", conf_style))
 
@@ -293,7 +289,7 @@ class ContractTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=13,
             textColor=primary,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             spaceBefore=6,
             spaceAfter=6,
         )
@@ -348,7 +344,7 @@ class ContractTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=13,
             textColor=primary,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             spaceBefore=6,
             spaceAfter=6,
         )
@@ -411,7 +407,7 @@ class ContractTemplate(BaseBriefingTemplate):
                     brand=b,
                     fontSize=13,
                     textColor=primary,
-                    fontName="Helvetica-Bold",
+                    fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                     spaceBefore=8,
                     spaceAfter=6,
                 )
@@ -429,7 +425,7 @@ class ContractTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=13,
             textColor=primary,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             spaceBefore=10,
             spaceAfter=6,
         )
@@ -438,7 +434,7 @@ class ContractTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=11,
             textColor=primary,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             spaceBefore=6,
             spaceAfter=3,
         )
@@ -528,7 +524,7 @@ class ContractTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=14,
             textColor=primary,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             alignment=1,
             spaceBefore=8,
             spaceAfter=4,
@@ -541,7 +537,7 @@ class ContractTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=12,
             textColor=primary,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             spaceBefore=6,
             spaceAfter=4,
         )
@@ -592,7 +588,7 @@ class ContractTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=14,
             textColor=primary,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             alignment=1,
             spaceBefore=8,
             spaceAfter=8,
@@ -639,7 +635,7 @@ class ContractTemplate(BaseBriefingTemplate):
                 brand=b,
                 fontSize=11,
                 textColor=primary,
-                fontName="Helvetica-Bold",
+                fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                 spaceBefore=6,
                 spaceAfter=4,
             )
@@ -654,7 +650,7 @@ class ContractTemplate(BaseBriefingTemplate):
                 tbl.setStyle(
                     TableStyle(
                         [
-                            ("FONTNAME", (0, 0), (0, 0), "Helvetica"),
+                            ("FONTNAME", (0, 0), (0, 0), self.brand.get("font_body", "Helvetica")),
                             ("FONTSIZE", (0, 0), (-1, -1), 9),
                             ("TEXTCOLOR", (0, 0), (0, 0), HexColor(b.get("caption", "#666666"))),
                             ("LINEBELOW", (1, 0), (1, 0), 0.5, rule_c),
@@ -683,7 +679,7 @@ class ContractTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=11,
             textColor=primary,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             spaceBefore=6,
             spaceAfter=4,
         )
@@ -697,7 +693,7 @@ class ContractTemplate(BaseBriefingTemplate):
             tbl.setStyle(
                 TableStyle(
                     [
-                        ("FONTNAME", (0, 0), (0, 0), "Helvetica"),
+                        ("FONTNAME", (0, 0), (0, 0), self.brand.get("font_body", "Helvetica")),
                         ("FONTSIZE", (0, 0), (-1, -1), 9),
                         ("TEXTCOLOR", (0, 0), (0, 0), HexColor(b.get("caption", "#666666"))),
                         ("LINEBELOW", (1, 0), (1, 0), 0.5, rule_c),
@@ -711,61 +707,18 @@ class ContractTemplate(BaseBriefingTemplate):
 
         return flowables
 
-    # ------------------------------------------------------------------
-    # Override generate() for contract header/footer
-    # ------------------------------------------------------------------
-
-    def generate(self) -> Path:
-        """Generate the contract PDF with agreement header and confidential footer."""
-        self.output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        content = self.extract_content()
-        title = content.get("title", self.target_path.name.replace("-", " ").title())
-
-        # Doc ID (optional)
-        doc_ids_cfg = self.config.get("doc_ids", {})
-        if doc_ids_cfg.get("enabled", True):
-            from briefkit.doc_ids import get_or_assign_doc_id
-
-            self.doc_id = get_or_assign_doc_id(
-                self.target_path,
-                self.level,
-                title,
-                config=self.config,
-            )
-
-        # Header/footer state
-
-        layout = self.config.get("layout", {})
-        margins = layout.get("margins", {})
-        top_m = margins.get("top", 25) * mm
-        bottom_m = margins.get("bottom", 22) * mm
-        left_m = margins.get("left", 22) * mm
-        right_m = margins.get("right", 22) * mm
-
-        page_size = _PAGE_SIZES.get(layout.get("page_size", "A4"), A4)
-
-        doc = self._build_doc(
-            pagesize=page_size,
-            topMargin=top_m,
-            bottomMargin=bottom_m,
-            leftMargin=left_m,
-            rightMargin=right_m,
-            subject="Agreement",
-        )
-
-        story = self.build_story(content)
-        story = self._finalize_story(story)
-
-        # Capture title for closure
-        agreement_title = title
+    def header_footer(self, content: dict):
+        agreement_title = content.get("title", self.target_path.name.replace("-", " ").title())
         brand = self.brand
+        left_m = self.geometry.margins.left
+        right_m = self.geometry.margins.right
+        body_font = self.brand.get("font_body", "Helvetica")
 
         def _contract_first_page(canvas, doc):
             """No header on title page, just confidential footer."""
             canvas.saveState()
             page_w, _ = doc.pagesize
-            canvas.setFont("Helvetica", 7)
+            canvas.setFont(body_font, 7)
             canvas.setFillColor(HexColor(brand.get("caption", "#666666")))
             canvas.drawCentredString(
                 page_w / 2,
@@ -780,7 +733,7 @@ class ContractTemplate(BaseBriefingTemplate):
             page_w, page_h = doc.pagesize
 
             # Header: agreement name, right-aligned
-            canvas.setFont("Helvetica", 8)
+            canvas.setFont(body_font, 8)
             canvas.setFillColor(HexColor(brand.get("caption", "#666666")))
             canvas.drawRightString(
                 page_w - left_m,
@@ -789,7 +742,7 @@ class ContractTemplate(BaseBriefingTemplate):
             )
 
             # Footer: page number and confidential
-            canvas.setFont("Helvetica", 7)
+            canvas.setFont(body_font, 7)
             canvas.setFillColor(HexColor(brand.get("caption", "#666666")))
             canvas.drawString(
                 left_m,
@@ -803,13 +756,7 @@ class ContractTemplate(BaseBriefingTemplate):
             )
             canvas.restoreState()
 
-        doc.build(
-            story,
-            onFirstPage=_contract_first_page,
-            onLaterPages=_contract_later_pages,
-        )
-
-        return self.output_path
+        return _contract_first_page, _contract_later_pages
 
     # ------------------------------------------------------------------
     # Suppress all unused base section builders

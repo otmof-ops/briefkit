@@ -38,11 +38,10 @@ Body pages:
 
 from __future__ import annotations
 
+import functools
 import re
-from pathlib import Path
 
 from reportlab.lib.colors import HexColor, white
-from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     PageBreak,
@@ -60,7 +59,6 @@ from briefkit.styles import (
     _get_brand,
     _ps,
     _safe_text,
-    compute_content_width,
 )
 from briefkit.templates._helpers import should_skip
 
@@ -83,18 +81,12 @@ _CALLOUT_BG = "#EFFDF9"
 # Module-level state for custom header / footer
 # ---------------------------------------------------------------------------
 
-_dr_state: dict = {
-    "title": "",
-    "year": "2026",
-    "report_type": "RESEARCH REPORT",
-    "brand": {},
-}
 
-
-def _dr_header_footer(canvas, doc):
+def _dr_header_footer(canvas, doc, state):
     """Deep research header/footer — exact match of PDF body pages."""
+    b = _get_brand(state.get("brand"))
     canvas.saveState()
-    _get_brand(_dr_state.get("brand"))
+    _get_brand(state.get("brand"))
     w, h = doc.pagesize
 
     # Header rule: teal 1.5pt at y=802.20
@@ -103,14 +95,14 @@ def _dr_header_footer(canvas, doc):
     canvas.line(62.362, 802.205, 532.913, 802.205)
 
     # Header text at y=807.87
-    canvas.setFont("Helvetica", 7.5)
+    canvas.setFont(b.get("font_body", "Helvetica"), 7.5)
     canvas.setFillColor(HexColor(_HEADER_CAPTION))
-    title = _dr_state.get("title", "")
+    title = state.get("title", "")
     if title:
         canvas.drawString(62.362, 807.874, title.upper()[:50])
 
-    report_label = _dr_state.get("report_type", "RESEARCH REPORT")
-    year = _dr_state.get("year", "2026")
+    report_label = state.get("report_type", "RESEARCH REPORT")
+    year = state.get("year", "2026")
     canvas.drawRightString(532.913, 807.874, f"{report_label} {year}")
 
     # Footer rule: 0.5pt #D1D4DB at y=45.35
@@ -120,7 +112,7 @@ def _dr_header_footer(canvas, doc):
 
     # Footer page number: centered "— n —"
     page_num = canvas.getPageNumber()
-    canvas.setFont("Helvetica", 8)
+    canvas.setFont(b.get("font_body", "Helvetica"), 8)
     canvas.setFillColor(HexColor(_HEADER_CAPTION))
     canvas.drawCentredString(285.190, 28.346, f"\u2014 {page_num} \u2014")
 
@@ -143,6 +135,10 @@ class DeepResearchTemplate(BaseBriefingTemplate):
     technical deep-dives, white-paper-style analysis.
     """
 
+    pdf_subject = "Deep Research Report"
+    page_size_lock = "A4"
+    supports_variants = False
+
     def build_story(self, content: dict) -> list:
         """Assemble the research report story."""
         story: list = []
@@ -162,7 +158,7 @@ class DeepResearchTemplate(BaseBriefingTemplate):
             "DRContents",
             brand=self.brand,
             fontSize=22,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=HexColor(_TOC_TITLE),
             leading=26,
         )
@@ -193,14 +189,14 @@ class DeepResearchTemplate(BaseBriefingTemplate):
                 f"DRTocEntry_{i}",
                 brand=self.brand,
                 fontSize=10.5,
-                fontName="Helvetica",
+                fontName=self.brand.get("font_body", "Helvetica"),
                 textColor=HexColor(_BODY_TEXT),
                 leading=20,
                 leftIndent=22.677,
             )
             story.append(
                 Paragraph(
-                    f'<font name="Helvetica-Bold" color="{_TEAL}">{i}</font>&nbsp;&nbsp;&nbsp;{_safe_text(name)}',
+                    f'<font name="{self.brand.get("font_heading", "Helvetica-Bold")}" color="{_TEAL}">{i}</font>&nbsp;&nbsp;&nbsp;{_safe_text(name)}',
                     entry_style,
                 )
             )
@@ -217,7 +213,7 @@ class DeepResearchTemplate(BaseBriefingTemplate):
                     f"DRTocSub_{i}",
                     brand=self.brand,
                     fontSize=9.5,
-                    fontName="Helvetica-Oblique",
+                    fontName=self.brand.get("font_caption", "Helvetica-Oblique"),
                     textColor=HexColor(_HEADER_CAPTION),
                     leading=20,
                     leftIndent=45.354,
@@ -253,13 +249,13 @@ class DeepResearchTemplate(BaseBriefingTemplate):
                 f"DRSecH_{idx}",
                 brand=self.brand,
                 fontSize=20,
-                fontName="Helvetica-Bold",
+                fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                 textColor=HexColor(_TOC_TITLE),
                 leading=26,
             )
             story.append(
                 Paragraph(
-                    f'<font name="Helvetica-Bold" size="22" color="{_TEAL}">'
+                    f'<font name="{self.brand.get("font_heading", "Helvetica-Bold")}" size="22" color="{_TEAL}">'
                     f"{idx:02d}</font>"
                     f"&nbsp;&nbsp;&nbsp;{_safe_text(name)}",
                     sec_style,
@@ -285,41 +281,14 @@ class DeepResearchTemplate(BaseBriefingTemplate):
 
         return story
 
-    # ------------------------------------------------------------------
-    # generate() — custom cover and header/footer
-    # ------------------------------------------------------------------
-
-    def generate(self) -> Path:
-        """Generate the deep research PDF with minimalist dark cover."""
-        self.output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        content = self.extract_content()
-        title = content.get(
-            "title",
-            self.target_path.name.replace("-", " ").title(),
-        )
+    def prepare(self, content: dict) -> None:
+        title = content.get("title", self.target_path.name.replace("-", " ").title())
         subsystems = content.get("subsystems", [])
         overview = content.get("overview", "")
-
-        # Doc ID
-        doc_ids_cfg = self.config.get("doc_ids", {})
-        if doc_ids_cfg.get("enabled", True):
-            from briefkit.doc_ids import get_or_assign_doc_id
-
-            self.doc_id = get_or_assign_doc_id(
-                self.target_path,
-                self.level,
-                title,
-                config=self.config,
-            )
-
-        # Template-specific config
         dr_cfg = self.config.get("deep_research", {})
         report_type = dr_cfg.get("report_type", "Deep Research Report")
         topics = dr_cfg.get("topics", [])
         subtitle = dr_cfg.get("subtitle", "")
-
-        # Auto-derive subtitle from first overview sentence if not set
         if not subtitle and overview:
             first_line = overview.strip().split("\n")[0]
             for sep in (".", "!", "?"):
@@ -328,53 +297,39 @@ class DeepResearchTemplate(BaseBriefingTemplate):
                     first_line = first_line[: idx + 1]
                     break
             subtitle = re.sub(r"^#+\s*", "", first_line)[:200]
-
-        # Auto-derive topics from subsystem names
         if not topics and subsystems:
             topics = [sub.get("name", "") for sub in subsystems[:6]]
-
-        year = str(self.date.year)
-
-        # Header/footer state
-        _dr_state["title"] = dr_cfg.get("header_title", title)
-        _dr_state["year"] = year
-        _dr_state["report_type"] = report_type.upper()
-        _dr_state["brand"] = self.brand
-
-        layout = self.config.get("layout", {})
-        margins = layout.get("margins", {})
-        top_m = margins.get("top", 25) * mm
-        bottom_m = margins.get("bottom", 22) * mm
-        left_m = margins.get("left", 20) * mm
-        right_m = margins.get("right", 20) * mm
-
-        page_size = A4
-        self.content_width = compute_content_width(page_size, margins)
-
-        # Per-template metadata overrides. Unset keys fall through to the
-        # project-wide metadata that _build_doc derives from config, so no
-        # placeholder text ever reaches the PDF info dictionary.
-        meta = {
-            key: value
-            for key, value in (
-                ("author", dr_cfg.get("author")),
-                ("subject", dr_cfg.get("subject")),
-                ("title", dr_cfg.get("pdf_title")),
-            )
-            if value
-        }
-
-        doc = self._build_doc(
-            pagesize=page_size,
-            topMargin=top_m,
-            bottomMargin=bottom_m,
-            leftMargin=left_m,
-            rightMargin=right_m,
-            **meta,
+        self.hf_ctx.update(
+            {
+                "title": dr_cfg.get("header_title", title),
+                "year": str(self.date.year),
+                "report_type": report_type.upper(),
+                "brand": self.brand,
+            }
         )
+        self._cover_data = {"title": title, "subtitle": subtitle, "topics": topics, "report_type": report_type}
 
-        story = self.build_story(content)
-        story = self._finalize_story(story)
+    def doc_kwargs(self, content: dict) -> dict:
+        kwargs = super().doc_kwargs(content)
+        kwargs["subject"] = "Deep Research Report"
+        dr_cfg = self.config.get("deep_research", {})
+        for key, value in (
+            ("author", dr_cfg.get("author")),
+            ("subject", dr_cfg.get("subject")),
+            ("title", dr_cfg.get("pdf_title")),
+        ):
+            if value:
+                kwargs[key] = value
+        return kwargs
+
+    def header_footer(self, content: dict):
+        data = getattr(self, "_cover_data", {})
+        title = data.get("title", "")
+        subtitle = data.get("subtitle", "")
+        topics = data.get("topics", [])
+        report_type = data.get("report_type", "Deep Research Report")
+        body_font = self.brand.get("font_body", "Helvetica")
+        heading_font = self.brand.get("font_heading", "Helvetica-Bold")
 
         def _cover_page(canvas, doc_inner):
             """Draw cover — exact match of AI Simulations page 1."""
@@ -420,7 +375,7 @@ class DeepResearchTemplate(BaseBriefingTemplate):
 
             # Title: Helvetica-Bold 28pt white at x=68.36
             canvas.setFillColor(white)
-            canvas.setFont("Helvetica-Bold", 28)
+            canvas.setFont(heading_font, 28)
 
             # Word-wrap title
             title_lines = []
@@ -429,7 +384,7 @@ class DeepResearchTemplate(BaseBriefingTemplate):
             max_w = w * 0.6
             for word in words:
                 test = f"{current} {word}".strip()
-                if canvas.stringWidth(test, "Helvetica-Bold", 28) > max_w:
+                if canvas.stringWidth(test, heading_font, 28) > max_w:
                     if current:
                         title_lines.append(current)
                     current = word
@@ -445,14 +400,14 @@ class DeepResearchTemplate(BaseBriefingTemplate):
 
             # Subtitle: Helvetica 13pt #93A3B8
             if subtitle:
-                canvas.setFont("Helvetica", 13)
+                canvas.setFont(body_font, 13)
                 canvas.setFillColor(HexColor(_SUBTITLE_GRAY))
                 sub_lines = []
                 sub_words = subtitle.split()
                 current = ""
                 for word in sub_words:
                     test = f"{current} {word}".strip()
-                    if canvas.stringWidth(test, "Helvetica", 13) > max_w:
+                    if canvas.stringWidth(test, body_font, 13) > max_w:
                         if current:
                             sub_lines.append(current)
                         current = word
@@ -471,7 +426,7 @@ class DeepResearchTemplate(BaseBriefingTemplate):
             canvas.roundRect(68.362, 445.925, 155.906, 2.5, 0.75, stroke=0, fill=1)
 
             # Metadata: Helvetica 9pt #64748A
-            canvas.setFont("Helvetica", 9)
+            canvas.setFont(body_font, 9)
             canvas.setFillColor(HexColor(_META_GRAY))
             month_year = self.date.strftime("%B %Y")
             canvas.drawString(68.362, 414.248, f"Compiled {month_year} \u00b7 {report_type}")
@@ -479,7 +434,7 @@ class DeepResearchTemplate(BaseBriefingTemplate):
             # Topics: Helvetica 9pt #93A3B8
             if topics:
                 topic_str = "Covering: " + " \u00b7 ".join(t[:30] for t in topics[:6])
-                canvas.setFont("Helvetica", 9)
+                canvas.setFont(body_font, 9)
                 canvas.setFillColor(HexColor(_SUBTITLE_GRAY))
                 # Word-wrap
                 tag_lines = []
@@ -487,7 +442,7 @@ class DeepResearchTemplate(BaseBriefingTemplate):
                 current = ""
                 for word in tag_words:
                     test = f"{current} {word}".strip()
-                    if canvas.stringWidth(test, "Helvetica", 9) > max_w:
+                    if canvas.stringWidth(test, body_font, 9) > max_w:
                         if current:
                             tag_lines.append(current)
                         current = word
@@ -522,13 +477,7 @@ class DeepResearchTemplate(BaseBriefingTemplate):
 
             canvas.restoreState()
 
-        doc.build(
-            story,
-            onFirstPage=_cover_page,
-            onLaterPages=_dr_header_footer,
-        )
-
-        return self.output_path
+        return _cover_page, functools.partial(_dr_header_footer, state=self.hf_ctx)
 
     # ------------------------------------------------------------------
     # Suppress unused base section builders

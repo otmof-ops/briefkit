@@ -17,10 +17,7 @@ Key differences:
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from reportlab.lib.colors import HexColor
-from reportlab.lib.pagesizes import A3, A4, legal, letter
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     Paragraph,
@@ -39,8 +36,6 @@ from briefkit.styles import (
     _safe_para,
 )
 
-_PAGE_SIZES = {"A4": A4, "A3": A3, "Letter": letter, "Legal": legal}
-
 
 class LetterTemplate(BaseBriefingTemplate):
     """
@@ -50,6 +45,10 @@ class LetterTemplate(BaseBriefingTemplate):
     line, body paragraphs, and a formal closing with signature block.
     Suitable for official correspondence, cover letters, and notices.
     """
+
+    pdf_subject = "Letter"
+    design_margins_mm = {"top": 25, "bottom": 22, "left": 25, "right": 25}
+    supports_variants = False
 
     def build_story(self, content: dict) -> list:
         """
@@ -71,7 +70,7 @@ class LetterTemplate(BaseBriefingTemplate):
                 brand=b,
                 fontSize=14,
                 textColor=primary,
-                fontName="Helvetica-Bold",
+                fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                 spaceAfter=2,
             )
             story.append(Paragraph(org, lh_style))
@@ -83,7 +82,7 @@ class LetterTemplate(BaseBriefingTemplate):
                 brand=b,
                 fontSize=9,
                 textColor=caption_c,
-                fontName="Helvetica-Oblique",
+                fontName=self.brand.get("font_caption", "Helvetica-Oblique"),
             )
             story.append(Paragraph(tagline, tag_style))
 
@@ -118,7 +117,7 @@ class LetterTemplate(BaseBriefingTemplate):
                 brand=b,
                 fontSize=10,
                 textColor=body_c,
-                fontName="Helvetica-Bold",
+                fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             )
             story.append(Paragraph(f"RE: {title}", ref_style))
             story.append(Spacer(1, 6 * mm))
@@ -145,7 +144,7 @@ class LetterTemplate(BaseBriefingTemplate):
                     brand=b,
                     fontSize=11,
                     textColor=primary,
-                    fontName="Helvetica-Bold",
+                    fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                     spaceBefore=6,
                     spaceAfter=3,
                 )
@@ -179,7 +178,7 @@ class LetterTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=10,
             textColor=body_c,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
         )
         if org:
             story.append(Paragraph(org, sig_style))
@@ -191,59 +190,14 @@ class LetterTemplate(BaseBriefingTemplate):
 
         return story
 
-    # ------------------------------------------------------------------
-    # Override generate() to use minimal header/footer for letters
-    # ------------------------------------------------------------------
-
-    def generate(self) -> Path:
-        """
-        Generate the letter PDF with page-number-only footer.
-        """
-        self.output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        content = self.extract_content()
-
-        # Doc ID (optional)
-        doc_ids_cfg = self.config.get("doc_ids", {})
-        if doc_ids_cfg.get("enabled", True):
-            from briefkit.doc_ids import get_or_assign_doc_id
-
-            self.doc_id = get_or_assign_doc_id(
-                self.target_path,
-                self.level,
-                content.get("title", ""),
-                config=self.config,
-            )
-
-        # Header/footer state
-
-        layout = self.config.get("layout", {})
-        margins = layout.get("margins", {})
-        top_m = margins.get("top", 25) * mm
-        bottom_m = margins.get("bottom", 22) * mm
-        left_m = margins.get("left", 25) * mm  # Wider margins for letters
-        right_m = margins.get("right", 25) * mm
-
-        page_size = _PAGE_SIZES.get(layout.get("page_size", "A4"), A4)
-
-        doc = self._build_doc(
-            pagesize=page_size,
-            topMargin=top_m,
-            bottomMargin=bottom_m,
-            leftMargin=left_m,
-            rightMargin=right_m,
-            subject="Letter",
-        )
-
-        story = self.build_story(content)
-        story = self._finalize_story(story)
-
+    def header_footer(self, content: dict):
         caption_color = HexColor(self.brand.get("caption", "#666666"))
+        body_font = self.brand.get("font_body", "Helvetica")
 
         def _letter_footer(canvas, doc_inner):
             """Page number footer for later pages only."""
             canvas.saveState()
-            canvas.setFont("Helvetica", 8)
+            canvas.setFont(body_font, 8)
             canvas.setFillColor(caption_color)
             canvas.drawCentredString(
                 doc_inner.pagesize[0] / 2,
@@ -252,13 +206,7 @@ class LetterTemplate(BaseBriefingTemplate):
             )
             canvas.restoreState()
 
-        doc.build(
-            story,
-            onFirstPage=lambda c, d: None,
-            onLaterPages=_letter_footer,
-        )
-
-        return self.output_path
+        return None, _letter_footer
 
     # ------------------------------------------------------------------
     # Suppress all unused base section builders

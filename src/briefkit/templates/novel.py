@@ -96,7 +96,7 @@ class NovelTemplate(BookTemplate):
             _CAT_ERASURE: _ps(
                 "NovelErasure",
                 brand=b,
-                fontName="Courier-Bold",
+                fontName=self.brand.get("font_mono", "Courier-Bold"),
                 fontSize=12,
                 textColor=primary,
                 alignment=1,
@@ -107,7 +107,7 @@ class NovelTemplate(BookTemplate):
             _CAT_SYSTEM_COMMAND: _ps(
                 "NovelSystemCmd",
                 brand=b,
-                fontName="Courier-Bold",
+                fontName=self.brand.get("font_mono", "Courier-Bold"),
                 fontSize=11,
                 textColor=accent,
                 alignment=1,
@@ -118,7 +118,7 @@ class NovelTemplate(BookTemplate):
             _CAT_SYSTEM_TAG: _ps(
                 "NovelSystemTag",
                 brand=b,
-                fontName="Courier",
+                fontName=self.brand.get("font_mono", "Courier"),
                 fontSize=9,
                 textColor=caption,
                 backColor=code_bg,
@@ -131,7 +131,7 @@ class NovelTemplate(BookTemplate):
             _CAT_SYSTEM_LOG: _ps(
                 "NovelSystemLog",
                 brand=b,
-                fontName="Courier",
+                fontName=self.brand.get("font_mono", "Courier"),
                 fontSize=9,
                 textColor=caption,
                 backColor=code_bg,
@@ -348,14 +348,16 @@ class NovelTemplate(BookTemplate):
         # --- Half-title page ---
         cw = getattr(self, "content_width", CONTENT_WIDTH)
         ht_size = 24
-        while stringWidth(title, "Helvetica-Bold", ht_size) > cw * 0.85 and ht_size > 16:
+        while (
+            stringWidth(title, self.brand.get("font_heading", "Helvetica-Bold"), ht_size) > cw * 0.85 and ht_size > 16
+        ):
             ht_size -= 1
         half_title_style = _ps(
             "HalfTitle",
             brand=b,
             fontSize=ht_size,
             textColor=primary,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             alignment=1,
         )
         story.append(Spacer(1, 80 * mm))
@@ -364,14 +366,16 @@ class NovelTemplate(BookTemplate):
 
         # --- Full title page ---
         ft_size = 32
-        while stringWidth(title, "Helvetica-Bold", ft_size) > cw * 0.80 and ft_size > 18:
+        while (
+            stringWidth(title, self.brand.get("font_heading", "Helvetica-Bold"), ft_size) > cw * 0.80 and ft_size > 18
+        ):
             ft_size -= 1
         title_style = _ps(
             "BookTitle",
             brand=b,
             fontSize=ft_size,
             textColor=primary,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             alignment=1,
             leading=ft_size + 8,
             spaceAfter=6 * mm,
@@ -382,7 +386,7 @@ class NovelTemplate(BookTemplate):
             brand=b,
             fontSize=16,
             textColor=secondary,
-            fontName="Helvetica-Oblique",
+            fontName=self.brand.get("font_caption", "Helvetica-Oblique"),
             alignment=1,
         )
         author_style = _ps(

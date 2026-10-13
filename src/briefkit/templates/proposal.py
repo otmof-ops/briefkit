@@ -22,10 +22,8 @@ Key differences:
 from __future__ import annotations
 
 import re
-from pathlib import Path
 
 from reportlab.lib.colors import HexColor, white
-from reportlab.lib.pagesizes import A3, A4, legal, letter
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     PageBreak,
@@ -48,12 +46,6 @@ from briefkit.templates._helpers import should_skip
 # Page sizes
 # ---------------------------------------------------------------------------
 
-_PAGE_SIZES = {
-    "A4": A4,
-    "A3": A3,
-    "Letter": letter,
-    "Legal": legal,
-}
 
 # ---------------------------------------------------------------------------
 # Heuristic patterns for table classification
@@ -90,6 +82,10 @@ class ProposalTemplate(BaseBriefingTemplate):
     acceptance sign-off block.  Suitable for project proposals, RFP
     responses, and commercial offers.
     """
+
+    pdf_subject = "Proposal"
+    design_margins_mm = {"top": 25, "bottom": 22, "left": 22, "right": 22}
+    supports_variants = False
 
     def build_story(self, content: dict) -> list:
         """
@@ -205,7 +201,7 @@ class ProposalTemplate(BaseBriefingTemplate):
                 brand=b,
                 fontSize=14,
                 textColor=primary,
-                fontName="Helvetica-Bold",
+                fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                 alignment=1,
                 spaceAfter=6,
             )
@@ -218,7 +214,7 @@ class ProposalTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=28,
             textColor=primary,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             alignment=1,
             spaceAfter=6,
         )
@@ -245,7 +241,7 @@ class ProposalTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=16,
             textColor=primary,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             alignment=1,
             spaceAfter=8,
         )
@@ -272,7 +268,7 @@ class ProposalTemplate(BaseBriefingTemplate):
                 brand=b,
                 fontSize=9,
                 textColor=caption_c,
-                fontName="Helvetica-Oblique",
+                fontName=self.brand.get("font_caption", "Helvetica-Oblique"),
                 alignment=1,
             )
             flowables.append(Paragraph(tagline, tag_style))
@@ -297,7 +293,7 @@ class ProposalTemplate(BaseBriefingTemplate):
                 brand=b,
                 fontSize=9,
                 textColor=white,
-                fontName="Helvetica",
+                fontName=self.brand.get("font_body", "Helvetica"),
                 alignment=1,
             )
             band_data = [[Paragraph(contact_text, band_style)]]
@@ -561,7 +557,7 @@ class ProposalTemplate(BaseBriefingTemplate):
                 brand=b,
                 fontSize=11,
                 textColor=primary,
-                fontName="Helvetica-Bold",
+                fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                 spaceBefore=6,
                 spaceAfter=4,
             )
@@ -574,7 +570,7 @@ class ProposalTemplate(BaseBriefingTemplate):
                 tbl.setStyle(
                     TableStyle(
                         [
-                            ("FONTNAME", (0, 0), (0, 0), "Helvetica"),
+                            ("FONTNAME", (0, 0), (0, 0), self.brand.get("font_body", "Helvetica")),
                             ("FONTSIZE", (0, 0), (-1, -1), 9),
                             ("TEXTCOLOR", (0, 0), (0, 0), HexColor(b.get("caption", "#666666"))),
                             ("LINEBELOW", (1, 0), (1, 0), 0.5, rule_c),
@@ -632,7 +628,7 @@ class ProposalTemplate(BaseBriefingTemplate):
                 brand=b,
                 fontSize=14,
                 textColor=primary,
-                fontName="Helvetica-Bold",
+                fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                 alignment=1,
             )
             flowables.append(Paragraph(org, org_style))
@@ -697,54 +693,11 @@ class ProposalTemplate(BaseBriefingTemplate):
                         results.append((sub.get("name", ""), tbl))
         return results
 
-    # ------------------------------------------------------------------
-    # Override generate() for proposal header/footer
-    # ------------------------------------------------------------------
-
-    def generate(self) -> Path:
-        """Generate the proposal PDF with branded header and footer."""
-        self.output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        content = self.extract_content()
-        title = content.get("title", self.target_path.name.replace("-", " ").title())
-
-        # Doc ID (optional)
-        doc_ids_cfg = self.config.get("doc_ids", {})
-        if doc_ids_cfg.get("enabled", True):
-            from briefkit.doc_ids import get_or_assign_doc_id
-
-            self.doc_id = get_or_assign_doc_id(
-                self.target_path,
-                self.level,
-                title,
-                config=self.config,
-            )
-
-        # Header/footer state
-
-        layout = self.config.get("layout", {})
-        margins = layout.get("margins", {})
-        top_m = margins.get("top", 25) * mm
-        bottom_m = margins.get("bottom", 22) * mm
-        left_m = margins.get("left", 22) * mm
-        right_m = margins.get("right", 22) * mm
-
-        page_size = _PAGE_SIZES.get(layout.get("page_size", "A4"), A4)
-
-        doc = self._build_doc(
-            pagesize=page_size,
-            topMargin=top_m,
-            bottomMargin=bottom_m,
-            leftMargin=left_m,
-            rightMargin=right_m,
-            subject="Proposal",
-        )
-
-        story = self.build_story(content)
-        story = self._finalize_story(story)
-
-        proposal_title = title
+    def header_footer(self, content: dict):
+        proposal_title = content.get("title", self.target_path.name.replace("-", " ").title())
         brand = self.brand
+        right_m = self.geometry.margins.right
+        body_font = self.brand.get("font_body", "Helvetica")
 
         def _proposal_first_page(canvas, doc_inner):
             """No header on cover page."""
@@ -757,7 +710,7 @@ class ProposalTemplate(BaseBriefingTemplate):
             page_w, page_h = doc_inner.pagesize
 
             # Header
-            canvas.setFont("Helvetica", 8)
+            canvas.setFont(body_font, 8)
             canvas.setFillColor(HexColor(brand.get("caption", "#666666")))
             canvas.drawRightString(
                 page_w - right_m,
@@ -766,7 +719,7 @@ class ProposalTemplate(BaseBriefingTemplate):
             )
 
             # Footer
-            canvas.setFont("Helvetica", 7)
+            canvas.setFont(body_font, 7)
             canvas.setFillColor(HexColor(brand.get("caption", "#666666")))
             canvas.drawCentredString(
                 page_w / 2,
@@ -775,13 +728,7 @@ class ProposalTemplate(BaseBriefingTemplate):
             )
             canvas.restoreState()
 
-        doc.build(
-            story,
-            onFirstPage=_proposal_first_page,
-            onLaterPages=_proposal_later_pages,
-        )
-
-        return self.output_path
+        return _proposal_first_page, _proposal_later_pages
 
     # ------------------------------------------------------------------
     # Suppress unused base section builders

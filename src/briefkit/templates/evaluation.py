@@ -20,10 +20,8 @@ Suitable for: performance evaluations, employee reviews, appraisal forms.
 from __future__ import annotations
 
 import re
-from pathlib import Path
 
 from reportlab.lib.colors import HexColor, black, white
-from reportlab.lib.pagesizes import A3, A4, legal, letter
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     Paragraph,
@@ -42,8 +40,6 @@ from briefkit.styles import (
     _safe_para,
     _safe_text,
 )
-
-_PAGE_SIZES = {"A4": A4, "A3": A3, "Letter": letter, "Legal": legal}
 
 # ---------------------------------------------------------------------------
 # Metadata extraction helpers
@@ -94,57 +90,19 @@ class EvaluationTemplate(BaseBriefingTemplate):
     No cover page, TOC, or back cover.
     """
 
-    # ------------------------------------------------------------------
-    # generate() — standalone form, no cover/TOC/back cover
-    # ------------------------------------------------------------------
+    pdf_subject = "Performance Evaluation"
+    design_page_size = "Letter"
+    design_margins_mm = {"top": 20, "bottom": 18, "left": 20, "right": 20}
+    supports_variants = False
 
-    def generate(self) -> Path:
-        """Generate the evaluation PDF as a standalone form."""
-        self.output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        content = self.extract_content()
-
-        # Doc ID (optional)
-        doc_ids_cfg = self.config.get("doc_ids", {})
-        if doc_ids_cfg.get("enabled", True):
-            from briefkit.doc_ids import get_or_assign_doc_id
-
-            self.doc_id = get_or_assign_doc_id(
-                self.target_path,
-                self.level,
-                content.get("title", ""),
-                config=self.config,
-            )
-
-        # Header/footer state
-
-        layout = self.config.get("layout", {})
-        margins = layout.get("margins", {})
-        top_m = margins.get("top", 20) * mm
-        bottom_m = margins.get("bottom", 18) * mm
-        left_m = margins.get("left", 20) * mm
-        right_m = margins.get("right", 20) * mm
-
-        page_size = _PAGE_SIZES.get(layout.get("page_size", "Letter"), letter)
-
-        doc = self._build_doc(
-            pagesize=page_size,
-            topMargin=top_m,
-            bottomMargin=bottom_m,
-            leftMargin=left_m,
-            rightMargin=right_m,
-            subject="Performance Evaluation",
-        )
-
-        story = self.build_story(content)
-        story = self._finalize_story(story)
-
+    def header_footer(self, content: dict):
         caption_color = HexColor(self.brand.get("caption", "#666666"))
+        body_font = self.brand.get("font_body", "Helvetica")
 
         def _eval_footer(canvas, doc_inner):
             """Minimal page number footer."""
             canvas.saveState()
-            canvas.setFont("Helvetica", 7)
+            canvas.setFont(body_font, 7)
             canvas.setFillColor(caption_color)
             canvas.drawCentredString(
                 doc_inner.pagesize[0] / 2,
@@ -153,13 +111,7 @@ class EvaluationTemplate(BaseBriefingTemplate):
             )
             canvas.restoreState()
 
-        doc.build(
-            story,
-            onFirstPage=lambda c, d: None,
-            onLaterPages=_eval_footer,
-        )
-
-        return self.output_path
+        return None, _eval_footer
 
     # ------------------------------------------------------------------
     # build_story — evaluation form structure
@@ -178,7 +130,7 @@ class EvaluationTemplate(BaseBriefingTemplate):
             "EvalFormTitle",
             brand=self.brand,
             fontSize=14,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=_hex(self.brand, "primary"),
             alignment=1,
             spaceAfter=6,
@@ -235,7 +187,7 @@ class EvaluationTemplate(BaseBriefingTemplate):
             "EvalSectionHead",
             brand=self.brand,
             fontSize=9,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=black,
             spaceAfter=2,
             spaceBefore=2,
@@ -247,7 +199,7 @@ class EvaluationTemplate(BaseBriefingTemplate):
             "EvalMetaLabel",
             brand=self.brand,
             fontSize=8,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=black,
             leading=11,
         )
@@ -309,7 +261,7 @@ class EvaluationTemplate(BaseBriefingTemplate):
             "EvalRubricHead",
             brand=self.brand,
             fontSize=9,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=black,
             spaceAfter=2,
             spaceBefore=2,
@@ -328,7 +280,7 @@ class EvaluationTemplate(BaseBriefingTemplate):
             "EvalMatrixHeader",
             brand=self.brand,
             fontSize=8,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=white,
             alignment=1,
             leading=10,
@@ -342,7 +294,7 @@ class EvaluationTemplate(BaseBriefingTemplate):
             "EvalCatHead",
             brand=self.brand,
             fontSize=9,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=black,
             leading=12,
         )
@@ -350,7 +302,7 @@ class EvaluationTemplate(BaseBriefingTemplate):
             "EvalCriterion",
             brand=self.brand,
             fontSize=9,
-            fontName="Helvetica",
+            fontName=self.brand.get("font_body", "Helvetica"),
             textColor=black,
             leading=12,
         )
@@ -398,7 +350,7 @@ class EvaluationTemplate(BaseBriefingTemplate):
             # Header row
             ("BACKGROUND", (0, 0), (-1, 0), primary),
             ("TEXTCOLOR", (0, 0), (-1, 0), white),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTNAME", (0, 0), (-1, 0), self.brand.get("font_heading", "Helvetica-Bold")),
             ("FONTSIZE", (0, 0), (-1, 0), 8),
             ("ALIGNMENT", (1, 0), (-1, -1), "CENTER"),
             ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
@@ -463,7 +415,7 @@ class EvaluationTemplate(BaseBriefingTemplate):
             "EvalGoalsHead",
             brand=self.brand,
             fontSize=9,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=black,
             spaceAfter=2,
             spaceBefore=2,
@@ -472,7 +424,7 @@ class EvaluationTemplate(BaseBriefingTemplate):
             "EvalGoalsBody",
             brand=self.brand,
             fontSize=9,
-            fontName="Helvetica",
+            fontName=self.brand.get("font_body", "Helvetica"),
             textColor=black,
             leading=12,
         )
@@ -551,7 +503,7 @@ class EvaluationTemplate(BaseBriefingTemplate):
             "EvalCommentsHead",
             brand=self.brand,
             fontSize=9,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=black,
             spaceAfter=2,
             spaceBefore=2,
@@ -560,7 +512,7 @@ class EvaluationTemplate(BaseBriefingTemplate):
             "EvalCommentsBody",
             brand=self.brand,
             fontSize=9,
-            fontName="Helvetica",
+            fontName=self.brand.get("font_body", "Helvetica"),
             textColor=black,
             leading=12,
         )
@@ -590,7 +542,7 @@ class EvaluationTemplate(BaseBriefingTemplate):
             "EvalSigLabel",
             brand=self.brand,
             fontSize=8,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=black,
             leading=10,
         )
@@ -598,7 +550,7 @@ class EvaluationTemplate(BaseBriefingTemplate):
             "EvalSigLine",
             brand=self.brand,
             fontSize=8,
-            fontName="Helvetica",
+            fontName=self.brand.get("font_body", "Helvetica"),
             textColor=black,
             leading=10,
         )

@@ -22,10 +22,8 @@ Design norms:
 from __future__ import annotations
 
 import re
-from pathlib import Path
 
 from reportlab.lib.colors import HexColor, white
-from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     PageBreak,
@@ -101,6 +99,11 @@ class PlaybookTemplate(BaseBriefingTemplate):
     and runbooks.
     """
 
+    pdf_subject = "Playbook"
+    design_page_size = "Letter"
+    design_margins_mm = {"top": 20, "bottom": 20, "left": 25, "right": 25}
+    supports_variants = False
+
     # ------------------------------------------------------------------
     # Phase grouping
     # ------------------------------------------------------------------
@@ -168,7 +171,7 @@ class PlaybookTemplate(BaseBriefingTemplate):
             "PBPhaseNum",
             brand=self.brand,
             fontSize=16,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=white,
             alignment=1,
         )
@@ -178,7 +181,7 @@ class PlaybookTemplate(BaseBriefingTemplate):
             "PBPhaseTitle",
             brand=self.brand,
             fontSize=18,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=primary,
             alignment=0,
             spaceBefore=0,
@@ -256,7 +259,7 @@ class PlaybookTemplate(BaseBriefingTemplate):
                 "PBSubHead",
                 brand=self.brand,
                 fontSize=13,
-                fontName="Helvetica-Bold",
+                fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                 textColor=_hex(self.brand, "primary"),
                 spaceAfter=3,
                 spaceBefore=4,
@@ -317,7 +320,7 @@ class PlaybookTemplate(BaseBriefingTemplate):
             "PBTblHead",
             brand=self.brand,
             fontSize=9,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=white,
             alignment=0,
         )
@@ -427,7 +430,7 @@ class PlaybookTemplate(BaseBriefingTemplate):
                 "PBBackOrg",
                 brand=self.brand,
                 fontSize=14,
-                fontName="Helvetica-Bold",
+                fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                 textColor=primary,
                 alignment=1,
             )
@@ -446,68 +449,29 @@ class PlaybookTemplate(BaseBriefingTemplate):
 
         return flowables
 
-    # ------------------------------------------------------------------
-    # generate() — custom cover via canvas, letter size
-    # ------------------------------------------------------------------
-
-    def generate(self) -> Path:
-        """Generate the playbook PDF with dark cover page."""
-        self.output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        content = self.extract_content()
-        title = content.get("title", self.target_path.name.replace("-", " ").title())
+    def prepare(self, content: dict) -> None:
         overview = content.get("overview", "")
-
-        # Derive subtitle from first sentence of overview
         subtitle = ""
         if overview:
             first_line = overview.strip().split("\n")[0]
-            # Take first sentence
             for sep in (".", "!", "?"):
                 idx = first_line.find(sep)
                 if idx > 0:
                     first_line = first_line[: idx + 1]
                     break
             subtitle = first_line[:200]
+        self.hf_ctx["title"] = content.get("title", self.target_path.name.replace("-", " ").title())
+        self.hf_ctx["subtitle"] = subtitle
 
-        # Doc ID (optional)
-        doc_ids_cfg = self.config.get("doc_ids", {})
-        if doc_ids_cfg.get("enabled", True):
-            from briefkit.doc_ids import get_or_assign_doc_id
-
-            self.doc_id = get_or_assign_doc_id(
-                self.target_path,
-                self.level,
-                title,
-                config=self.config,
-            )
-
-        # Header/footer state
-
-        layout = self.config.get("layout", {})
-        margins = layout.get("margins", {})
-        top_m = margins.get("top", 20) * mm
-        bottom_m = margins.get("bottom", 20) * mm
-        left_m = margins.get("left", 25) * mm
-        right_m = margins.get("right", 25) * mm
-
-        self.content_width = letter[0] - left_m - right_m
-
-        doc = self._build_doc(
-            pagesize=letter,
-            topMargin=top_m,
-            bottomMargin=bottom_m,
-            leftMargin=left_m,
-            rightMargin=right_m,
-            subject="Playbook",
-        )
-
-        story = self.build_story(content)
-        story = self._finalize_story(story)
-
+    def header_footer(self, content: dict):
+        title = self.hf_ctx.get("title", "")
+        subtitle = self.hf_ctx.get("subtitle", "")
         primary_color = HexColor(self.brand.get("primary", "#1B2A4A"))
         org = self.brand.get("org", "")
         caption_c = self.brand.get("caption", "#999999")
+        left_m = self.geometry.margins.left
+        body_font = self.brand.get("font_body", "Helvetica")
+        heading_font = self.brand.get("font_heading", "Helvetica-Bold")
 
         def _cover_page(canvas, doc_inner):
             """Draw the dark cover page — full primary background, white text."""
@@ -521,22 +485,22 @@ class PlaybookTemplate(BaseBriefingTemplate):
             # Org name — top-left
             if org:
                 canvas.setFillColor(white)
-                canvas.setFont("Helvetica", 12)
+                canvas.setFont(body_font, 12)
                 canvas.drawString(left_m, h - 25 * mm, org)
 
             # Title — centered at ~35% from top
             canvas.setFillColor(white)
-            canvas.setFont("Helvetica-Bold", 32)
+            canvas.setFont(heading_font, 32)
             title_y = h * 0.65
             canvas.drawCentredString(w / 2, title_y, title[:80])
 
             # Subtitle
             if subtitle:
-                canvas.setFont("Helvetica", 14)
+                canvas.setFont(body_font, 14)
                 canvas.drawCentredString(w / 2, title_y - 30, subtitle[:120])
 
             # Date at bottom
-            canvas.setFont("Helvetica", 10)
+            canvas.setFont(body_font, 10)
             canvas.drawCentredString(w / 2, 25 * mm, self.date_str)
 
             canvas.restoreState()
@@ -547,7 +511,7 @@ class PlaybookTemplate(BaseBriefingTemplate):
             w = doc_inner.pagesize[0]
             y = 12 * mm
 
-            canvas.setFont("Helvetica", 8)
+            canvas.setFont(body_font, 8)
             canvas.setFillColor(HexColor(caption_c))
 
             # Org name left
@@ -560,13 +524,7 @@ class PlaybookTemplate(BaseBriefingTemplate):
 
             canvas.restoreState()
 
-        doc.build(
-            story,
-            onFirstPage=_cover_page,
-            onLaterPages=_body_footer,
-        )
-
-        return self.output_path
+        return _cover_page, _body_footer
 
     # ------------------------------------------------------------------
     # Suppress unused base section builders

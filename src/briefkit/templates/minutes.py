@@ -22,11 +22,10 @@ Key differences:
 
 from __future__ import annotations
 
+import functools
 import re
-from pathlib import Path
 
 from reportlab.lib.colors import HexColor
-from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     Paragraph,
@@ -83,14 +82,8 @@ _ADJOURN_PATTERN = re.compile(
 # Custom header / footer
 # ---------------------------------------------------------------------------
 
-_minutes_state: dict = {
-    "title": "",
-    "date": "",
-    "brand": {},
-}
 
-
-def _minutes_header_footer(canvas, doc):
+def _minutes_header_footer(canvas, doc, state):
     """
     Minutes template header/footer.
 
@@ -98,18 +91,18 @@ def _minutes_header_footer(canvas, doc):
     Footer: page number centered.
     """
     canvas.saveState()
-    b = _get_brand(_minutes_state.get("brand"))
+    b = _get_brand(state.get("brand"))
     page_width, page_height = doc.pagesize
     caption_c = HexColor(b.get("caption", "#666666"))
     rule_c = HexColor(b.get("rule", "#CCCCCC"))
 
     # Header
     top_y = page_height - doc.topMargin + 8 * mm
-    canvas.setFont("Helvetica", 8)
+    canvas.setFont(b.get("font_body", "Helvetica"), 8)
     canvas.setFillColor(caption_c)
 
-    title = _minutes_state.get("title", "")
-    date_str = _minutes_state.get("date", "")
+    title = state.get("title", "")
+    date_str = state.get("date", "")
 
     if title:
         canvas.drawString(doc.leftMargin, top_y, title)
@@ -123,7 +116,7 @@ def _minutes_header_footer(canvas, doc):
 
     # Footer — page number centered
     bottom_y = doc.bottomMargin - 6 * mm
-    canvas.setFont("Helvetica", 7)
+    canvas.setFont(b.get("font_body", "Helvetica"), 7)
     canvas.setFillColor(caption_c)
     canvas.drawCentredString(
         page_width / 2,
@@ -142,6 +135,10 @@ class MinutesTemplate(BaseBriefingTemplate):
     numbered agenda items, auto-extracted action items, resolutions,
     and a closing block.
     """
+
+    pdf_subject = "Meeting Minutes"
+    design_page_size = "A4"
+    supports_variants = False
 
     def build_story(self, content: dict) -> list:
         """
@@ -217,7 +214,7 @@ class MinutesTemplate(BaseBriefingTemplate):
             "MinutesTitle",
             brand=self.brand,
             fontSize=22,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=_hex(self.brand, "primary"),
             alignment=1,
             spaceAfter=6,
@@ -260,7 +257,7 @@ class MinutesTemplate(BaseBriefingTemplate):
                 "MinutesMetaLabel",
                 brand=self.brand,
                 fontSize=10,
-                fontName="Helvetica-Bold",
+                fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                 textColor=_hex(self.brand, "primary"),
             )
             value_style = _ps(
@@ -338,7 +335,7 @@ class MinutesTemplate(BaseBriefingTemplate):
             "AttendeeLabel",
             brand=self.brand,
             fontSize=10,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=_hex(self.brand, "primary"),
             spaceBefore=4,
             spaceAfter=2,
@@ -512,7 +509,7 @@ class MinutesTemplate(BaseBriefingTemplate):
             "MinutesResolution",
             brand=self.brand,
             fontSize=10,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=_hex(self.brand, "body_text"),
             leading=14,
             leftIndent=12,
@@ -617,59 +614,18 @@ class MinutesTemplate(BaseBriefingTemplate):
 
         return flowables
 
-    # ------------------------------------------------------------------
-    # Override generate() for custom header/footer
-    # ------------------------------------------------------------------
-
-    def generate(self) -> Path:
-        """Generate the minutes PDF with custom header/footer."""
-        self.output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        content = self.extract_content()
-        title = content.get("title", self.target_path.name.replace("-", " ").title())
-
-        # Doc ID (optional)
-        doc_ids_cfg = self.config.get("doc_ids", {})
-        if doc_ids_cfg.get("enabled", True):
-            from briefkit.doc_ids import get_or_assign_doc_id
-
-            self.doc_id = get_or_assign_doc_id(
-                self.target_path,
-                self.level,
-                title,
-                config=self.config,
-            )
-
-        # Populate minutes header/footer state
-        _minutes_state["title"] = title
-        _minutes_state["date"] = self.date_str
-        _minutes_state["brand"] = self.brand
-
-        layout = self.config.get("layout", {})
-        margins = layout.get("margins", {})
-        top_m = margins.get("top", 25) * mm
-        bottom_m = margins.get("bottom", 22) * mm
-        left_m = margins.get("left", 20) * mm
-        right_m = margins.get("right", 20) * mm
-
-        doc = self._build_doc(
-            pagesize=A4,
-            topMargin=top_m,
-            bottomMargin=bottom_m,
-            leftMargin=left_m,
-            rightMargin=right_m,
-            subject="Meeting Minutes",
+    def prepare(self, content: dict) -> None:
+        self.hf_ctx.update(
+            {
+                "title": content.get("title", self.target_path.name.replace("-", " ").title()),
+                "date": self.date_str,
+                "brand": self.brand,
+            }
         )
 
-        story = self.build_story(content)
-        story = self._finalize_story(story)
-        doc.build(
-            story,
-            onFirstPage=_minutes_header_footer,
-            onLaterPages=_minutes_header_footer,
-        )
-
-        return self.output_path
+    def header_footer(self, content: dict):
+        callback = functools.partial(_minutes_header_footer, state=self.hf_ctx)
+        return callback, callback
 
     # ------------------------------------------------------------------
     # Suppress all unused base section builders

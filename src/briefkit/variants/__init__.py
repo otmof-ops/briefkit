@@ -122,6 +122,16 @@ def _register(variant_cls):
     return variant_cls
 
 
+def register_variant(variant_cls):
+    """
+    Register a :class:`DocSetVariant` subclass so ``--variant <name>``,
+    ``variants.rules`` and auto-detection can select it. Usable as a class
+    decorator. Returns the class.
+    """
+    _ensure_registry_populated()
+    return _register(variant_cls)
+
+
 def get_variant(name: str) -> DocSetVariant | None:
     """
     Return the registered variant with the given *name*, or None if unknown.

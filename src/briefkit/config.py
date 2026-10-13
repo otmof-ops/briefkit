@@ -54,15 +54,6 @@ DEFAULTS: dict[str, Any] = {
         "page_size": "A4",
         "orientation": "portrait",
         "margins": {"top": 25, "bottom": 22, "left": 20, "right": 20},
-        "font_family": "Helvetica",
-        "font_size": {
-            "body": 10,
-            "h1": 16,
-            "h2": 13,
-            "h3": 11,
-            "caption": 8,
-            "code": 8.5,
-        },
     },
     "content": {
         # Per-source-document word budget applied during extraction.
@@ -100,19 +91,6 @@ DEFAULTS: dict[str, Any] = {
     },
     "template": {
         "preset": "briefing",
-        "sections": {
-            "cover": True,
-            "classification_banner": True,
-            "toc": True,
-            "executive_summary": True,
-            "at_a_glance": True,
-            "body": True,
-            "cross_references": True,
-            "key_terms": True,
-            "bibliography": True,
-            "back_cover": True,
-        },
-        "custom_sections": [],
     },
     "license": {
         "preset": "",
@@ -129,7 +107,6 @@ DEFAULTS: dict[str, Any] = {
         "filename": "executive-briefing.pdf",
         "output_dir": "",
         "skip_current": True,
-        "report_format": "markdown",
     },
     # Thresholds for `briefkit quality`. None means the level default.
     "quality": {
@@ -138,7 +115,6 @@ DEFAULTS: dict[str, Any] = {
         "hard_min_bytes": None,
         "soft_min_bytes": None,
     },
-    "constraints": [],
 }
 
 # ---------------------------------------------------------------------------
@@ -147,7 +123,6 @@ DEFAULTS: dict[str, Any] = {
 
 _VALID_PAGE_SIZES = {"A4", "A3", "Letter", "Legal", "Tabloid"}
 _VALID_ORIENTATIONS = {"portrait", "landscape"}
-_VALID_REPORT_FORMATS = {"markdown", "json", "text"}
 _VALID_YEAR_FORMATS = {"short", "full"}
 _HEX_COLOR_RE = re.compile(r"^#[0-9A-Fa-f]{6}$")
 
@@ -248,11 +223,6 @@ def _validate_config(cfg: dict[str, Any]) -> list[str]:
             errors.append(f"brand.{color_key} must be a 6-digit hex color (e.g. #1B2A4A), got: {val!r}{hint}")
 
     output = cfg.get("output", {})
-    if output.get("report_format") not in _VALID_REPORT_FORMATS:
-        errors.append(
-            f"output.report_format must be one of {sorted(_VALID_REPORT_FORMATS)}, got: {output.get('report_format')!r}"
-        )
-
     doc_ids = cfg.get("doc_ids", {})
     digits = doc_ids.get("sequence_digits")
     if digits is not None and (not isinstance(digits, int) or digits < 1 or digits > 8):

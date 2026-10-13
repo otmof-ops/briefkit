@@ -16,3 +16,5 @@ Use print() for all user-facing output. stdout for progress, stderr for errors a
 - **Positive:** Zero logging configuration overhead; predictable output; clean stdout/stderr separation; --json provides structured alternative
 - **Negative:** --verbose has limited utility (only affects exception tracebacks at top level); no log levels (DEBUG/INFO/WARNING); no file logging capability
 - **Accepted tradeoff:** The init template previously included a log_dir config key that was never implemented; this has been removed to avoid confusion
+
+**Update (1.1.0):** `--verbose` now also prints extraction, variant and build details on stderr; `--json` is honored by ten of the twelve commands (`init` and `preview` excepted) and is pure JSON on stdout. The decision stands.

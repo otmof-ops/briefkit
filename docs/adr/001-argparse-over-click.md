@@ -5,7 +5,7 @@
 
 ## Context
 
-BriefKit is designed as a zero-config, minimal-dependency tool. Adding click (or typer) would double the runtime dependency count from 2 to 3. The CLI has 11 subcommands with consistent flag patterns.
+BriefKit is designed as a zero-config, minimal-dependency tool. Adding click (or typer) would double the runtime dependency count from 3 to 4. The CLI has 12 subcommands with consistent flag patterns.
 
 ## Decision
 

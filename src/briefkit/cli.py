@@ -236,6 +236,9 @@ def _extraction_is_empty(content: dict) -> bool:
         return False  # _generate_one didn't report — assume OK
     if content.get("subsystems"):
         return False
+    # Aggregates (subject, division, root) carry their children instead.
+    if content.get("doc_sets") or content.get("subjects") or content.get("divisions"):
+        return False
     if content.get("orientation"):
         return False
     overview = (content.get("overview") or "").strip()
@@ -287,16 +290,23 @@ def _dry_run_report(path: Path, cfg: dict, *, quiet: bool = False, as_json: bool
     }
 
     try:
-        content = extract_content(path, level=3, config=cfg)
+        from briefkit.config import find_project_root  # noqa: PLC0415
+        from briefkit.generator import detect_level  # noqa: PLC0415
+
+        level = detect_level(path, find_project_root(path), cfg)
+        content = extract_content(path, level=level, config=cfg)
     except Exception as exc:
         print(f"Extraction failed: {exc}", file=sys.stderr)
         return 1
 
     subsystems = content.get("subsystems", []) or []
+    children = content.get("doc_sets") or content.get("subjects") or content.get("divisions") or []
     metrics = content.get("metrics", {}) or {}
     proj = cfg.get("project", {}) or {}
+    report["level"] = level
     report["extracted"] = {
         "subsystems": len(subsystems),
+        "children": len(children),
         "words": metrics.get("word_count", 0),
         "bibliography": len(content.get("bibliography", []) or []),
         "terms": len(content.get("terms", {}) or {}),
@@ -315,8 +325,11 @@ def _dry_run_report(path: Path, cfg: dict, *, quiet: bool = False, as_json: bool
         print(f"Source:   {report['source']}")
         print(f"Template: {report['template']}")
         print(f"Page:     {report['page_size']} {report['orientation']}")
+        print(f"Level:    {level}")
         print("\nExtracted:")
         print(f"  Subsystems:    {ex['subsystems']}")
+        if ex["children"]:
+            print(f"  Children:      {ex['children']}")
         print(f"  Words total:   {ex['words']}")
         print(f"  Bibliography:  {ex['bibliography']}")
         print(f"  Terms (index): {ex['terms']}")
@@ -501,9 +514,12 @@ def cmd_status(args: argparse.Namespace) -> int:
 
         rows.append({"path": str(directory), "output": str(output_pdf), "status": status})
 
+    check = getattr(args, "check", False)
+    not_current = sum(1 for r in rows if r["status"] != "current")
+
     if as_json:
         print(json.dumps(rows, indent=2))
-        return 0
+        return 1 if check and not_current else 0
 
     if not rows:
         if not quiet:
@@ -526,7 +542,7 @@ def cmd_status(args: argparse.Namespace) -> int:
             f"{summary['missing']} missing"
         )
 
-    return 0
+    return 1 if check and not_current else 0
 
 
 def cmd_assign_ids(args: argparse.Namespace) -> int:
@@ -878,7 +894,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--template",
         "-t",
         metavar="NAME",
-        help="Template preset to use (e.g. briefing, summary, technical)",
+        help="Template preset to use (see `briefkit templates`)",
     )
     gen_flags.add_argument(
         "--preset",
@@ -919,7 +935,7 @@ def _build_parser() -> argparse.ArgumentParser:
     gen_flags.add_argument(
         "--org",
         metavar="NAME",
-        help="Override organisation name",
+        help="Override organization name",
     )
     gen_flags.add_argument(
         "--title",
@@ -962,7 +978,7 @@ def _build_parser() -> argparse.ArgumentParser:
         metavar="PATH",
         nargs="?",
         default=".",
-        help="Directory to initialise (default: current directory)",
+        help="Directory to initialize (default: current directory)",
     )
     p_init.add_argument(
         "--force",
@@ -997,6 +1013,12 @@ def _build_parser() -> argparse.ArgumentParser:
         default=".",
         help="Directory to check (default: current directory)",
     )
+    p_status.add_argument(
+        "--check",
+        action="store_true",
+        default=False,
+        help="Exit 1 when any briefing is stale or missing (for CI)",
+    )
     p_status.set_defaults(func=cmd_status)
 
     # --- assign-ids ---
@@ -1017,7 +1039,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "quality",
         parents=[global_flags],
         help="Run quality gates on an existing briefing PDF",
-        description="Validate an existing PDF against the configured quality constraints.",
+        description="Check an existing PDF: header, parse, pages, text; size and page thresholds warn unless --strict.",
     )
     p_qual.add_argument(
         "path",

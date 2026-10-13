@@ -48,9 +48,7 @@ from briefkit.elements.dashboard import build_metric_dashboard  # noqa: F401 —
 # ---------------------------------------------------------------------------
 # Page size lookup
 # ---------------------------------------------------------------------------
-# Re-export _hf_state for templates that mutate section headers directly
 from briefkit.elements.header_footer import (  # noqa: F401 — re-exported
-    _hf_state,
     build_classification_banner,
     make_header_footer,
 )
@@ -376,8 +374,16 @@ def detect_level(
     if _has_numbered_docs(target, pattern):
         return 3
 
+    # The same reading applies to aggregates: a directory whose children (or
+    # grandchildren) hold numbered documents is a subject (or division)
+    # wherever it sits, because that is the only level whose extraction can
+    # find anything there. The depth rule decides only when the tree says
+    # nothing.
+    inferred = _infer_level_from_children(target, pattern, 0)
+    if inferred:
+        return inferred
     if project_root is None:
-        return _infer_level_from_children(target, pattern, root_level)
+        return root_level
 
     root = Path(project_root).resolve()
 
@@ -1652,12 +1658,14 @@ class BaseBriefingTemplate:
         return None
 
     def apply_variants(self, story: list, content: dict) -> list:
-        """Add the domain variant's sections, honouring ``--variant`` and ``variants.auto_detect``."""
+        """Add the domain variant's sections: ``--variant``, then ``variants.rules``, then auto-detection."""
         verbose = self.config.get("_cli", {}).get("verbose", False)
-        variant_name = self.config.get("_cli", {}).get("variant")
-        if isinstance(variant_name, str) and variant_name.strip().lower() == "none":
-            variant_name = None
-        elif not variant_name and self.config.get("variants", {}).get("auto_detect", True):
+        cli_variant = self.config.get("_cli", {}).get("variant")
+        suppressed = isinstance(cli_variant, str) and cli_variant.strip().lower() == "none"
+        variant_name = None if suppressed else cli_variant
+        if not variant_name and not suppressed:
+            variant_name = self._variant_from_rules()
+        if not variant_name and not suppressed and self.config.get("variants", {}).get("auto_detect", True):
             parts = [content.get("overview", ""), content.get("title", "")]
             parts.extend(sub.get("content", "") for sub in content.get("subsystems", []))
             detected = auto_detect_variant(" ".join(parts))
@@ -1670,6 +1678,28 @@ class BaseBriefingTemplate:
             if variant_obj:
                 story = variant_obj.build_variant_sections(content, story, self.styles, self.brand)
         return story
+
+    def _variant_from_rules(self) -> str | None:
+        """
+        The variant named by the first ``variants.rules`` entry whose pattern
+        matches the target's path relative to the project root (or its name
+        when there is no root). Patterns are shell globs; ``docs/legal/**``
+        matches everything beneath ``docs/legal``.
+        """
+        import fnmatch
+
+        rules = (self.config.get("variants", {}) or {}).get("rules") or []
+        if not rules:
+            return None
+        rel = self._display_path().replace(os.sep, "/")
+        for rule in rules:
+            if not isinstance(rule, dict):
+                continue
+            pattern = str(rule.get("pattern", "")).replace("\\", "/")
+            name = rule.get("variant")
+            if pattern and name and (fnmatch.fnmatch(rel, pattern) or fnmatch.fnmatch(rel, pattern.rstrip("/*"))):
+                return str(name)
+        return None
 
     def before_build(self, story: list, content: dict) -> list:
         """Last hook before the guard rails: variants are applied here when the template supports them."""

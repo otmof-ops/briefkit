@@ -241,7 +241,7 @@ class ReportTemplate(BaseBriefingTemplate):
                 brand=self.brand,
                 fontSize=9,
                 textColor=_hex(self.brand, "caption"),
-                fontName="Helvetica-Oblique",
+                fontName=self.brand.get("font_caption", "Helvetica-Oblique"),
             )
             flowables.append(
                 Paragraph(
@@ -509,7 +509,7 @@ class ReportTemplate(BaseBriefingTemplate):
                         brand=self.brand,
                         fontSize=8,
                         textColor=_hex(self.brand, "caption"),
-                        fontName="Helvetica-Oblique",
+                        fontName=self.brand.get("font_caption", "Helvetica-Oblique"),
                         leftIndent=12,
                         spaceAfter=4,
                     ),

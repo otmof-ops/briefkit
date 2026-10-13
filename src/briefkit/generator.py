@@ -12,16 +12,18 @@ brand colors, doc IDs, and hierarchy config are driven by the config dict.
 from __future__ import annotations
 
 import contextlib
+import dataclasses
 import datetime
 import os
 import re
 import sys
+import warnings
 from pathlib import Path
 from typing import Any
 
 from reportlab import rl_config
 from reportlab.lib.colors import HexColor
-from reportlab.lib.pagesizes import A3, A4, legal, letter
+from reportlab.lib.pagesizes import A3, A4, landscape, legal, letter
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     CondPageBreak,
@@ -36,6 +38,7 @@ from reportlab.platypus import (
 )
 
 from briefkit._dates import today
+from briefkit.config import DEFAULTS as _DEFAULTS
 from briefkit.doc_ids import get_or_assign_doc_id
 from briefkit.elements.callout import build_callout_box, build_pull_quote  # noqa: F401 — re-exported
 from briefkit.elements.charts import build_bar_chart, build_timeline  # noqa: F401 — re-exported
@@ -69,7 +72,6 @@ from briefkit.styles import (
     _safe_para,
     _safe_text,
     build_styles,
-    compute_content_width,
     esc,
 )
 from briefkit.variants import auto_detect_variant, get_variant
@@ -136,6 +138,72 @@ _PAGE_SIZES = {
     "Tabloid": (792, 1224),
 }
 
+
+@dataclasses.dataclass(frozen=True)
+class Margins:
+    """Page margins in points."""
+
+    top: float
+    bottom: float
+    left: float
+    right: float
+
+
+@dataclasses.dataclass(frozen=True)
+class PageGeometry:
+    """
+    The single owner of page geometry.
+
+    The document frame and ``content_width`` both derive from it, so a
+    template can no longer size its tables for one page and build its frame
+    for another.
+    """
+
+    pagesize: tuple[float, float]
+    margins: Margins
+    page_size_name: str
+    orientation: str
+
+    @property
+    def content_width(self) -> float:
+        return self.pagesize[0] - self.margins.left - self.margins.right
+
+    @property
+    def frame_height(self) -> float:
+        return self.pagesize[1] - self.margins.top - self.margins.bottom
+
+
+def _noop_page(canvas, doc) -> None:  # noqa: ARG001 — ReportLab callback signature
+    """Draw nothing on the page."""
+
+
+class SectionNumbering:
+    """
+    Numbers the body's top-level sections from a start value and records the
+    table-of-contents entries as it goes, so the TOC can only list headings
+    that the body actually emitted.
+    """
+
+    def __init__(self, start: int):
+        self._n = start - 1
+        self.entries: list[tuple[int, str]] = []
+
+    def section(self, title: str) -> str:
+        self._n += 1
+        label = f"{self._n}. {title}"
+        self.entries.append((1, label))
+        return label
+
+    def sub(self, index: int, title: str) -> str:
+        label = f"{self._n}.{index} {title}"
+        self.entries.append((2, f"  {label}"))
+        return label
+
+    @property
+    def current(self) -> int:
+        return self._n
+
+
 # ---------------------------------------------------------------------------
 # Helper flowables
 # ---------------------------------------------------------------------------
@@ -164,7 +232,11 @@ class HierarchyTreeFlowable(Flowable):
         for level, label in self.tree_data:
             indent = level * 14 + 2
             prefix = "\u2022 " if level > 0 else ""
-            font = "Helvetica-Bold" if level == 0 else "Helvetica"
+            font = (
+                self._brand.get("font_heading", "Helvetica-Bold")
+                if level == 0
+                else self._brand.get("font_body", "Helvetica")
+            )
             size = 10 if level == 0 else 9
             col = primary if level == 0 else body_c
             c.setFillColor(col)
@@ -281,7 +353,53 @@ class BaseBriefingTemplate:
         Falls back to a minimal default if None.
     output_path : str or Path or None
         Where to write the PDF.  Defaults to target_path/<output.filename>.
+
+    Traits
+    ------
+    Subclasses describe themselves with class attributes rather than by
+    overriding :meth:`generate`:
+
+    ``pdf_subject``
+        The PDF ``/Subject`` when the template has a fixed one.
+    ``design_page_size``
+        The page size the template was designed for ("A4", "Letter"). It is
+        used unless the user set ``layout.page_size`` in ``briefkit.yml``.
+    ``page_size_lock``
+        A page size that always applies (covers drawn at absolute
+        coordinates); ``layout.page_size`` is ignored.
+    ``orientation_lock``
+        ``"landscape"`` for templates that are landscape by construction;
+        ``layout.orientation`` is ignored.
+    ``design_margins_mm``
+        Margins used for any side the user did not set in ``layout.margins``.
+    ``margin_overrides_mm``
+        Margins that apply whatever the user set (a memo's wide left margin).
+    ``supports_variants``
+        Whether domain variants (finance disclaimers, risk registers) may be
+        added. Fixed-format templates set this to ``False``.
+    ``assigns_doc_id``
+        Whether a document ID is assigned and shown.
     """
+
+    pdf_subject: str | None = None
+    design_page_size: str | None = None
+    page_size_lock: str | None = None
+    orientation_lock: str | None = None
+    design_margins_mm: dict[str, float] = {"top": 25, "bottom": 22, "left": 20, "right": 20}
+    margin_overrides_mm: dict[str, float] = {}
+    supports_variants: bool = True
+    assigns_doc_id: bool = True
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        if "generate" in cls.__dict__:
+            warnings.warn(
+                f"{cls.__name__} overrides generate(); use the page_geometry / prepare / doc_kwargs / "
+                f"header_footer / before_build hooks instead, or the universal guard rails and "
+                f"metadata will not apply.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
 
     def __init__(
         self,
@@ -323,11 +441,13 @@ class BaseBriefingTemplate:
         self.date_str: str = self.date.strftime("%d %B %Y")
         self.doc_id: str = ""
 
-        # Compute dynamic content width
-        layout = self.config.get("layout", {})
-        margins = layout.get("margins", {})
-        page_size = _PAGE_SIZES.get(layout.get("page_size", "A4"), A4)
-        self.content_width = compute_content_width(page_size, margins)
+        # Geometry is decided once, here and again in generate(); the frame
+        # and every element width derive from it.
+        self.hf_ctx: dict[str, Any] = {}
+        self._pending_back_cover: list = []
+        self._body_section_start = 3
+        self.geometry = self.page_geometry()
+        self.content_width = self.geometry.content_width
 
         # Pre-build styles dict for use by section builders
         self.styles = build_styles(self.brand)
@@ -407,7 +527,9 @@ class BaseBriefingTemplate:
         flowables: list = []
         rendered = 0
         for idx, block in enumerate(blocks):
-            if skip_top_headings and block.get("type") == "heading" and block.get("level", 99) <= 2:
+            # The chapter's own H1 is rendered by the caller; H2 and below are
+            # the chapter's section structure and must stay.
+            if skip_top_headings and block.get("type") == "heading" and block.get("level", 99) == 1:
                 continue
             if limit and rendered >= limit:
                 return flowables, len(blocks) - idx
@@ -973,7 +1095,7 @@ class BaseBriefingTemplate:
                             _ps(
                                 f"IndexLetter_{first}",
                                 brand=self.brand,
-                                fontName="Helvetica-Bold",
+                                fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                                 fontSize=9,
                                 textColor=primary,
                                 spaceBefore=6,
@@ -1344,6 +1466,145 @@ class BaseBriefingTemplate:
         return BriefkitDocTemplate(str(out_path), **merged)
 
     # ------------------------------------------------------------------
+    # Hooks — what a template may customise about the generation
+    # ------------------------------------------------------------------
+
+    def _user_set(self, section: str, key: str) -> bool:
+        """
+        Whether the user set ``<section>.<key>`` deliberately.
+
+        ``load_config`` records the user's file under ``_user``. A config
+        built in code has no such record, so a value that differs from the
+        default counts as deliberate.
+        """
+        user = self.config.get("_user")
+        if isinstance(user, dict):
+            sec = user.get(section)
+            return isinstance(sec, dict) and key in sec
+        current = (self.config.get(section) or {}).get(key)
+        return current is not None and current != (_DEFAULTS.get(section) or {}).get(key)
+
+    def _user_margin_set(self, side: str) -> bool:
+        user = self.config.get("_user")
+        if isinstance(user, dict):
+            margins = (user.get("layout") or {}).get("margins") if isinstance(user.get("layout"), dict) else None
+            return isinstance(margins, dict) and side in margins
+        current = ((self.config.get("layout") or {}).get("margins") or {}).get(side)
+        return current is not None and current != _DEFAULTS["layout"]["margins"].get(side)
+
+    def page_geometry(self) -> PageGeometry:
+        """
+        Resolve page size, orientation and margins.
+
+        Page size: ``page_size_lock`` > ``layout.page_size`` when the user set
+        it > ``design_page_size`` > ``layout.page_size`` default. Orientation:
+        ``orientation_lock`` > ``layout.orientation`` when the user set it >
+        portrait. Margins per side: ``margin_overrides_mm`` >
+        ``layout.margins`` when the user set that side > ``design_margins_mm``.
+        """
+        layout = self.config.get("layout", {}) or {}
+        if self.page_size_lock:
+            name = self.page_size_lock
+        elif self._user_set("layout", "page_size"):
+            name = layout.get("page_size", "A4")
+        else:
+            name = self.design_page_size or layout.get("page_size", "A4")
+        size = _PAGE_SIZES.get(name, A4)
+
+        if self.orientation_lock:
+            orientation = self.orientation_lock
+        elif self._user_set("layout", "orientation"):
+            orientation = str(layout.get("orientation", "portrait")).lower()
+        else:
+            orientation = "portrait"
+        if orientation == "landscape":
+            size = landscape(size)
+        else:
+            size = (min(size), max(size))
+
+        user_margins = layout.get("margins", {}) or {}
+        resolved: dict[str, float] = {}
+        for side in ("top", "bottom", "left", "right"):
+            if side in self.margin_overrides_mm:
+                value = self.margin_overrides_mm[side]
+            elif self._user_margin_set(side):
+                value = user_margins.get(side, _DEFAULTS["layout"]["margins"][side])
+            else:
+                value = self.design_margins_mm.get(side, _DEFAULTS["layout"]["margins"][side])
+            resolved[side] = float(value) * mm
+        return PageGeometry(pagesize=size, margins=Margins(**resolved), page_size_name=name, orientation=orientation)
+
+    def assign_doc_id(self, content: dict) -> str:
+        """The document ID for this run, or ``""`` when IDs are off or the template has none."""
+        if not self.assigns_doc_id or not self.config.get("doc_ids", {}).get("enabled", True):
+            return ""
+        return get_or_assign_doc_id(self.target_path, self.level, content.get("title", ""), config=self.config)
+
+    def prepare(self, content: dict) -> None:
+        """
+        Hook run after geometry and doc ID are known and before the document
+        and story are built. Templates stash what their page callbacks need
+        in ``self.hf_ctx`` here.
+        """
+
+    def doc_kwargs(self, content: dict) -> dict[str, Any]:
+        """
+        Keyword arguments merged over :meth:`_build_doc`'s config-derived
+        defaults. ``metadata.subject`` from the config wins over the template's
+        subject; author and title are left to ``_build_doc`` (metadata, then
+        brand and document title).
+        """
+        meta = self.config.get("metadata", {}) or {}
+        kwargs: dict[str, Any] = {}
+        if not meta.get("subject"):
+            kwargs["subject"] = self.pdf_subject or f"Level {self.level} Briefing"
+        return kwargs
+
+    def header_footer(self, content: dict) -> tuple[Any, Any]:
+        """
+        The ``(first page, later pages)`` canvas callbacks; ``None`` draws nothing.
+
+        The default draws briefkit's running head and footer from
+        ``self.hf_ctx`` on every page.
+        """
+        hf = make_header_footer(self.hf_ctx, brand=self.brand)
+        return hf, hf
+
+    def body_toc_entries(self, content: dict) -> list[tuple[int, str]] | None:
+        """
+        The table-of-contents entries for the body, when a template numbers
+        its own sections. ``None`` means the base layout ("N. Content
+        Overview" with one entry per subsystem).
+        """
+        return None
+
+    def apply_variants(self, story: list, content: dict) -> list:
+        """Add the domain variant's sections, honouring ``--variant`` and ``variants.auto_detect``."""
+        verbose = self.config.get("_cli", {}).get("verbose", False)
+        variant_name = self.config.get("_cli", {}).get("variant")
+        if isinstance(variant_name, str) and variant_name.strip().lower() == "none":
+            variant_name = None
+        elif not variant_name and self.config.get("variants", {}).get("auto_detect", True):
+            parts = [content.get("overview", ""), content.get("title", "")]
+            parts.extend(sub.get("content", "") for sub in content.get("subsystems", []))
+            detected = auto_detect_variant(" ".join(parts))
+            if detected:
+                variant_name = detected.name
+        if verbose and variant_name:
+            print(f"  Variant detected: {variant_name}", file=sys.stderr)
+        if variant_name:
+            variant_obj = get_variant(variant_name)
+            if variant_obj:
+                story = variant_obj.build_variant_sections(content, story, self.styles, self.brand)
+        return story
+
+    def before_build(self, story: list, content: dict) -> list:
+        """Last hook before the guard rails: variants are applied here when the template supports them."""
+        if self.supports_variants:
+            story = self.apply_variants(story, content)
+        return story
+
+    # ------------------------------------------------------------------
     # build_story — override in subclasses for different section orders
     # ------------------------------------------------------------------
 
@@ -1361,7 +1622,7 @@ class BaseBriefingTemplate:
           7.  Cross-reference map (omitted if empty)
           8.  Key terms index (omitted if empty)
           9.  Bibliography (omitted if empty)
-          10. Back cover
+          10. Back cover (appended by generate(), after any variant sections)
 
         Subclasses override this method to change the order or insert
         template-specific sections.
@@ -1393,7 +1654,8 @@ class BaseBriefingTemplate:
         )
         story.append(Spacer(1, 6 * mm))
 
-        # Pre-build optional sections to drive dynamic TOC
+        # Pre-build the optional sections and the body so the TOC lists what
+        # the document actually contains, numbered as it is numbered.
         source_type = content.get("metrics", {}).get("source_type", "ACADEMIC")
         ref_labels = content.get("cross_ref_labels", {})
         cross_ref_flowables = self.build_cross_references(content.get("cross_refs", []), ref_labels=ref_labels)
@@ -1410,32 +1672,36 @@ class BaseBriefingTemplate:
             [] if should_skip(cfg, "dashboard") else list(self.build_at_a_glance(content.get("metrics", {})))
         )
 
+        n = 0
+        toc_entries: list[tuple[int, str]] = []
+        if exec_summary_flowables:
+            n += 1
+            toc_entries.append((1, f"{n}. Executive Summary"))
+        if dashboard_flowables:
+            n += 1
+            toc_entries.append((1, f"{n}. At a Glance"))
+        self._body_section_start = n + 1
+        body_flowables = list(self.build_body(content))
+
+        body_entries = self.body_toc_entries(content)
+        if body_entries is None:
+            content_n = self._body_section_start
+            body_entries = [(1, f"{content_n}. Content Overview")]
+            for i, sub in enumerate(content.get("subsystems", []), 1):
+                body_entries.append((2, f"  {content_n}.{i} {sub.get('name', f'Section {i}')}"))
+        toc_entries.extend(body_entries)
+
+        if cross_ref_flowables:
+            toc_entries.append((1, "Cross-Reference Map"))
+        if index_flowables:
+            toc_entries.append((1, "Key Terms Index"))
+        if bib_flowables:
+            toc_entries.append((1, "Source Bibliography"))
+
         # Table of contents
         if not should_skip(cfg, "toc"):
             story.append(_safe_para("Table of Contents", self.styles["STYLE_H1"]))
             story.append(Spacer(1, 2 * mm))
-
-            toc_entries = []
-            n = 0
-            if exec_summary_flowables:
-                n += 1
-                toc_entries.append((1, f"{n}. Executive Summary"))
-            if dashboard_flowables:
-                n += 1
-                toc_entries.append((1, f"{n}. At a Glance"))
-            n += 1
-            content_n = n
-            toc_entries.append((1, f"{content_n}. Content Overview"))
-            for i, sub in enumerate(content.get("subsystems", []), 1):
-                toc_entries.append((2, f"  {content_n}.{i} {sub.get('name', f'Section {i}')}"))
-
-            if cross_ref_flowables:
-                toc_entries.append((1, "Cross-Reference Map"))
-            if index_flowables:
-                toc_entries.append((1, "Key Terms Index"))
-            if bib_flowables:
-                toc_entries.append((1, "Source Bibliography"))
-
             story.extend(build_toc(toc_entries, brand=self.brand, content_width=self.content_width))
             story.append(PageBreak())
 
@@ -1450,7 +1716,7 @@ class BaseBriefingTemplate:
             story.append(PageBreak())
 
         # Body
-        story.extend(self.build_body(content))
+        story.extend(body_flowables)
         story.append(PageBreak())
 
         # Optional sections
@@ -1465,9 +1731,9 @@ class BaseBriefingTemplate:
         if bib_flowables:
             story.extend(bib_flowables)
 
-        # Back cover
+        # Back cover: deferred so variant sections land before it.
         if not should_skip(cfg, "back_cover"):
-            story.extend(self.build_back_cover())
+            self._pending_back_cover = self.build_back_cover()
 
         return story
 
@@ -1479,107 +1745,62 @@ class BaseBriefingTemplate:
         """
         Orchestrate the full PDF generation.
 
+        Final: templates customise it through the traits and hooks
+        (:meth:`page_geometry`, :meth:`prepare`, :meth:`doc_kwargs`,
+        :meth:`header_footer`, :meth:`before_build`), never by overriding this
+        method, so the guard rails, metadata, atomic write and variant policy
+        apply to every template identically.
+
         Steps:
           1. Ensure output directory exists.
           2. Extract content from target_path.
           3. Assign or retrieve a document ID.
-          4. Update header/footer state.
-          5. Build the ReportLab document template.
-          6. Call build_story() to assemble all flowables.
-          7. Build the PDF with header/footer callbacks.
-
-        Returns the output path as a Path object.
+          4. Resolve geometry and let the template prepare its page state.
+          5. Build the document template.
+          6. Build the story, add variants, append the back cover, run the
+             universal post-processing.
+          7. Build the PDF with the template's page callbacks.
         """
         self.output_path.parent.mkdir(parents=True, exist_ok=True)
 
         content = self.extract_content()
         verbose = self.config.get("_cli", {}).get("verbose", False)
-
         if verbose:
-            print(
-                f"  Extracted: {len(content.get('subsystems', []))} subsystems, {content.get('metrics', {}).get('word_count', 0)} words",
-                file=sys.stderr,
-            )
+            n_sub = len(content.get("subsystems", []))
+            words = content.get("metrics", {}).get("word_count", 0)
+            print(f"  Extracted: {n_sub} subsystems, {words} words", file=sys.stderr)
 
-        # Document ID
-        doc_ids_cfg = self.config.get("doc_ids", {})
-        if doc_ids_cfg.get("enabled", True):
-            self.doc_id = get_or_assign_doc_id(
-                self.target_path,
-                self.level,
-                content.get("title", ""),
-                config=self.config,
-            )
-        else:
-            self.doc_id = ""
-
-        # Build header/footer state dict and callback
-        hf_state = {
+        self.doc_id = self.assign_doc_id(content)
+        self.hf_ctx = {
             "section": content.get("title", self.target_path.name),
             "date": self.date_str,
             "doc_id": self.doc_id,
         }
-        hf = make_header_footer(hf_state, brand=self.brand)
+        self.geometry = self.page_geometry()
+        self.content_width = self.geometry.content_width
+        self.prepare(content)
 
-        # Note: _hf_state sync removed for thread safety — use closure via make_header_footer()
-
-        # Page size
-        layout = self.config.get("layout", {})
-        page_size = _PAGE_SIZES.get(layout.get("page_size", "A4"), A4)
-        margins = layout.get("margins", {})
-        top_m = margins.get("top", 25) * mm
-        bottom_m = margins.get("bottom", 22) * mm
-        left_m = margins.get("left", 20) * mm
-        right_m = margins.get("right", 20) * mm
-
-        b = self.brand
-        org = b.get("org", "briefkit")
-
+        g = self.geometry
         doc = self._build_doc(
-            pagesize=page_size,
-            topMargin=top_m,
-            bottomMargin=bottom_m,
-            leftMargin=left_m,
-            rightMargin=right_m,
-            author=org,
-            subject=f"Level {self.level} Briefing",
+            pagesize=g.pagesize,
+            topMargin=g.margins.top,
+            bottomMargin=g.margins.bottom,
+            leftMargin=g.margins.left,
+            rightMargin=g.margins.right,
+            **self.doc_kwargs(content),
         )
 
-        story = self.build_story(content)
+        self._pending_back_cover = []
+        story = list(self.build_story(content))
+        story = self.before_build(story, content)
+        story.extend(self._pending_back_cover)
 
-        # Apply variant-specific sections if detected.
-        #
-        # ``--variant none`` suppresses them entirely. Without an explicit
-        # opt-out the only way to avoid an unwanted variant was to name a
-        # different one, so a document that fits no variant still received
-        # whichever one happened to keyword-match — a tax pack picking up the
-        # finance variant's investment-advice disclaimer, for instance.
-        variant_name = self.config.get("_cli", {}).get("variant")
-        if isinstance(variant_name, str) and variant_name.strip().lower() == "none":
-            variant_name = None
-        elif not variant_name and self.config.get("variants", {}).get("auto_detect", True):
-            # Auto-detect from content text
-            parts = [content.get("overview", ""), content.get("title", "")]
-            parts.extend(sub.get("content", "") for sub in content.get("subsystems", []))
-            all_text = " ".join(parts)
-            detected = auto_detect_variant(all_text)
-            if detected:
-                variant_name = detected.name
-        if verbose and variant_name:
-            print(f"  Variant detected: {variant_name}", file=sys.stderr)
-
-        if variant_name:
-            variant_obj = get_variant(variant_name)
-            if variant_obj:
-                story = variant_obj.build_variant_sections(content, story, self.styles, self.brand)
-
-        # Universal post-processing — orphan protection + empty-page
-        # collapse. Must be called by every template before doc.build.
+        # Universal post-processing — orphan protection + empty-page collapse.
         story = self._finalize_story(story)
 
         if verbose:
             print(f"  Building PDF: {len(story)} flowables", file=sys.stderr)
 
-        doc.build(story, onFirstPage=hf, onLaterPages=hf)
-
+        on_first, on_later = self.header_footer(content)
+        doc.build(story, onFirstPage=on_first or _noop_page, onLaterPages=on_later or _noop_page)
         return self.output_path

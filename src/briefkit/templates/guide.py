@@ -40,10 +40,9 @@ Body pages:
 
 from __future__ import annotations
 
-from pathlib import Path
+import functools
 
 from reportlab.lib.colors import HexColor, white
-from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     PageBreak,
@@ -61,7 +60,6 @@ from briefkit.generator import (
 from briefkit.styles import (
     _get_brand,
     _ps,
-    compute_content_width,
 )
 from briefkit.templates._helpers import should_skip
 
@@ -86,19 +84,12 @@ _TABLE_HEADER_BG = "#1A2331"
 # Module-level state for custom header / footer
 # ---------------------------------------------------------------------------
 
-_guide_state: dict = {
-    "title": "",
-    "header_right": "",
-    "date": "",
-    "footer_left": "",
-    "brand": {},
-}
 
-
-def _guide_header_footer(canvas, doc):
+def _guide_header_footer(canvas, doc, state):
     """Guide header/footer — exact match of PDF body pages."""
+    b = _get_brand(state.get("brand"))
     canvas.saveState()
-    _get_brand(_guide_state.get("brand"))
+    _get_brand(state.get("brand"))
     w, h = doc.pagesize
 
     # Header — dark bar: full width, 34pt tall, top-aligned
@@ -114,15 +105,15 @@ def _guide_header_footer(canvas, doc):
 
     # Header text — title left, info right (inside the bar)
     text_y = bar_y + 11.34  # vertically centered in bar
-    title = _guide_state.get("title", "")
+    title = state.get("title", "")
     if title:
-        canvas.setFont("Helvetica", 7)
+        canvas.setFont(b.get("font_body", "Helvetica"), 7)
         canvas.setFillColor(HexColor(_HEADER_LEFT))
         canvas.drawString(doc.leftMargin, text_y, title.upper()[:60])
 
-    header_right = _guide_state.get("header_right", "")
+    header_right = state.get("header_right", "")
     if header_right:
-        canvas.setFont("Helvetica", 7)
+        canvas.setFont(b.get("font_body", "Helvetica"), 7)
         canvas.setFillColor(HexColor(_BLUE_ACCENT))
         canvas.drawRightString(w - doc.rightMargin, text_y, header_right[:60])
 
@@ -134,14 +125,14 @@ def _guide_header_footer(canvas, doc):
 
     # Footer text — three columns at y=22.68
     footer_y = 22.677
-    canvas.setFont("Helvetica", 7)
+    canvas.setFont(b.get("font_body", "Helvetica"), 7)
     canvas.setFillColor(HexColor(_CAPTION))
 
-    footer_left = _guide_state.get("footer_left", "")
+    footer_left = state.get("footer_left", "")
     if footer_left:
         canvas.drawString(doc.leftMargin, footer_y, footer_left[:40])
 
-    date_str = _guide_state.get("date", "")
+    date_str = state.get("date", "")
     if date_str:
         canvas.drawCentredString(w / 2, footer_y, f"Generated {date_str}")
 
@@ -166,6 +157,10 @@ class GuideTemplate(BaseBriefingTemplate):
     Suitable for: system guides, hardware manuals, optimization guides,
     configuration references, benchmark reports.
     """
+
+    pdf_subject = "Technical Guide"
+    page_size_lock = "A4"
+    supports_variants = False
 
     def build_story(self, content: dict) -> list:
         """Assemble the guide story (cover handled by canvas callback)."""
@@ -194,7 +189,7 @@ class GuideTemplate(BaseBriefingTemplate):
                         "GuideTocTitle",
                         brand=self.brand,
                         fontSize=14,
-                        fontName="Helvetica-Bold",
+                        fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                         textColor=secondary_c,
                         leading=16.8,
                     ),
@@ -236,7 +231,7 @@ class GuideTemplate(BaseBriefingTemplate):
                             f"GTocN_{i}",
                             brand=self.brand,
                             fontSize=14,
-                            fontName="Helvetica-Bold",
+                            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                             textColor=secondary_c,
                             leading=12,
                             alignment=2,
@@ -248,7 +243,7 @@ class GuideTemplate(BaseBriefingTemplate):
                             f"GTocT_{i}",
                             brand=self.brand,
                             fontSize=10,
-                            fontName="Helvetica-Bold",
+                            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                             textColor=toc_title_c,
                             leading=14,
                         ),
@@ -274,7 +269,7 @@ class GuideTemplate(BaseBriefingTemplate):
                     f"GTocSub_{i}",
                     brand=self.brand,
                     fontSize=7.5,
-                    fontName="Helvetica",
+                    fontName=self.brand.get("font_body", "Helvetica"),
                     textColor=caption_c,
                     leading=9,
                     leftIndent=46,
@@ -314,7 +309,7 @@ class GuideTemplate(BaseBriefingTemplate):
                             f"GSecN_{idx}",
                             brand=self.brand,
                             fontSize=13,
-                            fontName="Helvetica-Bold",
+                            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                             textColor=secondary_c,
                             leading=15.6,
                         ),
@@ -325,7 +320,7 @@ class GuideTemplate(BaseBriefingTemplate):
                             f"GSecT_{idx}",
                             brand=self.brand,
                             fontSize=13,
-                            fontName="Helvetica-Bold",
+                            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                             textColor=secondary_c,
                             leading=15.6,
                         ),
@@ -365,7 +360,7 @@ class GuideTemplate(BaseBriefingTemplate):
                                     f"GSubH_{idx}_{rendered}",
                                     brand=self.brand,
                                     fontSize=11,
-                                    fontName="Helvetica-Bold",
+                                    fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                                     textColor=toc_title_c,
                                     leading=13.2,
                                 ),
@@ -420,78 +415,50 @@ class GuideTemplate(BaseBriefingTemplate):
 
         return story
 
-    # ------------------------------------------------------------------
-    # generate() — custom cover and header/footer
-    # ------------------------------------------------------------------
-
-    def generate(self) -> Path:
-        """Generate the guide PDF with dark cover page."""
-        self.output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        content = self.extract_content()
-        title = content.get(
-            "title",
-            self.target_path.name.replace("-", " ").title(),
-        )
+    def prepare(self, content: dict) -> None:
+        title = content.get("title", self.target_path.name.replace("-", " ").title())
         subsystems = content.get("subsystems", [])
-
-        # Doc ID
-        doc_ids_cfg = self.config.get("doc_ids", {})
-        if doc_ids_cfg.get("enabled", True):
-            from briefkit.doc_ids import get_or_assign_doc_id
-
-            self.doc_id = get_or_assign_doc_id(
-                self.target_path,
-                self.level,
-                title,
-                config=self.config,
-            )
-
-        # Template-specific config
         guide_cfg = self.config.get("guide", {})
-        spec_rows = guide_cfg.get("spec_table", [])
         subtitle_kw = guide_cfg.get("subtitle_keywords", "")
-        classification = guide_cfg.get("classification", "")
-        version = guide_cfg.get("version", "1.0")
-        header_right = guide_cfg.get("header_right", "")
-
-        # Auto-derive subtitle keywords from subsystem names if not set
         if not subtitle_kw and subsystems:
-            kw_list = [sub.get("name", "") for sub in subsystems[:6]]
-            subtitle_kw = "  |  ".join(kw_list)
-
-        # Header/footer state
-        _guide_state["title"] = title
-        _guide_state["header_right"] = header_right
-        _guide_state["date"] = self.date.strftime("%d %B %Y")
-        _guide_state["footer_left"] = classification
-        _guide_state["brand"] = self.brand
-
-        layout = self.config.get("layout", {})
-        margins = layout.get("margins", {})
-        top_m = margins.get("top", 25) * mm
-        bottom_m = margins.get("bottom", 22) * mm
-        left_m = margins.get("left", 20) * mm
-        right_m = margins.get("right", 20) * mm
-
-        page_size = A4
-        self.content_width = compute_content_width(page_size, margins)
-
-        meta = {"subject": guide_cfg.get("subject") or f"Technical guide: {title}"}
-        if guide_cfg.get("author"):
-            meta["author"] = guide_cfg["author"]
-
-        doc = self._build_doc(
-            pagesize=page_size,
-            topMargin=top_m,
-            bottomMargin=bottom_m,
-            leftMargin=left_m,
-            rightMargin=right_m,
-            **meta,
+            subtitle_kw = "  |  ".join(sub.get("name", "") for sub in subsystems[:6])
+        self.hf_ctx.update(
+            {
+                "title": title,
+                "header_right": guide_cfg.get("header_right", ""),
+                "date": self.date.strftime("%d %B %Y"),
+                "footer_left": guide_cfg.get("classification", ""),
+                "brand": self.brand,
+            }
         )
+        self._cover_data = {
+            "title": title,
+            "spec_rows": guide_cfg.get("spec_table", []),
+            "subtitle_kw": subtitle_kw,
+            "classification": guide_cfg.get("classification", ""),
+            "version": guide_cfg.get("version", "1.0"),
+        }
 
-        story = self.build_story(content)
-        story = self._finalize_story(story)
+    def doc_kwargs(self, content: dict) -> dict:
+        kwargs = super().doc_kwargs(content)
+        guide_cfg = self.config.get("guide", {})
+        title = content.get("title", self.target_path.name.replace("-", " ").title())
+        kwargs["subject"] = guide_cfg.get("subject") or f"Technical guide: {title}"
+        if guide_cfg.get("author"):
+            kwargs["author"] = guide_cfg["author"]
+        return kwargs
+
+    def header_footer(self, content: dict):
+        data = getattr(self, "_cover_data", {})
+        title = data.get("title", "")
+        spec_rows = data.get("spec_rows", [])
+        subtitle_kw = data.get("subtitle_kw", "")
+        classification = data.get("classification", "")
+        version = data.get("version", "1.0")
+        left_m = self.geometry.margins.left
+        right_m = self.geometry.margins.right
+        body_font = self.brand.get("font_body", "Helvetica")
+        heading_font = self.brand.get("font_heading", "Helvetica-Bold")
 
         def _cover_page(canvas, doc_inner):
             """Draw cover — exact match of System Overclocking Guide page 1."""
@@ -556,14 +523,14 @@ class GuideTemplate(BaseBriefingTemplate):
 
             # Title: Helvetica-Bold 32pt white
             canvas.setFillColor(white)
-            canvas.setFont("Helvetica-Bold", 32)
+            canvas.setFont(heading_font, 32)
             # Split title into lines
             title_lines = []
             words = title.split()
             current = ""
             for word in words:
                 test = f"{current} {word}".strip()
-                if canvas.stringWidth(test, "Helvetica-Bold", 32) > (w - left_m - right_m) * 0.85:
+                if canvas.stringWidth(test, heading_font, 32) > (w - left_m - right_m) * 0.85:
                     if current:
                         title_lines.append(current)
                     current = word
@@ -585,7 +552,7 @@ class GuideTemplate(BaseBriefingTemplate):
 
             # Subtitle keywords: Helvetica 12pt teal
             if subtitle_kw:
-                canvas.setFont("Helvetica", 12)
+                canvas.setFont(body_font, 12)
                 canvas.setFillColor(HexColor(_TEAL_ACCENT))
                 canvas.drawString(70.866, rule_y - 34, subtitle_kw[:80])
 
@@ -603,7 +570,7 @@ class GuideTemplate(BaseBriefingTemplate):
                 canvas.roundRect(box_x, box_y, box_w, box_h, 5, stroke=1, fill=1)
 
                 # "TARGET SYSTEM" header
-                canvas.setFont("Helvetica-Bold", 8)
+                canvas.setFont(heading_font, 8)
                 canvas.setFillColor(HexColor(_BLUE_ACCENT))
                 canvas.drawString(85.039, box_y + box_h - 20, "TARGET SYSTEM")
 
@@ -613,16 +580,16 @@ class GuideTemplate(BaseBriefingTemplate):
                     value = row.get("value", "") if isinstance(row, dict) else ""
                     ry = box_y + box_h - 40 - i * row_h
 
-                    canvas.setFont("Helvetica-Bold", 7)
+                    canvas.setFont(heading_font, 7)
                     canvas.setFillColor(HexColor(_TEAL_ACCENT))
                     canvas.drawString(90.709, ry, label.upper()[:20])
 
-                    canvas.setFont("Helvetica", 8.5)
+                    canvas.setFont(body_font, 8.5)
                     canvas.setFillColor(HexColor(_SPEC_VALUE))
                     canvas.drawString(175.748, ry, str(value)[:60])
 
             # Footer: date and classification
-            canvas.setFont("Helvetica", 8)
+            canvas.setFont(body_font, 8)
             canvas.setFillColor(HexColor(_CAPTION))
             canvas.drawString(70.866, 70.866, f"Generated: {self.date.strftime('%d %B %Y')}")
             if classification:
@@ -635,19 +602,13 @@ class GuideTemplate(BaseBriefingTemplate):
             badge_y = 51.024
             canvas.setFillColor(HexColor(_BLUE_ACCENT))
             canvas.roundRect(badge_x, badge_y, badge_w, 22.677, 3, stroke=0, fill=1)
-            canvas.setFont("Helvetica-Bold", 7)
+            canvas.setFont(heading_font, 7)
             canvas.setFillColor(white)
             canvas.drawCentredString(badge_x + badge_w / 2, badge_y + 7.09, badge_text)
 
             canvas.restoreState()
 
-        doc.build(
-            story,
-            onFirstPage=_cover_page,
-            onLaterPages=_guide_header_footer,
-        )
-
-        return self.output_path
+        return _cover_page, functools.partial(_guide_header_footer, state=self.hf_ctx)
 
     # ------------------------------------------------------------------
     # Suppress unused base section builders

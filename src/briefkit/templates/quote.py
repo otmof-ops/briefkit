@@ -20,10 +20,7 @@ Key differences:
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from reportlab.lib.colors import HexColor, white
-from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     KeepTogether,
@@ -55,6 +52,11 @@ class QuoteTemplate(BaseBriefingTemplate):
     and an acceptance/signature block. Suitable for project quotes,
     estimates, proposals, and fee schedules.
     """
+
+    pdf_subject = "Quote"
+    design_page_size = "A4"
+    design_margins_mm = {"top": 20, "bottom": 20, "left": 20, "right": 20}
+    supports_variants = False
 
     def build_story(self, content: dict) -> list:
         """
@@ -97,7 +99,7 @@ class QuoteTemplate(BaseBriefingTemplate):
                 brand=b,
                 fontSize=10,
                 textColor=primary,
-                fontName="Helvetica-Bold",
+                fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                 spaceAfter=3,
             )
             story.append(Paragraph("CLIENT", client_label))
@@ -114,7 +116,7 @@ class QuoteTemplate(BaseBriefingTemplate):
                 brand=b,
                 fontSize=12,
                 textColor=primary,
-                fontName="Helvetica-Bold",
+                fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                 spaceAfter=4,
             )
             story.append(Paragraph("SCOPE OF WORK", scope_label))
@@ -130,7 +132,7 @@ class QuoteTemplate(BaseBriefingTemplate):
                 brand=b,
                 fontSize=12,
                 textColor=primary,
-                fontName="Helvetica-Bold",
+                fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                 spaceAfter=4,
             )
             story.append(Paragraph("PRICING", pricing_label))
@@ -172,7 +174,7 @@ class QuoteTemplate(BaseBriefingTemplate):
                 brand=b,
                 fontSize=14,
                 textColor=primary,
-                fontName="Helvetica-Bold",
+                fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             )
             left_parts.append(Paragraph(org, org_style))
 
@@ -183,7 +185,7 @@ class QuoteTemplate(BaseBriefingTemplate):
                 brand=b,
                 fontSize=9,
                 textColor=caption_c,
-                fontName="Helvetica-Oblique",
+                fontName=self.brand.get("font_caption", "Helvetica-Oblique"),
             )
             left_parts.append(Paragraph(tagline, tag_style))
 
@@ -213,7 +215,7 @@ class QuoteTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=24,
             textColor=primary,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             alignment=2,
         )
         right_content = Paragraph("QUOTE", title_style)
@@ -271,7 +273,7 @@ class QuoteTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=9,
             textColor=primary,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
         )
         value_style = _ps(
             "QuoteMetaValue",
@@ -339,7 +341,7 @@ class QuoteTemplate(BaseBriefingTemplate):
                 brand=b,
                 fontSize=11,
                 textColor=primary,
-                fontName="Helvetica-Bold",
+                fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                 spaceBefore=6,
                 spaceAfter=3,
             )
@@ -421,7 +423,7 @@ class QuoteTemplate(BaseBriefingTemplate):
                     [
                         ("BACKGROUND", (0, 0), (-1, 0), primary),
                         ("TEXTCOLOR", (0, 0), (-1, 0), white),
-                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                        ("FONTNAME", (0, 0), (-1, 0), self.brand.get("font_heading", "Helvetica-Bold")),
                         ("FONTSIZE", (0, 0), (-1, 0), 9),
                         ("VALIGN", (0, 0), (-1, -1), "TOP"),
                         ("TOPPADDING", (0, 0), (-1, -1), 4),
@@ -455,7 +457,7 @@ class QuoteTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=12,
             textColor=primary,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             spaceAfter=4,
         )
         flowables.append(Paragraph("TERMS AND CONDITIONS", terms_label))
@@ -501,7 +503,7 @@ class QuoteTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=12,
             textColor=primary,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             spaceAfter=4,
         )
         flowables.append(Paragraph("ACCEPTANCE", accept_label))
@@ -562,56 +564,15 @@ class QuoteTemplate(BaseBriefingTemplate):
 
         return flowables
 
-    # ------------------------------------------------------------------
-    # Override generate() for quote-specific header/footer
-    # ------------------------------------------------------------------
-
-    def generate(self) -> Path:
-        """Generate the quote PDF with minimal header/footer."""
-        self.output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        content = self.extract_content()
-
-        # Doc ID (optional)
-        doc_ids_cfg = self.config.get("doc_ids", {})
-        if doc_ids_cfg.get("enabled", True):
-            from briefkit.doc_ids import get_or_assign_doc_id
-
-            self.doc_id = get_or_assign_doc_id(
-                self.target_path,
-                self.level,
-                content.get("title", ""),
-                config=self.config,
-            )
-
-        # Header/footer state
-
-        layout = self.config.get("layout", {})
-        margins = layout.get("margins", {})
-        top_m = margins.get("top", 20) * mm
-        bottom_m = margins.get("bottom", 20) * mm
-        left_m = margins.get("left", 20) * mm
-        right_m = margins.get("right", 20) * mm
-
-        doc = self._build_doc(
-            pagesize=A4,
-            topMargin=top_m,
-            bottomMargin=bottom_m,
-            leftMargin=left_m,
-            rightMargin=right_m,
-            subject="Quote",
-        )
-
-        story = self.build_story(content)
-        story = self._finalize_story(story)
-
+    def header_footer(self, content: dict):
         caption_color = HexColor(self.brand.get("caption", "#666666"))
         org = self.brand.get("org", "")
+        body_font = self.brand.get("font_body", "Helvetica")
 
         def _quote_footer(canvas, doc_inner):
             """Footer: org name left, page number right."""
             canvas.saveState()
-            canvas.setFont("Helvetica", 7)
+            canvas.setFont(body_font, 7)
             canvas.setFillColor(caption_color)
             if org:
                 canvas.drawString(
@@ -626,13 +587,7 @@ class QuoteTemplate(BaseBriefingTemplate):
             )
             canvas.restoreState()
 
-        doc.build(
-            story,
-            onFirstPage=_quote_footer,
-            onLaterPages=_quote_footer,
-        )
-
-        return self.output_path
+        return _quote_footer, _quote_footer
 
     # ------------------------------------------------------------------
     # Suppress all unused base section builders

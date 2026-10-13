@@ -36,10 +36,9 @@ Body pages (dark):
 
 from __future__ import annotations
 
-from pathlib import Path
+import functools
 
 from reportlab.lib.colors import HexColor
-from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     PageBreak,
@@ -57,7 +56,6 @@ from briefkit.styles import (
     _get_brand,
     _ps,
     _safe_text,
-    compute_content_width,
 )
 from briefkit.templates._helpers import should_skip
 
@@ -103,14 +101,6 @@ _P_TABLE_HEADER = "#0077B5"
 # Module-level state for custom header / footer
 # ---------------------------------------------------------------------------
 
-_mag_state: dict = {
-    "title": "",
-    "subtitle": "",
-    "date": "",
-    "is_dark": True,
-    "brand": {},
-}
-
 
 def _is_dark_bg(bg_hex: str) -> bool:
     """Determine if a hex color is dark (luminance < 0.5)."""
@@ -122,12 +112,13 @@ def _is_dark_bg(bg_hex: str) -> bool:
     return luminance < 0.5
 
 
-def _mag_header_footer(canvas, doc):
+def _mag_header_footer(canvas, doc, state):
     """Magazine header/footer — exact match of PDF body pages."""
+    b = _get_brand(state.get("brand"))
     canvas.saveState()
-    _get_brand(_mag_state.get("brand"))
+    _get_brand(state.get("brand"))
     w, h = doc.pagesize
-    is_dark = _mag_state.get("is_dark", True)
+    is_dark = state.get("is_dark", True)
 
     # Select colors based on dark/light mode
     if is_dark:
@@ -146,10 +137,10 @@ def _mag_header_footer(canvas, doc):
     canvas.line(56.693, 807.874, 538.583, 807.874)
 
     # Header text at y=812.13
-    canvas.setFont("Helvetica", 7)
+    canvas.setFont(b.get("font_body", "Helvetica"), 7)
     canvas.setFillColor(HexColor(caption_c))
-    title = _mag_state.get("title", "")
-    subtitle = _mag_state.get("subtitle", "")
+    title = state.get("title", "")
+    subtitle = state.get("subtitle", "")
     header_text = f"{title}  //  {subtitle}" if subtitle else title
     canvas.drawString(56.693, 812.126, header_text[:70])
 
@@ -165,9 +156,9 @@ def _mag_header_footer(canvas, doc):
     canvas.line(56.693, 34.016, 538.583, 34.016)
 
     # Footer text centered
-    date_str = _mag_state.get("date", "")
+    date_str = state.get("date", "")
     if date_str:
-        canvas.setFont("Helvetica", 6.5)
+        canvas.setFont(b.get("font_body", "Helvetica"), 6.5)
         canvas.setFillColor(HexColor(caption_c))
         canvas.drawCentredString(w / 2, 22.677, date_str)
 
@@ -189,6 +180,10 @@ class MagazineTemplate(BaseBriefingTemplate):
     Suitable for: definitive guides, product guides, technology references,
     buyer's guides, ecosystem overviews.
     """
+
+    pdf_subject = "Magazine"
+    page_size_lock = "A4"
+    supports_variants = False
 
     def build_story(self, content: dict) -> list:
         """Assemble the magazine story."""
@@ -216,7 +211,7 @@ class MagazineTemplate(BaseBriefingTemplate):
             "MagSecLabel",
             brand=b,
             fontSize=10,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=HexColor(cyan),
             spaceBefore=4,
             spaceAfter=4,
@@ -229,7 +224,7 @@ class MagazineTemplate(BaseBriefingTemplate):
             "MagTocTitle",
             brand=b,
             fontSize=20,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=HexColor(text_c),
             leading=24,
         )
@@ -263,7 +258,7 @@ class MagazineTemplate(BaseBriefingTemplate):
                             f"MagTocN_{i}",
                             brand=b,
                             fontSize=8.5,
-                            fontName="Helvetica-Bold",
+                            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                             textColor=HexColor(cyan),
                             leading=11,
                         ),
@@ -312,7 +307,7 @@ class MagazineTemplate(BaseBriefingTemplate):
                         f"MagSL_{idx}",
                         brand=b,
                         fontSize=10,
-                        fontName="Helvetica-Bold",
+                        fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                         textColor=HexColor(cyan),
                         spaceBefore=4,
                         spaceAfter=4,
@@ -329,7 +324,7 @@ class MagazineTemplate(BaseBriefingTemplate):
                         f"MagST_{idx}",
                         brand=b,
                         fontSize=20,
-                        fontName="Helvetica-Bold",
+                        fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                         textColor=HexColor(text_c),
                         leading=24,
                     ),
@@ -369,95 +364,57 @@ class MagazineTemplate(BaseBriefingTemplate):
 
         return story
 
-    # ------------------------------------------------------------------
-    # generate() — custom cover and header/footer
-    # ------------------------------------------------------------------
-
-    def generate(self) -> Path:
-        """Generate the magazine PDF with large-typography cover."""
-        self.output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        content = self.extract_content()
-        title = content.get(
-            "title",
-            self.target_path.name.replace("-", " ").title(),
-        )
-        subsystems = content.get("subsystems", [])
-
-        # Doc ID
-        doc_ids_cfg = self.config.get("doc_ids", {})
-        if doc_ids_cfg.get("enabled", True):
-            from briefkit.doc_ids import get_or_assign_doc_id
-
-            self.doc_id = get_or_assign_doc_id(
-                self.target_path,
-                self.level,
-                title,
-                config=self.config,
-            )
-
-        # Template-specific config
+    def prepare(self, content: dict) -> None:
+        title = content.get("title", self.target_path.name.replace("-", " ").title())
         mag_cfg = self.config.get("magazine", {})
-        edition = mag_cfg.get("edition", f"{self.date.year} EDITION")
-        accent_word_idx = mag_cfg.get("accent_word", -1)
-        sidebar_text = mag_cfg.get(
-            "sidebar_text",
-            f"{title}  //  {self.date.year}",
-        )
-        subtitle_text = mag_cfg.get("subtitle", "THE DEFINITIVE GUIDE TO")
-        bottom_colors = mag_cfg.get("bottom_colors", [])
-
         b = self.brand
         is_dark = _is_dark_bg(b.get("background", "#FFFFFF"))
-
-        # Default bottom bar colors from PDF
+        bottom_colors = mag_cfg.get("bottom_colors", [])
         if not bottom_colors:
-            if is_dark:
-                bottom_colors = [_D_CYAN, _D_BLUE, _D_LINK, _D_PINK]
-            else:
-                bottom_colors = [_P_CYAN, _P_ACCENT, _P_LINK, _P_PINK]
-
-        # Compiled date string
+            bottom_colors = [_D_CYAN, _D_BLUE, _D_LINK, _D_PINK] if is_dark else [_P_CYAN, _P_ACCENT, _P_LINK, _P_PINK]
         compiled_date = f"COMPILED {self.date.strftime('%B %d, %Y').upper()}"
         footer_text = mag_cfg.get(
             "footer_text",
             f"{compiled_date}  \u2022  ECOSYSTEM STATUS AS OF EARLY {self.date.year}",
         )
-
-        # Header/footer state
-        _mag_state["title"] = mag_cfg.get("header_title", title).upper()
-        _mag_state["subtitle"] = "THE DEFINITIVE GUIDE"
-        _mag_state["date"] = footer_text
-        _mag_state["is_dark"] = is_dark
-        _mag_state["brand"] = b
-
-        layout = self.config.get("layout", {})
-        margins = layout.get("margins", {})
-        top_m = margins.get("top", 25) * mm
-        bottom_m = margins.get("bottom", 22) * mm
-        left_m = margins.get("left", 20) * mm
-        right_m = margins.get("right", 20) * mm
-
-        page_size = A4
-        self.content_width = compute_content_width(page_size, margins)
-
-        meta = {"subject": mag_cfg.get("subject") or title}
-        if mag_cfg.get("author"):
-            meta["author"] = mag_cfg["author"]
-
-        doc = self._build_doc(
-            pagesize=page_size,
-            topMargin=top_m,
-            bottomMargin=bottom_m,
-            leftMargin=left_m,
-            rightMargin=right_m,
-            **meta,
+        self.hf_ctx.update(
+            {
+                "title": mag_cfg.get("header_title", title).upper(),
+                "subtitle": "THE DEFINITIVE GUIDE",
+                "date": footer_text,
+                "is_dark": is_dark,
+                "brand": b,
+            }
         )
+        self._cover_data = {
+            "title": title,
+            "subsystems": content.get("subsystems", []),
+            "edition": mag_cfg.get("edition", f"{self.date.year} EDITION"),
+            "accent_word_idx": mag_cfg.get("accent_word", -1),
+            "sidebar_text": mag_cfg.get("sidebar_text", f"{title}  //  {self.date.year}"),
+            "subtitle_text": mag_cfg.get("subtitle", "THE DEFINITIVE GUIDE TO"),
+            "bottom_colors": bottom_colors,
+            "is_dark": is_dark,
+        }
 
-        story = self.build_story(content)
-        story = self._finalize_story(story)
+    def doc_kwargs(self, content: dict) -> dict:
+        kwargs = super().doc_kwargs(content)
+        mag_cfg = self.config.get("magazine", {})
+        kwargs["subject"] = mag_cfg.get("subject") or content.get("title", "Magazine")
+        if mag_cfg.get("author"):
+            kwargs["author"] = mag_cfg["author"]
+        return kwargs
 
-        # Select cover palette
+    def header_footer(self, content: dict):
+        data = getattr(self, "_cover_data", {})
+        title = data.get("title", "")
+        subsystems = data.get("subsystems", [])
+        edition = data.get("edition", "")
+        accent_word_idx = data.get("accent_word_idx", -1)
+        sidebar_text = data.get("sidebar_text", "")
+        subtitle_text = data.get("subtitle_text", "")
+        bottom_colors = data.get("bottom_colors", [])
+        is_dark = data.get("is_dark", False)
         if is_dark:
             bg, sidebar, sidebar_edge = _D_BG, _D_SIDEBAR, _D_SIDEBAR_EDGE
             sidebar_txt, purple, cyan = _D_SIDEBAR_TEXT, _D_PURPLE, _D_CYAN
@@ -468,6 +425,8 @@ class MagazineTemplate(BaseBriefingTemplate):
             sidebar_txt, purple, cyan = _P_SIDEBAR_TEXT, _P_PURPLE, _P_CYAN
             text_c, caption, link = _P_TEXT, _P_CAPTION, _P_LINK
             chapter_c, rule_c = _P_CAPTION, _P_RULE
+        body_font = self.brand.get("font_body", "Helvetica")
+        heading_font = self.brand.get("font_heading", "Helvetica-Bold")
 
         def _cover_page(canvas, doc_inner):
             """Draw cover — exact match of Chromecast Guide page 1."""
@@ -491,7 +450,7 @@ class MagazineTemplate(BaseBriefingTemplate):
                 canvas.saveState()
                 canvas.translate(518.740, 113.386)
                 canvas.rotate(90)
-                canvas.setFont("Helvetica", 7)
+                canvas.setFont(body_font, 7)
                 canvas.setFillColor(HexColor(sidebar_txt))
                 canvas.drawString(0, 0, sidebar_text.upper()[:60])
                 canvas.restoreState()
@@ -515,7 +474,7 @@ class MagazineTemplate(BaseBriefingTemplate):
 
             # Pre-title: "THE DEFINITIVE GUIDE TO"
             if subtitle_text:
-                canvas.setFont("Helvetica", 9)
+                canvas.setFont(body_font, 9)
                 canvas.setFillColor(HexColor(caption))
                 canvas.drawString(cx, 716.834, subtitle_text.upper()[:50])
 
@@ -539,7 +498,7 @@ class MagazineTemplate(BaseBriefingTemplate):
             current = []
             for word in title_words:
                 test = " ".join(current + [word])
-                test_w = canvas.stringWidth(test, "Helvetica-Bold", title_font_size)
+                test_w = canvas.stringWidth(test, heading_font, title_font_size)
                 if test_w > content_w and current:
                     title_lines.append(current[:])
                     current = [word]
@@ -564,16 +523,16 @@ class MagazineTemplate(BaseBriefingTemplate):
                             canvas.setFillColor(HexColor(cyan))
                         else:
                             canvas.setFillColor(HexColor(text_c))
-                        canvas.setFont("Helvetica-Bold", title_font_size)
+                        canvas.setFont(heading_font, title_font_size)
                         canvas.drawString(x, title_y, word)
-                        x += canvas.stringWidth(word + " ", "Helvetica-Bold", title_font_size)
+                        x += canvas.stringWidth(word + " ", heading_font, title_font_size)
                 elif has_accent:
                     canvas.setFillColor(HexColor(cyan))
-                    canvas.setFont("Helvetica-Bold", title_font_size)
+                    canvas.setFont(heading_font, title_font_size)
                     canvas.drawString(cx, title_y, line_text)
                 else:
                     canvas.setFillColor(HexColor(text_c))
-                    canvas.setFont("Helvetica-Bold", title_font_size)
+                    canvas.setFont(heading_font, title_font_size)
                     canvas.drawString(cx, title_y, line_text)
 
                 word_global_idx += len(line_words)
@@ -586,7 +545,7 @@ class MagazineTemplate(BaseBriefingTemplate):
 
             # Edition label: Helvetica-Bold 12pt purple
             edition_y = rule_y - 34
-            canvas.setFont("Helvetica-Bold", 12)
+            canvas.setFont(heading_font, 12)
             canvas.setFillColor(HexColor(link))
             canvas.drawString(cx, edition_y, edition.upper())
 
@@ -595,17 +554,17 @@ class MagazineTemplate(BaseBriefingTemplate):
             for i, sub in enumerate(subsystems[:6], 1):
                 name = sub.get("name", f"Section {i}")
                 # Number: Helvetica-Bold 7.5pt cyan
-                canvas.setFont("Helvetica-Bold", 7.5)
+                canvas.setFont(heading_font, 7.5)
                 canvas.setFillColor(HexColor(cyan))
                 canvas.drawString(cx, list_y, f"{i:02d}")
                 # Name: Helvetica 8pt
-                canvas.setFont("Helvetica", 8)
+                canvas.setFont(body_font, 8)
                 canvas.setFillColor(HexColor(chapter_c))
                 canvas.drawString(cx + 25.512, list_y, name[:45])
                 list_y -= 15.591
 
             # Date label: Helvetica-Bold 7.5pt
-            canvas.setFont("Helvetica-Bold", 7.5)
+            canvas.setFont(heading_font, 7.5)
             canvas.setFillColor(HexColor(caption))
             month_year = self.date.strftime("%B %Y").upper()
             canvas.drawString(cx, 110.220, month_year)
@@ -626,13 +585,7 @@ class MagazineTemplate(BaseBriefingTemplate):
 
             canvas.restoreState()
 
-        doc.build(
-            story,
-            onFirstPage=_cover_page,
-            onLaterPages=_mag_header_footer,
-        )
-
-        return self.output_path
+        return _cover_page, functools.partial(_mag_header_footer, state=self.hf_ctx)
 
     # ------------------------------------------------------------------
     # Suppress unused base section builders

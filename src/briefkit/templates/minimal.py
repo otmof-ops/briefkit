@@ -20,9 +20,8 @@ Key differences:
 
 from __future__ import annotations
 
-from pathlib import Path
+import functools
 
-from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     PageBreak,
@@ -36,6 +35,7 @@ from briefkit.generator import (
     build_toc,
 )
 from briefkit.styles import (
+    _get_brand,
     _hex,
     _ps,
     _safe_para,
@@ -43,12 +43,13 @@ from briefkit.styles import (
 from briefkit.templates._helpers import should_skip
 
 
-def _minimal_header_footer(canvas, doc):
+def _minimal_header_footer(canvas, doc, state):
     """Minimal footer: page number centered, no header."""
+    b = _get_brand(state.get("brand"))
     canvas.saveState()
     page_width, page_height = doc.pagesize
     bottom = doc.bottomMargin - 6 * mm
-    canvas.setFont("Helvetica", 7)
+    canvas.setFont(b.get("font_body", "Helvetica"), 7)
     canvas.setFillColorRGB(0.4, 0.4, 0.4)
     canvas.drawCentredString(page_width / 2, bottom + 1.5 * mm, f"Page {doc.page}")
     canvas.restoreState()
@@ -65,6 +66,10 @@ class MinimalTemplate(BaseBriefingTemplate):
     Useful for plain-text-style exports, draft documents, or when embedding
     briefkit output into a larger pipeline that adds its own chrome.
     """
+
+    pdf_subject = "Minimal Briefing"
+    design_page_size = "A4"
+    supports_variants = False
 
     def build_story(self, content: dict) -> list:
         """
@@ -164,7 +169,7 @@ class MinimalTemplate(BaseBriefingTemplate):
                             textColor=_hex(self.brand, "body_text"),
                             leading=14,
                             leftIndent=16,
-                            fontName="Helvetica-Oblique",
+                            fontName=self.brand.get("font_caption", "Helvetica-Oblique"),
                         )
                         flowables.append(Paragraph(f"\u201c{text}\u201d", quote_style))
                     continue
@@ -243,57 +248,12 @@ class MinimalTemplate(BaseBriefingTemplate):
 
         return flowables
 
-    # ------------------------------------------------------------------
-    # Override generate() to use minimal header/footer
-    # ------------------------------------------------------------------
+    def prepare(self, content: dict) -> None:
+        self.hf_ctx["brand"] = self.brand
 
-    def generate(self) -> Path:
-        """
-        Generate the minimal PDF with page-number-only footer.
-        """
-        self.output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        content = self.extract_content()
-
-        # Doc ID (optional)
-        doc_ids_cfg = self.config.get("doc_ids", {})
-        if doc_ids_cfg.get("enabled", True):
-            from briefkit.doc_ids import get_or_assign_doc_id
-
-            self.doc_id = get_or_assign_doc_id(
-                self.target_path,
-                self.level,
-                content.get("title", ""),
-                config=self.config,
-            )
-
-        # Header/footer state (minimal: only date, no section name)
-
-        layout = self.config.get("layout", {})
-        margins = layout.get("margins", {})
-        top_m = margins.get("top", 25) * mm
-        bottom_m = margins.get("bottom", 22) * mm
-        left_m = margins.get("left", 20) * mm
-        right_m = margins.get("right", 20) * mm
-
-        doc = self._build_doc(
-            pagesize=A4,
-            topMargin=top_m,
-            bottomMargin=bottom_m,
-            leftMargin=left_m,
-            rightMargin=right_m,
-            subject="Minimal Briefing",
-        )
-
-        story = self.build_story(content)
-        story = self._finalize_story(story)
-        doc.build(
-            story,
-            onFirstPage=_minimal_header_footer,
-            onLaterPages=_minimal_header_footer,
-        )
-
-        return self.output_path
+    def header_footer(self, content: dict):
+        callback = functools.partial(_minimal_header_footer, state=self.hf_ctx)
+        return callback, callback
 
     # ------------------------------------------------------------------
     # Suppress all unused base section builders

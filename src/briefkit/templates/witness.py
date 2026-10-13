@@ -19,11 +19,10 @@ Key differences:
 
 from __future__ import annotations
 
+import functools
 import html
-from pathlib import Path
 
 from reportlab.lib.colors import HexColor
-from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     Paragraph,
@@ -35,6 +34,7 @@ from reportlab.platypus import (
 from briefkit.extractor import parse_markdown
 from briefkit.generator import BaseBriefingTemplate
 from briefkit.styles import (
+    _get_brand,
     _hex,
     _ps,
 )
@@ -47,8 +47,9 @@ def _decode_html_entities(text: str) -> str:
     return html.unescape(text)
 
 
-def _witness_header_footer(canvas, doc):
+def _witness_header_footer(canvas, doc, state):
     """Legal-style header/footer: thin rule, doc ref, page number."""
+    b = _get_brand(state.get("brand"))
     canvas.saveState()
     pw, ph = doc.pagesize
     lm = doc.leftMargin
@@ -60,18 +61,18 @@ def _witness_header_footer(canvas, doc):
     canvas.line(lm, ph - doc.topMargin + 8 * mm, pw - rm, ph - doc.topMargin + 8 * mm)
 
     # Header right: doc title
-    canvas.setFont("Helvetica", 7)
+    canvas.setFont(b.get("font_body", "Helvetica"), 7)
     canvas.setFillColor(HexColor("#333333"))
-    title = getattr(doc, "_witness_title", "Witness Statement")
+    title = state.get("title", "Witness Statement")
     canvas.drawRightString(pw - rm, ph - doc.topMargin + 10 * mm, title)
 
     # Footer: page number center, doc ref right
     bottom_y = doc.bottomMargin - 6 * mm
-    canvas.setFont("Helvetica", 7)
+    canvas.setFont(b.get("font_body", "Helvetica"), 7)
     canvas.setFillColor(HexColor("#666666"))
     canvas.drawCentredString(pw / 2, bottom_y + 1.5 * mm, f"Page {doc.page}")
 
-    doc_ref = getattr(doc, "_witness_doc_ref", "")
+    doc_ref = state.get("doc_ref", "")
     if doc_ref:
         canvas.drawRightString(pw - rm, bottom_y + 1.5 * mm, doc_ref)
 
@@ -91,6 +92,12 @@ class WitnessTemplate(BaseBriefingTemplate):
     No briefing chrome. Clean, formal, court-ready.
     """
 
+    pdf_subject = "Witness Statement"
+    design_page_size = "A4"
+    design_margins_mm = {"top": 28, "bottom": 22, "left": 22, "right": 22}
+    supports_variants = False
+    assigns_doc_id = False
+
     name = "witness"
 
     def build_story(self, content: dict) -> list:
@@ -108,7 +115,7 @@ class WitnessTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=18,
             textColor=primary,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             alignment=1,
             spaceAfter=4,
         )
@@ -123,7 +130,7 @@ class WitnessTemplate(BaseBriefingTemplate):
                 brand=b,
                 fontSize=10,
                 textColor=body_c,
-                fontName="Helvetica",
+                fontName=self.brand.get("font_body", "Helvetica"),
                 alignment=1,
                 spaceAfter=6,
                 leading=14,
@@ -169,7 +176,7 @@ class WitnessTemplate(BaseBriefingTemplate):
                         brand=b,
                         fontSize=13,
                         textColor=primary,
-                        fontName="Helvetica-Bold",
+                        fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                         spaceBefore=10,
                         spaceAfter=4,
                     )
@@ -182,7 +189,7 @@ class WitnessTemplate(BaseBriefingTemplate):
                         brand=b,
                         fontSize=11,
                         textColor=body_c,
-                        fontName="Helvetica-Bold",
+                        fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                         spaceBefore=6,
                         spaceAfter=2,
                     )
@@ -195,7 +202,7 @@ class WitnessTemplate(BaseBriefingTemplate):
                         brand=b,
                         fontSize=10,
                         textColor=body_c,
-                        fontName="Helvetica-Bold",
+                        fontName=self.brand.get("font_heading", "Helvetica-Bold"),
                         spaceBefore=4,
                         spaceAfter=2,
                     )
@@ -214,7 +221,7 @@ class WitnessTemplate(BaseBriefingTemplate):
                             leading=13,
                             leftIndent=20,
                             rightIndent=20,
-                            fontName="Helvetica-Oblique",
+                            fontName=self.brand.get("font_caption", "Helvetica-Oblique"),
                             spaceBefore=4,
                             spaceAfter=4,
                         )
@@ -235,42 +242,15 @@ class WitnessTemplate(BaseBriefingTemplate):
         self.content = _ec(self.target_path, level=3, config=self.config)
         return self.content
 
-    def generate(self) -> Path:
-        self.output_path.parent.mkdir(parents=True, exist_ok=True)
-        content = self.extract_content()
+    def prepare(self, content: dict) -> None:
+        self.hf_ctx["title"] = content.get("title", "Witness Statement")
+        self.hf_ctx["doc_ref"] = self.config.get("project", {}).get("doc_id_format", "")
+        self.hf_ctx["brand"] = self.brand
 
-        title = content.get("title", "Witness Statement")
+    def header_footer(self, content: dict):
+        callback = functools.partial(_witness_header_footer, state=self.hf_ctx)
+        return callback, callback
 
-        layout = self.config.get("layout", {})
-        margins = layout.get("margins", {})
-        top_m = margins.get("top", 28) * mm
-        bottom_m = margins.get("bottom", 22) * mm
-        left_m = margins.get("left", 22) * mm
-        right_m = margins.get("right", 22) * mm
-
-        doc = self._build_doc(
-            pagesize=A4,
-            topMargin=top_m,
-            bottomMargin=bottom_m,
-            leftMargin=left_m,
-            rightMargin=right_m,
-            subject="Witness Statement",
-        )
-
-        # Pass metadata to header/footer
-        doc._witness_title = title
-        doc._witness_doc_ref = self.config.get("project", {}).get("doc_id_format", "")
-
-        story = self.build_story(content)
-        story = self._finalize_story(story)
-        doc.build(
-            story,
-            onFirstPage=_witness_header_footer,
-            onLaterPages=_witness_header_footer,
-        )
-        return self.output_path
-
-    # Suppress all briefing chrome
     def build_at_a_glance(self, *a, **kw):
         return []
 

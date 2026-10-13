@@ -20,10 +20,8 @@ Follows Oxford (A4) and Colorado State (Letter) production resume norms:
 from __future__ import annotations
 
 import re
-from pathlib import Path
 
 from reportlab.lib.colors import HexColor, black
-from reportlab.lib.pagesizes import A3, A4, legal, letter
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     Spacer,
@@ -40,8 +38,6 @@ from briefkit.styles import (
     _safe_para,
     _safe_text,
 )
-
-_PAGE_SIZES = {"A4": A4, "A3": A3, "Letter": letter, "Legal": legal}
 
 _DARK_GREY = HexColor("#666666")
 _BLACK = black
@@ -62,6 +58,10 @@ class ResumeTemplate(BaseBriefingTemplate):
     additional information.
     """
 
+    pdf_subject = "Resume"
+    design_margins_mm = {"top": 20, "bottom": 18, "left": 22, "right": 22}
+    supports_variants = False
+
     def _section_heading(self, title: str) -> list:
         """Return flowables for a section heading with a black underline rule."""
         items: list = []
@@ -71,7 +71,7 @@ class ResumeTemplate(BaseBriefingTemplate):
             brand=self.brand,
             fontSize=12,
             textColor=_BLACK,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             spaceAfter=1,
         )
         items.append(_safe_para(title.upper(), h_style))
@@ -158,7 +158,7 @@ class ResumeTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=16,
             textColor=_BLACK,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             alignment=1,
             spaceAfter=2,
         )
@@ -304,7 +304,7 @@ class ResumeTemplate(BaseBriefingTemplate):
             brand=self.brand,
             fontSize=10,
             textColor=_BLACK,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             spaceAfter=0,
         )
         company_style = _ps(
@@ -312,7 +312,7 @@ class ResumeTemplate(BaseBriefingTemplate):
             brand=self.brand,
             fontSize=10,
             textColor=_BLACK,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             alignment=2,
             spaceAfter=0,
         )
@@ -349,7 +349,7 @@ class ResumeTemplate(BaseBriefingTemplate):
                 brand=self.brand,
                 fontSize=10,
                 textColor=_DARK_GREY,
-                fontName="Helvetica-Oblique",
+                fontName=self.brand.get("font_caption", "Helvetica-Oblique"),
                 spaceAfter=2,
             )
             story.append(_safe_para(_safe_text(job_title), title_style))
@@ -434,7 +434,7 @@ class ResumeTemplate(BaseBriefingTemplate):
             brand=self.brand,
             fontSize=10,
             textColor=_BLACK,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             spaceAfter=0,
         )
         inst_style = _ps(
@@ -442,7 +442,7 @@ class ResumeTemplate(BaseBriefingTemplate):
             brand=self.brand,
             fontSize=10,
             textColor=_BLACK,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             spaceAfter=0,
         )
         degree_style = _ps(
@@ -500,55 +500,13 @@ class ResumeTemplate(BaseBriefingTemplate):
 
         story.append(Spacer(1, 2 * mm))
 
-    # ------------------------------------------------------------------
-    # Override generate() -- clean resume with minimal footer
-    # ------------------------------------------------------------------
-
-    def generate(self) -> Path:
-        """Generate the resume PDF with minimal page-number footer."""
-        self.output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        content = self.extract_content()
-
-        # Doc ID (optional)
-        doc_ids_cfg = self.config.get("doc_ids", {})
-        if doc_ids_cfg.get("enabled", True):
-            from briefkit.doc_ids import get_or_assign_doc_id
-
-            self.doc_id = get_or_assign_doc_id(
-                self.target_path,
-                self.level,
-                content.get("title", ""),
-                config=self.config,
-            )
-
-        # Header/footer state -- minimal for resume
-
-        layout = self.config.get("layout", {})
-        margins = layout.get("margins", {})
-        top_m = margins.get("top", 20) * mm
-        bottom_m = margins.get("bottom", 18) * mm
-        left_m = margins.get("left", 22) * mm
-        right_m = margins.get("right", 22) * mm
-
-        page_size = _PAGE_SIZES.get(layout.get("page_size", "A4"), A4)
-
-        doc = self._build_doc(
-            pagesize=page_size,
-            topMargin=top_m,
-            bottomMargin=bottom_m,
-            leftMargin=left_m,
-            rightMargin=right_m,
-            subject="Resume",
-        )
-
-        story = self.build_story(content)
-        story = self._finalize_story(story)
+    def header_footer(self, content: dict):
+        body_font = self.brand.get("font_body", "Helvetica")
 
         def _resume_footer(canvas, doc_inner):
             """Subtle page number footer for multi-page resumes."""
             canvas.saveState()
-            canvas.setFont("Helvetica", 7)
+            canvas.setFont(body_font, 7)
             canvas.setFillColor(_DARK_GREY)
             canvas.drawCentredString(
                 doc_inner.pagesize[0] / 2,
@@ -557,13 +515,7 @@ class ResumeTemplate(BaseBriefingTemplate):
             )
             canvas.restoreState()
 
-        doc.build(
-            story,
-            onFirstPage=lambda c, d: None,
-            onLaterPages=_resume_footer,
-        )
-
-        return self.output_path
+        return None, _resume_footer
 
     # ------------------------------------------------------------------
     # Suppress all unused base section builders

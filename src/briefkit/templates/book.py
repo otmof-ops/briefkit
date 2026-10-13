@@ -21,7 +21,6 @@ Key differences:
 
 from __future__ import annotations
 
-from reportlab.lib.pagesizes import A3, A4, legal, letter
 from reportlab.lib.units import mm
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.platypus import KeepTogether, PageBreak, Paragraph, Spacer
@@ -52,6 +51,9 @@ class BookTemplate(BaseBriefingTemplate):
     colophon).
     """
 
+    pdf_subject = "Book"
+    supports_variants = False
+
     def build_story(self, content: dict) -> list:
         """
         Assemble the complete book story.
@@ -70,14 +72,16 @@ class BookTemplate(BaseBriefingTemplate):
         # --- Half-title page ---
         cw = getattr(self, "content_width", CONTENT_WIDTH)
         ht_size = 24
-        while stringWidth(title, "Helvetica-Bold", ht_size) > cw * 0.85 and ht_size > 16:
+        while (
+            stringWidth(title, self.brand.get("font_heading", "Helvetica-Bold"), ht_size) > cw * 0.85 and ht_size > 16
+        ):
             ht_size -= 1
         half_title_style = _ps(
             "HalfTitle",
             brand=b,
             fontSize=ht_size,
             textColor=primary,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             alignment=1,
         )
         story.append(Spacer(1, 80 * mm))
@@ -86,14 +90,16 @@ class BookTemplate(BaseBriefingTemplate):
 
         # --- Full title page ---
         ft_size = 32
-        while stringWidth(title, "Helvetica-Bold", ft_size) > cw * 0.80 and ft_size > 18:
+        while (
+            stringWidth(title, self.brand.get("font_heading", "Helvetica-Bold"), ft_size) > cw * 0.80 and ft_size > 18
+        ):
             ft_size -= 1
         title_style = _ps(
             "BookTitle",
             brand=b,
             fontSize=ft_size,
             textColor=primary,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             alignment=1,
             leading=ft_size + 8,
             spaceAfter=6 * mm,
@@ -104,7 +110,7 @@ class BookTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=16,
             textColor=secondary,
-            fontName="Helvetica-Oblique",
+            fontName=self.brand.get("font_caption", "Helvetica-Oblique"),
             alignment=1,
         )
         author_style = _ps(
@@ -197,8 +203,7 @@ class BookTemplate(BaseBriefingTemplate):
         # --- Chapters (recto — each on new page) ---
         for chapter_title, chapter_flowables in chapters:
             # Update running header for this chapter
-            if hasattr(self, "_hf_state"):
-                self._hf_state["section"] = chapter_title
+            self.hf_ctx["section"] = chapter_title
 
             # Wrap the chapter title with its first content flowable in a
             # KeepTogether block. Without this, a chapter whose first real
@@ -223,8 +228,7 @@ class BookTemplate(BaseBriefingTemplate):
             story.append(PageBreak())
 
         # Reset running header
-        if hasattr(self, "_hf_state"):
-            self._hf_state["section"] = content.get("title", "")
+        self.hf_ctx["section"] = content.get("title", "")
 
         # --- Back matter ---
         if glossary_flowables:
@@ -389,7 +393,7 @@ class BookTemplate(BaseBriefingTemplate):
         letter_style = _ps(
             "GlossaryLetter",
             brand=self.brand,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             fontSize=12,
             textColor=primary,
             spaceBefore=8,
@@ -458,72 +462,9 @@ class BookTemplate(BaseBriefingTemplate):
         flowables.append(Paragraph(f"Typeset by briefkit on {self.date_str}.", cp_style))
         return flowables
 
-    # ------------------------------------------------------------------
-    # Override generate() to suppress headers/footers on front matter
-    # ------------------------------------------------------------------
-
-    def generate(self):
-        """Generate the book PDF with clean front matter (no headers/footers)."""
-        import sys
-
-        from briefkit.doc_ids import get_or_assign_doc_id
-        from briefkit.extractor import extract_content
-
-        verbose = self.config.get("_cli", {}).get("verbose", False)
-
-        content = extract_content(str(self.target_path), config=self.config, level=self.level)
-        if verbose:
-            n_sub = len(content.get("subsystems", []))
-            wc = content.get("metrics", {}).get("word_count", 0)
-            print(f"  Extracted: {n_sub} subsystems, {wc} words", file=sys.stderr)
-
-        # Doc IDs
-        if self.config.get("doc_ids", {}).get("enabled", True):
-            self.doc_id = get_or_assign_doc_id(
-                self.target_path,
-                level=self.level,
-                title=content.get("title", self.target_path.name),
-                config=self.config,
-            )
-        else:
-            self.doc_id = ""
-
-        # Build header/footer for body pages only
-        # Store on self so build_story can update the running section header
-        self._hf_state = {
-            "section": content.get("title", self.target_path.name),
-            "date": self.date_str,
-            "doc_id": self.doc_id,
-        }
-        hf = make_header_footer(self._hf_state, brand=self.brand)
-
-        # Page setup
-        _PAGE_SIZES = {"A4": A4, "A3": A3, "Letter": letter, "Legal": legal}
-        layout = self.config.get("layout", {})
-        page_size = _PAGE_SIZES.get(layout.get("page_size", "A4"), A4)
-        margins = layout.get("margins", {})
-
-        doc = self._build_doc(
-            pagesize=page_size,
-            topMargin=margins.get("top", 25) * mm,
-            bottomMargin=margins.get("bottom", 22) * mm,
-            leftMargin=margins.get("left", 20) * mm,
-            rightMargin=margins.get("right", 20) * mm,
-        )
-
-        story = self.build_story(content)
-        story = self._finalize_story(story)
-
-        if verbose:
-            print(f"  Building PDF: {len(story)} flowables", file=sys.stderr)
-
-        # NO header/footer on first page (half-title), apply from later pages
-        def _blank_page(canvas, doc):
-            """Completely blank — no header, no footer."""
-            pass
-
-        doc.build(story, onFirstPage=_blank_page, onLaterPages=hf)
-        return self.output_path
+    def header_footer(self, content: dict):
+        """Clean front matter: nothing on the half-title page, the running head from the next page on."""
+        return None, make_header_footer(self.hf_ctx, brand=self.brand)
 
     # ------------------------------------------------------------------
     # Suppress unused base methods

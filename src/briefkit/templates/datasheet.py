@@ -22,11 +22,10 @@ Suitable for: technical specs, data sheets, product sheets, IT specifications.
 
 from __future__ import annotations
 
+import functools
 import re
-from pathlib import Path
 
 from reportlab.lib.colors import HexColor, white
-from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     Paragraph,
@@ -44,41 +43,35 @@ from briefkit.styles import (
     _hex,
     _ps,
     _safe_text,
-    compute_content_width,
 )
 
 # ---------------------------------------------------------------------------
 # Module-level state for custom header / footer
 # ---------------------------------------------------------------------------
 
-_ds_state: dict = {
-    "title": "",
-    "brand": {},
-}
 
-
-def _ds_header_footer(canvas, doc):
+def _ds_header_footer(canvas, doc, state):
     """
     Datasheet header/footer.
 
     Header: title left-aligned, page number right-aligned.
     """
     canvas.saveState()
-    b = _get_brand(_ds_state.get("brand"))
+    b = _get_brand(state.get("brand"))
     page_width, page_height = doc.pagesize
 
     caption_c = HexColor(b.get("caption", "#666666"))
     top_y = page_height - doc.topMargin + 8 * mm
 
     # Header — title left
-    title = _ds_state.get("title", "")
+    title = state.get("title", "")
     if title:
-        canvas.setFont(b.get("font_body", "Helvetica"), 8)
+        canvas.setFont(b.get("font_body", b.get("font_body", "Helvetica")), 8)
         canvas.setFillColor(caption_c)
         canvas.drawString(doc.leftMargin, top_y, title)
 
     # Header — page number right
-    canvas.setFont(b.get("font_body", "Helvetica"), 8)
+    canvas.setFont(b.get("font_body", b.get("font_body", "Helvetica")), 8)
     canvas.setFillColor(caption_c)
     canvas.drawRightString(
         page_width - doc.rightMargin,
@@ -137,6 +130,10 @@ class DatasheetTemplate(BaseBriefingTemplate):
     Modelled on Smartsheet IT specification layouts.
     """
 
+    pdf_subject = "Technical Datasheet"
+    design_page_size = "Letter"
+    supports_variants = False
+
     # ------------------------------------------------------------------
     # Story assembly
     # ------------------------------------------------------------------
@@ -181,7 +178,7 @@ class DatasheetTemplate(BaseBriefingTemplate):
             "DSTitle",
             brand=self.brand,
             fontSize=16,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=_hex(self.brand, "body_text"),
             alignment=0,
             spaceAfter=2,
@@ -221,7 +218,7 @@ class DatasheetTemplate(BaseBriefingTemplate):
             "DSLabel",
             brand=self.brand,
             fontSize=9,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=_hex(self.brand, "secondary"),
             leading=12,
         )
@@ -229,7 +226,7 @@ class DatasheetTemplate(BaseBriefingTemplate):
             "DSHeaderCell",
             brand=self.brand,
             fontSize=10,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor="#FFFFFF",
             leading=13,
         )
@@ -329,7 +326,7 @@ class DatasheetTemplate(BaseBriefingTemplate):
             "DSProjLabel",
             brand=self.brand,
             fontSize=9,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=_hex(self.brand, "secondary"),
             leading=12,
         )
@@ -344,7 +341,7 @@ class DatasheetTemplate(BaseBriefingTemplate):
             "DSBanner",
             brand=self.brand,
             fontSize=10,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor="#FFFFFF",
             leading=13,
         )
@@ -439,7 +436,7 @@ class DatasheetTemplate(BaseBriefingTemplate):
             "DSTechBanner",
             brand=self.brand,
             fontSize=10,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor="#FFFFFF",
             leading=13,
         )
@@ -447,7 +444,7 @@ class DatasheetTemplate(BaseBriefingTemplate):
             "DSCompHeader",
             brand=self.brand,
             fontSize=9,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor="#FFFFFF",
             leading=12,
             alignment=1,
@@ -456,7 +453,7 @@ class DatasheetTemplate(BaseBriefingTemplate):
             "DSTechLabel",
             brand=self.brand,
             fontSize=9,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=_hex(self.brand, "secondary"),
             leading=12,
         )
@@ -622,61 +619,13 @@ class DatasheetTemplate(BaseBriefingTemplate):
 
         return pairs[:20]
 
-    # ------------------------------------------------------------------
-    # Override generate() for custom layout
-    # ------------------------------------------------------------------
+    def prepare(self, content: dict) -> None:
+        self.hf_ctx["title"] = content.get("title", self.target_path.name.replace("-", " ").title())
+        self.hf_ctx["brand"] = self.brand
 
-    def generate(self) -> Path:
-        """Generate the datasheet PDF with Letter size and custom header/footer."""
-        self.output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        content = self.extract_content()
-        title = content.get("title", self.target_path.name.replace("-", " ").title())
-
-        # Doc ID (optional)
-        doc_ids_cfg = self.config.get("doc_ids", {})
-        if doc_ids_cfg.get("enabled", True):
-            from briefkit.doc_ids import get_or_assign_doc_id
-
-            self.doc_id = get_or_assign_doc_id(
-                self.target_path,
-                self.level,
-                title,
-                config=self.config,
-            )
-
-        # Populate module-level state for header/footer
-        _ds_state["title"] = title
-        _ds_state["brand"] = self.brand
-
-        # Recalculate content width for Letter
-        layout = self.config.get("layout", {})
-        margins = layout.get("margins", {})
-        self.content_width = compute_content_width(letter, margins)
-
-        top_m = margins.get("top", 25) * mm
-        bottom_m = margins.get("bottom", 22) * mm
-        left_m = margins.get("left", 20) * mm
-        right_m = margins.get("right", 20) * mm
-
-        doc = self._build_doc(
-            pagesize=letter,
-            topMargin=top_m,
-            bottomMargin=bottom_m,
-            leftMargin=left_m,
-            rightMargin=right_m,
-            subject="Technical Datasheet",
-        )
-
-        story = self.build_story(content)
-        story = self._finalize_story(story)
-        doc.build(
-            story,
-            onFirstPage=_ds_header_footer,
-            onLaterPages=_ds_header_footer,
-        )
-
-        return self.output_path
+    def header_footer(self, content: dict):
+        callback = functools.partial(_ds_header_footer, state=self.hf_ctx)
+        return callback, callback
 
     # ------------------------------------------------------------------
     # Suppress unused base section builders

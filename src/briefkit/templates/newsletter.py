@@ -24,10 +24,7 @@ internal comms, update summaries.
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from reportlab.lib.colors import white
-from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     PageBreak,
@@ -88,6 +85,11 @@ class NewsletterTemplate(BaseBriefingTemplate):
     accent rules, pull quotes, and a relaxed editorial layout.
     No TOC, no bibliography, no formal academic structure.
     """
+
+    pdf_subject = "Newsletter"
+    design_page_size = "A4"
+    design_margins_mm = {"top": 20, "bottom": 18, "left": 18, "right": 18}
+    supports_variants = False
 
     # ------------------------------------------------------------------
     # build_story — completely overridden for newsletter layout
@@ -181,7 +183,7 @@ class NewsletterTemplate(BaseBriefingTemplate):
             "NLBannerText",
             brand=self.brand,
             fontSize=20,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=white,
             alignment=1,
             spaceAfter=2,
@@ -269,7 +271,7 @@ class NewsletterTemplate(BaseBriefingTemplate):
             "NLFeatureHead",
             brand=self.brand,
             fontSize=18,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=_hex(self.brand, "primary"),
             spaceAfter=6,
             spaceBefore=4,
@@ -372,7 +374,7 @@ class NewsletterTemplate(BaseBriefingTemplate):
             f"NLArticleHead{idx}",
             brand=self.brand,
             fontSize=14,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             textColor=_hex(self.brand, "primary"),
             spaceAfter=4,
             spaceBefore=2,
@@ -527,61 +529,9 @@ class NewsletterTemplate(BaseBriefingTemplate):
 
         return flowables
 
-    # ------------------------------------------------------------------
-    # Override generate() for custom header/footer
-    # ------------------------------------------------------------------
-
-    def generate(self) -> Path:
-        """Generate the newsletter PDF with minimal header/footer."""
-        self.output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        content = self.extract_content()
-        title = content.get("title", self.target_path.name.replace("-", " ").title())
-
-        # Doc ID (optional)
-        doc_ids_cfg = self.config.get("doc_ids", {})
-        if doc_ids_cfg.get("enabled", True):
-            from briefkit.doc_ids import get_or_assign_doc_id
-
-            self.doc_id = get_or_assign_doc_id(
-                self.target_path,
-                self.level,
-                title,
-                config=self.config,
-            )
-
-        # Populate header/footer state
-
-        hf = make_header_footer(
-            {"section": title, "date": self.date_str, "doc_id": self.doc_id},
-            brand=self.brand,
-        )
-
-        layout = self.config.get("layout", {})
-        margins = layout.get("margins", {})
-        top_m = margins.get("top", 20) * mm
-        bottom_m = margins.get("bottom", 18) * mm
-        left_m = margins.get("left", 18) * mm
-        right_m = margins.get("right", 18) * mm
-
-        doc = self._build_doc(
-            pagesize=A4,
-            topMargin=top_m,
-            bottomMargin=bottom_m,
-            leftMargin=left_m,
-            rightMargin=right_m,
-            subject="Newsletter",
-        )
-
-        story = self.build_story(content)
-        story = self._finalize_story(story)
-        doc.build(
-            story,
-            onFirstPage=lambda c, d: None,
-            onLaterPages=hf,
-        )
-
-        return self.output_path
+    def header_footer(self, content: dict):
+        """No chrome on the banner page; the running head from page 2."""
+        return None, make_header_footer(self.hf_ctx, brand=self.brand)
 
     # ------------------------------------------------------------------
     # Suppress unused base section builders

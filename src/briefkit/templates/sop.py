@@ -20,10 +20,8 @@ Key differences:
 from __future__ import annotations
 
 import re
-from pathlib import Path
 
 from reportlab.lib.colors import HexColor, black
-from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     PageBreak,
@@ -75,6 +73,11 @@ class SOPTemplate(BaseBriefingTemplate):
     Acronyms, then Procedure steps).
     """
 
+    pdf_subject = "SOP"
+    design_page_size = "Letter"
+    design_margins_mm = {"top": 25, "bottom": 22, "left": 25, "right": 25}
+    supports_variants = False
+
     def build_story(self, content: dict) -> list:
         """
         Assemble the SOP story:
@@ -101,7 +104,7 @@ class SOPTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=_HEAD_SIZE,
             textColor=black,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             spaceBefore=8,
             spaceAfter=4,
         )
@@ -117,7 +120,7 @@ class SOPTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=_BODY_SIZE,
             textColor=black,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             leading=13,
         )
         cell_grey = _ps(
@@ -125,7 +128,7 @@ class SOPTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=_HEAD_SIZE,
             textColor=black,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             leading=14,
             alignment=1,
         )
@@ -344,50 +347,11 @@ class SOPTemplate(BaseBriefingTemplate):
 
         return story
 
-    # ------------------------------------------------------------------
-    # Override generate() for SOP-specific header/footer
-    # ------------------------------------------------------------------
-
-    def generate(self) -> Path:
-        """Generate the SOP PDF with custom header and footer."""
-        self.output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        content = self.extract_content()
-
-        # Doc ID
-        doc_ids_cfg = self.config.get("doc_ids", {})
-        if doc_ids_cfg.get("enabled", True):
-            from briefkit.doc_ids import get_or_assign_doc_id
-
-            self.doc_id = get_or_assign_doc_id(
-                self.target_path,
-                self.level,
-                content.get("title", ""),
-                config=self.config,
-            )
-
-        # Header/footer state
-
-        layout = self.config.get("layout", {})
-        margins = layout.get("margins", {})
-        top_m = margins.get("top", 25) * mm
-        bottom_m = margins.get("bottom", 22) * mm
-        left_m = margins.get("left", 25) * mm
-        right_m = margins.get("right", 25) * mm
-
-        doc = self._build_doc(
-            pagesize=letter,
-            topMargin=top_m,
-            bottomMargin=bottom_m,
-            leftMargin=left_m,
-            rightMargin=right_m,
-            subject="SOP",
-        )
-
-        story = self.build_story(content)
-        story = self._finalize_story(story)
-
+    def header_footer(self, content: dict):
         revision_text = f"Revision: {self.doc_id}" if self.doc_id else ""
+        left_m = self.geometry.margins.left
+        body_font = self.brand.get("font_body", "Helvetica")
+        heading_font = self.brand.get("font_heading", "Helvetica-Bold")
 
         def _sop_header_footer(canvas, doc_inner):
             """SOP header and footer on every page."""
@@ -395,7 +359,7 @@ class SOPTemplate(BaseBriefingTemplate):
             pw = doc_inner.pagesize[0]
 
             # Header: centered title
-            canvas.setFont("Helvetica-Bold", 10)
+            canvas.setFont(heading_font, 10)
             canvas.setFillColor(black)
             canvas.drawCentredString(
                 pw / 2,
@@ -405,7 +369,7 @@ class SOPTemplate(BaseBriefingTemplate):
 
             # Header right: revision
             if revision_text:
-                canvas.setFont("Helvetica", 8)
+                canvas.setFont(body_font, 8)
                 canvas.drawRightString(
                     pw - left_m,
                     doc_inner.pagesize[1] - 15 * mm,
@@ -413,7 +377,7 @@ class SOPTemplate(BaseBriefingTemplate):
                 )
 
             # Footer: page number
-            canvas.setFont("Helvetica", 8)
+            canvas.setFont(body_font, 8)
             canvas.drawCentredString(
                 pw / 2,
                 12 * mm,
@@ -422,13 +386,7 @@ class SOPTemplate(BaseBriefingTemplate):
 
             canvas.restoreState()
 
-        doc.build(
-            story,
-            onFirstPage=_sop_header_footer,
-            onLaterPages=_sop_header_footer,
-        )
-
-        return self.output_path
+        return _sop_header_footer, _sop_header_footer
 
     # ------------------------------------------------------------------
     # Suppress unused base section builders

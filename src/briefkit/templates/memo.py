@@ -18,10 +18,7 @@ Key differences:
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from reportlab.lib.colors import HexColor, black
-from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     Paragraph,
@@ -50,6 +47,11 @@ class MemoTemplate(BaseBriefingTemplate):
     Wider margins matching standard memo layout conventions.
     """
 
+    pdf_subject = "Memo"
+    design_page_size = "Letter"
+    margin_overrides_mm = {"left": 30, "right": 25}
+    supports_variants = False
+
     def build_story(self, content: dict) -> list:
         """
         Assemble the memo story:
@@ -77,7 +79,7 @@ class MemoTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=14,
             textColor=black,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             spaceAfter=2,
         )
         body_style = _ps(
@@ -93,7 +95,7 @@ class MemoTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=10,
             textColor=black,
-            fontName="Helvetica-Oblique",
+            fontName=self.brand.get("font_caption", "Helvetica-Oblique"),
             spaceBefore=12,
         )
 
@@ -206,60 +208,9 @@ class MemoTemplate(BaseBriefingTemplate):
                 flowables.extend(self.render_blocks([block]))
         return flowables
 
-    # ------------------------------------------------------------------
-    # Override generate() — no header/footer, wider margins
-    # ------------------------------------------------------------------
-
-    def generate(self) -> Path:
-        """Generate the memo PDF with no header/footer and wider margins."""
-        self.output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        content = self.extract_content()
-
-        # Doc ID (optional)
-        doc_ids_cfg = self.config.get("doc_ids", {})
-        if doc_ids_cfg.get("enabled", True):
-            from briefkit.doc_ids import get_or_assign_doc_id
-
-            self.doc_id = get_or_assign_doc_id(
-                self.target_path,
-                self.level,
-                content.get("title", ""),
-                config=self.config,
-            )
-
-        layout = self.config.get("layout", {})
-        margins = layout.get("margins", {})
-        top_m = margins.get("top", 25) * mm
-        bottom_m = margins.get("bottom", 22) * mm
-        # Wider margins for memo
-        left_m = 30 * mm
-        right_m = 25 * mm
-
-        # Recompute content width with memo margins
-        pw = letter[0]
-        self.content_width = pw - left_m - right_m
-
-        doc = self._build_doc(
-            pagesize=letter,
-            topMargin=top_m,
-            bottomMargin=bottom_m,
-            leftMargin=left_m,
-            rightMargin=right_m,
-            subject="Memo",
-        )
-
-        story = self.build_story(content)
-        story = self._finalize_story(story)
-
-        # No header/footer — memo is self-contained
-        doc.build(
-            story,
-            onFirstPage=lambda c, d: None,
-            onLaterPages=lambda c, d: None,
-        )
-
-        return self.output_path
+    def header_footer(self, content: dict):
+        """A memo is self-contained: no header, no footer."""
+        return None, None
 
     # ------------------------------------------------------------------
     # Suppress unused base section builders

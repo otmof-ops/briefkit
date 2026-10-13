@@ -20,6 +20,7 @@ from briefkit.extractor import parse_markdown
 from briefkit.generator import (
     BaseBriefingTemplate,
     HierarchyTreeFlowable,
+    SectionNumbering,
     build_bar_chart,
     build_callout_box,
     build_data_table,
@@ -47,7 +48,12 @@ class BriefingTemplate(BaseBriefingTemplate):
     def build_body(self, content: dict) -> list:
         """
         Build the body section dispatched by level.
+
+        Sections are numbered from the base template's first free number
+        (after the executive summary and dashboard, which may be skipped),
+        and every heading emitted is recorded for the table of contents.
         """
+        self._num = SectionNumbering(getattr(self, "_body_section_start", 3))
         if self.level == 3:
             return self._build_doc_set_body(content)
         elif self.level == 2:
@@ -57,6 +63,10 @@ class BriefingTemplate(BaseBriefingTemplate):
         else:
             return self._build_root_body(content)
 
+    def body_toc_entries(self, content: dict) -> list[tuple[int, str]] | None:
+        num = getattr(self, "_num", None)
+        return list(num.entries) if num is not None else None
+
     # ------------------------------------------------------------------
     # Level 3 — Documentation set
     # ------------------------------------------------------------------
@@ -65,7 +75,7 @@ class BriefingTemplate(BaseBriefingTemplate):
         flowables = []
 
         # 3. Context and Significance
-        flowables.append(Paragraph("3. Context and Significance", self.styles["STYLE_H1"]))
+        flowables.append(Paragraph(self._num.section("Context and Significance"), self.styles["STYLE_H1"]))
         flowables.append(Spacer(1, 3 * mm))  # ~3mm in points
         flowables.append(
             Paragraph(
@@ -86,7 +96,7 @@ class BriefingTemplate(BaseBriefingTemplate):
 
         # 4. Technical Deep-Dive
         subsystems = content.get("subsystems", [])
-        flowables.append(Paragraph("4. Technical Deep-Dive", self.styles["STYLE_H1"]))
+        flowables.append(Paragraph(self._num.section("Technical Deep-Dive"), self.styles["STYLE_H1"]))
         flowables.append(Spacer(1, 2 * mm))
         if subsystems:
             flowables.append(
@@ -98,14 +108,14 @@ class BriefingTemplate(BaseBriefingTemplate):
             flowables.append(Spacer(1, 3 * mm))
 
             for idx, sub in enumerate(subsystems, start=1):
-                flowables.append(Paragraph(f"4.{idx} {sub['name']}", self.styles["STYLE_H2"]))
+                flowables.append(_safe_para(self._num.sub(idx, sub["name"]), self.styles["STYLE_H2"]))
                 flowables.append(Spacer(1, 2 * mm))
 
                 blocks = sub.get("blocks") or parse_markdown(sub.get("content", ""))
                 limit = self.body_block_limit()
                 rendered = 0
                 for block in blocks:
-                    if block["type"] == "heading" and block["level"] <= 2:
+                    if block["type"] == "heading" and block["level"] == 1:
                         continue
                     for fl in self.render_blocks([block]):
                         flowables.append(fl)
@@ -156,7 +166,7 @@ class BriefingTemplate(BaseBriefingTemplate):
                 )
 
         # 5. Key Results and Data
-        flowables.append(Paragraph("5. Key Results and Data", self.styles["STYLE_H1"]))
+        flowables.append(Paragraph(self._num.section("Key Results and Data"), self.styles["STYLE_H1"]))
         flowables.append(Spacer(1, 3 * mm))
 
         all_result_tables = []
@@ -192,7 +202,7 @@ class BriefingTemplate(BaseBriefingTemplate):
 
         # 6. Engineering Brilliance
         brilliance = content.get("brilliance_summary", "")
-        flowables.append(Paragraph("6. Engineering Brilliance", self.styles["STYLE_H1"]))
+        flowables.append(Paragraph(self._num.section("Engineering Brilliance"), self.styles["STYLE_H1"]))
         flowables.append(Spacer(1, 3 * mm))
         if brilliance:
             flowables.append(
@@ -236,7 +246,7 @@ class BriefingTemplate(BaseBriefingTemplate):
         flowables.append(PageBreak())
 
         # 7. Practical Applications
-        flowables.append(Paragraph("7. Practical Applications", self.styles["STYLE_H1"]))
+        flowables.append(Paragraph(self._num.section("Practical Applications"), self.styles["STYLE_H1"]))
         flowables.append(Spacer(1, 3 * mm))
         flowables.append(
             Paragraph(
@@ -275,7 +285,7 @@ class BriefingTemplate(BaseBriefingTemplate):
         doc_sets = content.get("doc_sets", [])
 
         # 3. Subject Map
-        flowables.append(Paragraph("3. Subject Map", self.styles["STYLE_H1"]))
+        flowables.append(Paragraph(self._num.section("Subject Map"), self.styles["STYLE_H1"]))
         flowables.append(Spacer(1, 3 * mm))
         flowables.append(
             Paragraph(
@@ -293,7 +303,7 @@ class BriefingTemplate(BaseBriefingTemplate):
             flowables.append(Spacer(1, 4 * mm))
 
         # 4. Doc Set Directory
-        flowables.append(Paragraph("4. Doc Set Directory", self.styles["STYLE_H1"]))
+        flowables.append(Paragraph(self._num.section("Doc Set Directory"), self.styles["STYLE_H1"]))
         flowables.append(Spacer(1, 3 * mm))
         if doc_sets:
             dir_rows = []
@@ -324,7 +334,7 @@ class BriefingTemplate(BaseBriefingTemplate):
 
         # 5. Thematic Analysis
         flowables.append(PageBreak())
-        flowables.append(Paragraph("5. Thematic Analysis", self.styles["STYLE_H1"]))
+        flowables.append(Paragraph(self._num.section("Thematic Analysis"), self.styles["STYLE_H1"]))
         flowables.append(Spacer(1, 3 * mm))
         flowables.append(
             Paragraph(
@@ -351,7 +361,7 @@ class BriefingTemplate(BaseBriefingTemplate):
                 leftIndent=12,
             )
             for i, (cluster, items) in enumerate(list(clusters.items())[:6], start=1):
-                flowables.append(Paragraph(f"5.{i} {cluster}", self.styles["STYLE_H2"]))
+                flowables.append(_safe_para(self._num.sub(i, cluster), self.styles["STYLE_H2"]))
                 flowables.append(Spacer(1, 2 * mm))
                 flowables.append(
                     Paragraph(
@@ -366,7 +376,7 @@ class BriefingTemplate(BaseBriefingTemplate):
                 flowables.append(Spacer(1, 3 * mm))
 
         # 6. Historical Timeline
-        flowables.append(Paragraph("6. Historical Timeline", self.styles["STYLE_H1"]))
+        flowables.append(Paragraph(self._num.section("Historical Timeline"), self.styles["STYLE_H1"]))
         flowables.append(Spacer(1, 3 * mm))
         all_years: list[int] = []
         for ds in doc_sets:
@@ -379,7 +389,7 @@ class BriefingTemplate(BaseBriefingTemplate):
         flowables.append(Spacer(1, 4 * mm))
 
         # 7. Reading Recommendations
-        flowables.append(Paragraph("7. Reading Recommendations", self.styles["STYLE_H1"]))
+        flowables.append(Paragraph(self._num.section("Reading Recommendations"), self.styles["STYLE_H1"]))
         flowables.append(Spacer(1, 3 * mm))
         guide = content.get("guide_content", "")
         if guide:
@@ -413,7 +423,7 @@ class BriefingTemplate(BaseBriefingTemplate):
         subjects = content.get("subjects", [])
 
         # 3. Division Overview
-        flowables.append(Paragraph("3. Division Overview", self.styles["STYLE_H1"]))
+        flowables.append(Paragraph(self._num.section("Division Overview"), self.styles["STYLE_H1"]))
         flowables.append(Spacer(1, 3 * mm))
         overview = content.get("overview", "")
         if overview:
@@ -435,7 +445,7 @@ class BriefingTemplate(BaseBriefingTemplate):
 
         # 4. Division Dashboard
         flowables.append(PageBreak())
-        flowables.append(Paragraph("4. Division Dashboard", self.styles["STYLE_H1"]))
+        flowables.append(Paragraph(self._num.section("Division Dashboard"), self.styles["STYLE_H1"]))
         flowables.append(Spacer(1, 3 * mm))
 
         if subjects:
@@ -464,7 +474,7 @@ class BriefingTemplate(BaseBriefingTemplate):
 
         # 5. Division Map
         flowables.append(PageBreak())
-        flowables.append(Paragraph("5. Division Map", self.styles["STYLE_H1"]))
+        flowables.append(Paragraph(self._num.section("Division Map"), self.styles["STYLE_H1"]))
         flowables.append(Spacer(1, 3 * mm))
         if subjects:
             tree_data = [(0, content.get("title", "Division"))]
@@ -475,11 +485,11 @@ class BriefingTemplate(BaseBriefingTemplate):
 
         # 6. Subject Summaries
         flowables.append(PageBreak())
-        flowables.append(Paragraph("6. Subject Summaries", self.styles["STYLE_H1"]))
+        flowables.append(Paragraph(self._num.section("Subject Summaries"), self.styles["STYLE_H1"]))
         flowables.append(Spacer(1, 3 * mm))
 
         for i, subj in enumerate(subjects, start=1):
-            flowables.append(Paragraph(f"6.{i} {subj.get('name', 'Unknown')}", self.styles["STYLE_H2"]))
+            flowables.append(_safe_para(self._num.sub(i, subj.get("name", "Unknown")), self.styles["STYLE_H2"]))
             flowables.append(Spacer(1, 2 * mm))
             subj_overview = subj.get("overview", "")
             if subj_overview:
@@ -496,7 +506,7 @@ class BriefingTemplate(BaseBriefingTemplate):
 
         # 7. Reading Paths
         flowables.append(PageBreak())
-        flowables.append(Paragraph("7. Reading Paths", self.styles["STYLE_H1"]))
+        flowables.append(Paragraph(self._num.section("Reading Paths"), self.styles["STYLE_H1"]))
         flowables.append(Spacer(1, 3 * mm))
 
         path_style = _ps(
@@ -528,7 +538,7 @@ class BriefingTemplate(BaseBriefingTemplate):
     def _build_root_body(self, content: dict) -> list:
         flowables = []
 
-        flowables.append(Paragraph("3. Overview", self.styles["STYLE_H1"]))
+        flowables.append(Paragraph(self._num.section("Overview"), self.styles["STYLE_H1"]))
         flowables.append(Spacer(1, 3 * mm))
         overview = content.get("overview", "")
         if overview:
@@ -544,7 +554,7 @@ class BriefingTemplate(BaseBriefingTemplate):
             )
 
         flowables.append(PageBreak())
-        flowables.append(Paragraph("4. Dashboard", self.styles["STYLE_H1"]))
+        flowables.append(Paragraph(self._num.section("Dashboard"), self.styles["STYLE_H1"]))
         flowables.append(Spacer(1, 3 * mm))
         metrics = content.get("metrics", {})
         dashboard = build_metric_dashboard(
@@ -562,7 +572,7 @@ class BriefingTemplate(BaseBriefingTemplate):
         guide = content.get("guide_content", "")
         if guide:
             flowables.append(PageBreak())
-            flowables.append(Paragraph("5. Guide", self.styles["STYLE_H1"]))
+            flowables.append(Paragraph(self._num.section("Guide"), self.styles["STYLE_H1"]))
             flowables.append(Spacer(1, 3 * mm))
             for block in parse_markdown(guide[:3000])[:30]:
                 for fl in self.render_blocks([block]):

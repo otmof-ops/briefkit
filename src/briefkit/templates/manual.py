@@ -165,7 +165,7 @@ class ManualTemplate(BaseBriefingTemplate):
 
         # Back cover
         if not should_skip(cfg, "back_cover"):
-            story.extend(self.build_back_cover())
+            self._pending_back_cover = self.build_back_cover()
 
         return story
 
@@ -369,7 +369,7 @@ class ManualTemplate(BaseBriefingTemplate):
             brand=self.brand,
             fontSize=9,
             textColor=_hex(self.brand, "caption"),
-            fontName="Helvetica-Oblique",
+            fontName=self.brand.get("font_caption", "Helvetica-Oblique"),
             leftIndent=16,
         )
 
@@ -383,7 +383,7 @@ class ManualTemplate(BaseBriefingTemplate):
             for block in blocks:
                 btype = block["type"]
 
-                if btype == "heading" and block["level"] <= 2:
+                if btype == "heading" and block["level"] == 1:
                     continue
 
                 if btype == "list_item":
@@ -497,7 +497,7 @@ class ManualTemplate(BaseBriefingTemplate):
         q_style = _ps(
             "TroubleshootQ",
             brand=self.brand,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             fontSize=10,
             textColor=_hex(self.brand, "primary"),
             leading=14,

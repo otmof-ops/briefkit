@@ -60,7 +60,7 @@ class AcademicTemplate(BaseBriefingTemplate):
             brand=b,
             fontSize=24,
             textColor=primary,
-            fontName="Helvetica-Bold",
+            fontName=self.brand.get("font_heading", "Helvetica-Bold"),
             alignment=1,
             leading=30,
         )
@@ -152,7 +152,7 @@ class AcademicTemplate(BaseBriefingTemplate):
                     brand=b,
                     fontSize=9,
                     textColor=caption_c,
-                    fontName="Helvetica-Oblique",
+                    fontName=self.brand.get("font_caption", "Helvetica-Oblique"),
                 )
                 story.append(
                     Paragraph(
@@ -394,7 +394,7 @@ class AcademicTemplate(BaseBriefingTemplate):
             limit = self.body_block_limit()
             rendered = 0
             for block in blocks:
-                if block["type"] == "heading" and block["level"] <= 2:
+                if block["type"] == "heading" and block["level"] == 1:
                     continue
                 for fl in self.render_blocks([block]):
                     flowables.append(fl)

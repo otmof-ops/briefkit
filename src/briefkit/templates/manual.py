@@ -37,17 +37,17 @@ from briefkit.templates._helpers import should_skip
 
 # Regex patterns for safety extractions
 _WARNING_PATTERN = re.compile(
-    r'(?:^|\n)[\*\-]?\s*(?:>?\s*)?(WARNING|CAUTION|DANGER|NOTICE|IMPORTANT)[:\s]+([^\n]{20,300})',
+    r"(?:^|\n)[\*\-]?\s*(?:>?\s*)?(WARNING|CAUTION|DANGER|NOTICE|IMPORTANT)[:\s]+([^\n]{20,300})",
     re.IGNORECASE | re.MULTILINE,
 )
 
 # FAQ / troubleshooting patterns
 _FAQ_PATTERN = re.compile(
-    r'(?:^|\n)(?:\*\*)?(?:Q:|Question:)\s*(.{10,200}?)\n+(?:\*\*)?(?:A:|Answer:)\s*(.{10,400})',
+    r"(?:^|\n)(?:\*\*)?(?:Q:|Question:)\s*(.{10,200}?)\n+(?:\*\*)?(?:A:|Answer:)\s*(.{10,400})",
     re.IGNORECASE | re.MULTILINE,
 )
 _STEP_PATTERN = re.compile(
-    r'(?:^|\n)\d+[\.\)]\s+(.{10,300})',
+    r"(?:^|\n)\d+[\.\)]\s+(.{10,300})",
     re.MULTILINE,
 )
 
@@ -67,34 +67,42 @@ class ManualTemplate(BaseBriefingTemplate):
         story = []
 
         # Cover
-        story.extend(build_cover_page(
-            title    = content.get("title", self.target_path.name.replace("-", " ").title()),
-            subtitle = "Technical Manual",
-            path     = str(self.target_path),
-            level    = self.level,
-            date     = self.date,
-            doc_id   = self.doc_id,
-            brand    = self.brand,
-            content_width = self.content_width,
-        ))
+        story.extend(
+            build_cover_page(
+                title=content.get("title", self.target_path.name.replace("-", " ").title()),
+                subtitle="Technical Manual",
+                path=str(self.target_path),
+                level=self.level,
+                date=self.date,
+                doc_id=self.doc_id,
+                brand=self.brand,
+                content_width=self.content_width,
+            )
+        )
 
         # Classification banner
-        story.append(build_classification_banner(
-            self.level, str(self.target_path), brand=self.brand, content_width=self.content_width
-        ))
+        story.append(
+            build_classification_banner(
+                self.level, str(self.target_path), brand=self.brand, content_width=self.content_width
+            )
+        )
         story.append(Spacer(1, 2 * mm))
 
         cfg = self.config
         # Pre-build sections
-        revision_flowables    = [] if should_skip(cfg, "revision_history") else self._build_revision_history(content)
-        safety_flowables      = [] if should_skip(cfg, "safety_warnings")  else self._build_safety_warnings(content)
-        scope_flowables       = [] if should_skip(cfg, "scope")            else self._build_scope(content)
-        procedures_flowables  = self._build_procedures(content)
-        ref_tables_flowables  = [] if should_skip(cfg, "reference_tables") else self._build_reference_tables(content)
+        revision_flowables = [] if should_skip(cfg, "revision_history") else self._build_revision_history(content)
+        safety_flowables = [] if should_skip(cfg, "safety_warnings") else self._build_safety_warnings(content)
+        scope_flowables = [] if should_skip(cfg, "scope") else self._build_scope(content)
+        procedures_flowables = self._build_procedures(content)
+        ref_tables_flowables = [] if should_skip(cfg, "reference_tables") else self._build_reference_tables(content)
         troubleshoot_flowables = [] if should_skip(cfg, "troubleshooting") else self._build_troubleshooting(content)
-        bib_flowables         = [] if should_skip(cfg, "bibliography") else self.build_bibliography(
-            content.get("bibliography", []),
-            source_type=content.get("metrics", {}).get("source_type", "DOCUMENTATION"),
+        bib_flowables = (
+            []
+            if should_skip(cfg, "bibliography")
+            else self.build_bibliography(
+                content.get("bibliography", []),
+                source_type=content.get("metrics", {}).get("source_type", "DOCUMENTATION"),
+            )
         )
 
         # TOC
@@ -192,7 +200,7 @@ class ManualTemplate(BaseBriefingTemplate):
 
         # Extract version entries as a table: Version | Date | Description
         version_pattern = re.compile(
-            r'##\s+(?:v?(\d[\d\.\-]+))\s*[\-–]\s*([^\n]+)\n+([\s\S]+?)(?=##|\Z)',
+            r"##\s+(?:v?(\d[\d\.\-]+))\s*[\-–]\s*([^\n]+)\n+([\s\S]+?)(?=##|\Z)",
             re.MULTILINE,
         )
 
@@ -200,16 +208,19 @@ class ManualTemplate(BaseBriefingTemplate):
         for m in version_pattern.finditer(raw):
             ver, date_str, desc = m.group(1), m.group(2).strip(), m.group(3).strip()
             # Truncate description
-            desc_clean = re.sub(r'\n+', ' ', desc)[:120]
+            desc_clean = re.sub(r"\n+", " ", desc)[:120]
             rows.append([ver, date_str, desc_clean])
 
         if rows:
-            flowables.extend(build_data_table(
-                ["Version", "Date", "Description"], rows,
-                title="Document Revision History",
-                brand=self.brand,
-                content_width=self.content_width,
-            ))
+            flowables.extend(
+                build_data_table(
+                    ["Version", "Date", "Description"],
+                    rows,
+                    title="Document Revision History",
+                    brand=self.brand,
+                    content_width=self.content_width,
+                )
+            )
         else:
             # Fallback: render raw content as blocks
             for block in parse_markdown(raw[:2000])[:30]:
@@ -239,7 +250,7 @@ class ManualTemplate(BaseBriefingTemplate):
         warnings: list[tuple[str, str]] = []
         for m in _WARNING_PATTERN.finditer(all_text):
             level_str = m.group(1).upper()
-            text      = m.group(2).strip()
+            text = m.group(2).strip()
             if (level_str, text[:40]) not in {(w, t[:40]) for w, t in warnings}:
                 warnings.append((level_str, text))
             if len(warnings) >= 15:
@@ -250,29 +261,31 @@ class ManualTemplate(BaseBriefingTemplate):
 
         # Map levels to callout box types
         level_to_box = {
-            "WARNING":   "warning",
-            "DANGER":    "warning",
-            "CAUTION":   "takeaway",
-            "NOTICE":    "insight",
+            "WARNING": "warning",
+            "DANGER": "warning",
+            "CAUTION": "takeaway",
+            "NOTICE": "insight",
             "IMPORTANT": "insight",
         }
 
         flowables = []
         flowables.append(Paragraph("Safety Warnings", self.styles["STYLE_H1"]))
         flowables.append(Spacer(1, 2 * mm))
-        flowables.append(Paragraph(
-            "Read all safety warnings before operating or working with this system. "
-            "Failure to observe these warnings may result in personal injury, equipment "
-            "damage, or hazardous conditions.",
-            self.styles["STYLE_BODY"],
-        ))
+        flowables.append(
+            Paragraph(
+                "Read all safety warnings before operating or working with this system. "
+                "Failure to observe these warnings may result in personal injury, equipment "
+                "damage, or hazardous conditions.",
+                self.styles["STYLE_BODY"],
+            )
+        )
         flowables.append(Spacer(1, 3 * mm))
 
         for level_str, text in warnings:
             box_type = level_to_box.get(level_str, "warning")
-            flowables.append(build_callout_box(
-                f"{level_str}: {text}", box_type, brand=self.brand, content_width=self.content_width
-            ))
+            flowables.append(
+                build_callout_box(f"{level_str}: {text}", box_type, brand=self.brand, content_width=self.content_width)
+            )
 
         return flowables
 
@@ -289,32 +302,35 @@ class ManualTemplate(BaseBriefingTemplate):
         flowables.append(Spacer(1, 2 * mm))
 
         overview = content.get("overview", "")
-        title    = content.get("title", "this document")
+        title = content.get("title", "this document")
 
         if overview:
             for block in parse_markdown(overview[:1500])[:15]:
                 flowables.extend(self.render_blocks([block]))
         else:
-            flowables.append(Paragraph(
-                f"This technical manual covers {title}. "
-                "It is intended for qualified personnel responsible for installation, "
-                "operation, and maintenance.",
-                self.styles["STYLE_BODY"],
-            ))
+            flowables.append(
+                Paragraph(
+                    f"This technical manual covers {title}. "
+                    "It is intended for qualified personnel responsible for installation, "
+                    "operation, and maintenance.",
+                    self.styles["STYLE_BODY"],
+                )
+            )
 
         # Applicability table if multiple subsystems
         subsystems = content.get("subsystems", [])
         if len(subsystems) > 1:
-            rows = [[str(i), sub["name"], "See Procedures section"]
-                    for i, sub in enumerate(subsystems, 1)]
+            rows = [[str(i), sub["name"], "See Procedures section"] for i, sub in enumerate(subsystems, 1)]
             flowables.append(Spacer(1, 3 * mm))
-            flowables.extend(build_data_table(
-                ["#", "Subsystem", "Coverage"],
-                rows,
-                title="Applicability",
-                brand=self.brand,
-                content_width=self.content_width,
-            ))
+            flowables.extend(
+                build_data_table(
+                    ["#", "Subsystem", "Coverage"],
+                    rows,
+                    title="Applicability",
+                    brand=self.brand,
+                    content_width=self.content_width,
+                )
+            )
 
         return flowables
 
@@ -335,26 +351,30 @@ class ManualTemplate(BaseBriefingTemplate):
 
         subsystems = content.get("subsystems", [])
         if not subsystems:
-            flowables.append(Paragraph(
-                "No procedure documents found.", self.styles["STYLE_BODY"]
-            ))
+            flowables.append(Paragraph("No procedure documents found.", self.styles["STYLE_BODY"]))
             return flowables
 
         step_style = _ps(
-            "ProcedureStep", brand=self.brand,
-            fontSize=10, textColor=_hex(self.brand, "body_text"),
-            leading=15, leftIndent=16, spaceBefore=2, spaceAfter=2,
+            "ProcedureStep",
+            brand=self.brand,
+            fontSize=10,
+            textColor=_hex(self.brand, "body_text"),
+            leading=15,
+            leftIndent=16,
+            spaceBefore=2,
+            spaceAfter=2,
         )
         _ps(
-            "ProcedureNote", brand=self.brand,
-            fontSize=9, textColor=_hex(self.brand, "caption"),
-            fontName="Helvetica-Oblique", leftIndent=16,
+            "ProcedureNote",
+            brand=self.brand,
+            fontSize=9,
+            textColor=_hex(self.brand, "caption"),
+            fontName="Helvetica-Oblique",
+            leftIndent=16,
         )
 
         for proc_num, sub in enumerate(subsystems, 1):
-            flowables.append(Paragraph(
-                f"{proc_num}. {sub['name']}", self.styles["STYLE_H2"]
-            ))
+            flowables.append(Paragraph(f"{proc_num}. {sub['name']}", self.styles["STYLE_H2"]))
             flowables.append(Spacer(1, 1.5 * mm))
 
             blocks = sub.get("blocks") or parse_markdown(sub.get("content", ""))
@@ -369,15 +389,15 @@ class ManualTemplate(BaseBriefingTemplate):
                 if btype == "list_item":
                     step_counter += 1
                     text = block.get("text", "")
-                    flowables.append(Paragraph(
-                        f"Step {step_counter}: {text}", step_style
-                    ))
+                    flowables.append(Paragraph(f"Step {step_counter}: {text}", step_style))
 
                 elif btype == "blockquote":
                     # Notes/warnings inline in procedure
-                    flowables.append(build_callout_box(
-                        block.get("text", ""), "insight", brand=self.brand, content_width=self.content_width
-                    ))
+                    flowables.append(
+                        build_callout_box(
+                            block.get("text", ""), "insight", brand=self.brand, content_width=self.content_width
+                        )
+                    )
 
                 else:
                     for fl in self.render_blocks([block]):
@@ -407,17 +427,19 @@ class ManualTemplate(BaseBriefingTemplate):
         flowables = []
         flowables.append(Paragraph("Reference Tables", self.styles["STYLE_H1"]))
         flowables.append(Spacer(1, 2 * mm))
-        flowables.append(Paragraph(
-            "Consolidated reference tables extracted from the documentation.",
-            self.styles["STYLE_BODY"],
-        ))
+        flowables.append(
+            Paragraph(
+                "Consolidated reference tables extracted from the documentation.",
+                self.styles["STYLE_BODY"],
+            )
+        )
         flowables.append(Spacer(1, 2 * mm))
 
         for section_name, tbl in all_tables[:10]:
             flowables.append(Paragraph(section_name, self.styles["STYLE_H3"]))
-            flowables.extend(build_data_table(
-                tbl["headers"], tbl["rows"], brand=self.brand, content_width=self.content_width
-            ))
+            flowables.extend(
+                build_data_table(tbl["headers"], tbl["rows"], brand=self.brand, content_width=self.content_width)
+            )
             flowables.append(Spacer(1, 2 * mm))
 
         return flowables
@@ -430,9 +452,7 @@ class ManualTemplate(BaseBriefingTemplate):
         """
         Auto-extract FAQ/Q:A: patterns from content for troubleshooting.
         """
-        all_text = "\n".join(
-            sub.get("content", "") for sub in content.get("subsystems", [])
-        )
+        all_text = "\n".join(sub.get("content", "") for sub in content.get("subsystems", []))
 
         # Check for a dedicated troubleshooting.md
         trouble_path = self.target_path / "troubleshooting.md"
@@ -450,7 +470,7 @@ class ManualTemplate(BaseBriefingTemplate):
 
         # Also look for "Problem / Solution" bullet patterns
         problem_pattern = re.compile(
-            r'(?:Problem|Issue|Error|Symptom):\s*(.{10,200}?)[\n\r]+(?:Solution|Fix|Resolution|Cause):\s*(.{10,300})',
+            r"(?:Problem|Issue|Error|Symptom):\s*(.{10,200}?)[\n\r]+(?:Solution|Fix|Resolution|Cause):\s*(.{10,300})",
             re.IGNORECASE | re.MULTILINE,
         )
         for m in problem_pattern.finditer(all_text):
@@ -466,22 +486,31 @@ class ManualTemplate(BaseBriefingTemplate):
         flowables = []
         flowables.append(Paragraph("Troubleshooting", self.styles["STYLE_H1"]))
         flowables.append(Spacer(1, 2 * mm))
-        flowables.append(Paragraph(
-            "Common issues and their solutions.",
-            self.styles["STYLE_BODY"],
-        ))
+        flowables.append(
+            Paragraph(
+                "Common issues and their solutions.",
+                self.styles["STYLE_BODY"],
+            )
+        )
         flowables.append(Spacer(1, 2 * mm))
 
         q_style = _ps(
-            "TroubleshootQ", brand=self.brand,
-            fontName="Helvetica-Bold", fontSize=10,
-            textColor=_hex(self.brand, "primary"), leading=14,
-            spaceBefore=6, spaceAfter=2,
+            "TroubleshootQ",
+            brand=self.brand,
+            fontName="Helvetica-Bold",
+            fontSize=10,
+            textColor=_hex(self.brand, "primary"),
+            leading=14,
+            spaceBefore=6,
+            spaceAfter=2,
         )
         a_style = _ps(
-            "TroubleshootA", brand=self.brand,
-            fontSize=10, textColor=_hex(self.brand, "body_text"),
-            leading=14, leftIndent=12,
+            "TroubleshootA",
+            brand=self.brand,
+            fontSize=10,
+            textColor=_hex(self.brand, "body_text"),
+            leading=14,
+            leftIndent=12,
         )
 
         for q, a in faq_pairs:

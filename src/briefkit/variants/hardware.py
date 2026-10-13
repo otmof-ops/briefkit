@@ -18,16 +18,16 @@ from briefkit.variants import DocSetVariant, _register, collect_text
 
 # Electrical unit pattern
 _ELEC_UNIT_PAT = re.compile(
-    r'\b\d+(?:\.\d+)?\s*(?:V|mV|A|mA|µA|uA|W|mW|Ω|ohm|kΩ|MHz|kHz|GHz|pF|nF|µF|uF)\b',
+    r"\b\d+(?:\.\d+)?\s*(?:V|mV|A|mA|µA|uA|W|mW|Ω|ohm|kΩ|MHz|kHz|GHz|pF|nF|µF|uF)\b",
     re.IGNORECASE,
 )
 
 # Hex address pattern
-_HEX_PAT = re.compile(r'(0x[0-9a-fA-F]{4,8})\s+([A-Za-z][A-Za-z0-9_\s]{2,30})')
+_HEX_PAT = re.compile(r"(0x[0-9a-fA-F]{4,8})\s+([A-Za-z][A-Za-z0-9_\s]{2,30})")
 
 # Memory region keywords
 _REGION_KW = re.compile(
-    r'\b(?:SRAM|DRAM|Flash|ROM|EEPROM|SDRAM|IRAM|Cache|Peripheral|Register|CSR)\b',
+    r"\b(?:SRAM|DRAM|Flash|ROM|EEPROM|SDRAM|IRAM|Cache|Peripheral|Register|CSR)\b",
     re.IGNORECASE,
 )
 
@@ -39,19 +39,19 @@ _REG_HEADERS = {"register", "offset", "address", "bit", "field", "mask", "reg", 
 
 # Boot sequence keyword map
 _BOOT_KW_MAP = [
-    (r'\b(?:BIOS|UEFI)\b',                 "BIOS / UEFI Initialisation"),
-    (r'\bsecure\s*boot\b',                 "Secure Boot Verification"),
-    (r'\bSPL\b|secondary\s+program\s+loader', "SPL (Secondary Program Loader)"),
-    (r'\bTPL\b|tertiary\s+program\s+loader',  "TPL (Tertiary Program Loader)"),
-    (r'\b(?:U-Boot|u-boot)\b',             "U-Boot Bootloader"),
-    (r'\bGRUB\b',                          "GRUB Bootloader"),
-    (r'\bstage\s+1\b',                     "Stage 1 Bootloader"),
-    (r'\bstage\s+2\b',                     "Stage 2 Bootloader"),
-    (r'\binitramfs\b',                     "initramfs Loading"),
-    (r'\bkernel\b',                        "Kernel Handoff"),
-    (r'\bsystemd\b|\binit\b',              "System Init (systemd / init)"),
-    (r'\bdevice\s+tree\b|\bDTB\b',         "Device Tree Blob (DTB)"),
-    (r'\bpower.on\s+reset\b|\bPOR\b',      "Power-On Reset"),
+    (r"\b(?:BIOS|UEFI)\b", "BIOS / UEFI Initialisation"),
+    (r"\bsecure\s*boot\b", "Secure Boot Verification"),
+    (r"\bSPL\b|secondary\s+program\s+loader", "SPL (Secondary Program Loader)"),
+    (r"\bTPL\b|tertiary\s+program\s+loader", "TPL (Tertiary Program Loader)"),
+    (r"\b(?:U-Boot|u-boot)\b", "U-Boot Bootloader"),
+    (r"\bGRUB\b", "GRUB Bootloader"),
+    (r"\bstage\s+1\b", "Stage 1 Bootloader"),
+    (r"\bstage\s+2\b", "Stage 2 Bootloader"),
+    (r"\binitramfs\b", "initramfs Loading"),
+    (r"\bkernel\b", "Kernel Handoff"),
+    (r"\bsystemd\b|\binit\b", "System Init (systemd / init)"),
+    (r"\bdevice\s+tree\b|\bDTB\b", "Device Tree Blob (DTB)"),
+    (r"\bpower.on\s+reset\b|\bPOR\b", "Power-On Reset"),
 ]
 
 
@@ -61,13 +61,18 @@ class HardwareVariant(DocSetVariant):
 
     name = "hardware"
     auto_detect_keywords = [
-        "register", "GPIO", "voltage", "datasheet",
-        "pinout", "microcontroller", "firmware",
+        "register",
+        "GPIO",
+        "voltage",
+        "datasheet",
+        "pinout",
+        "microcontroller",
+        "firmware",
     ]
 
     def build_variant_sections(self, content, flowables, styles, brand):
-        s_h1   = styles["STYLE_H1"]
-        s_h2   = styles["STYLE_H2"]
+        s_h1 = styles["STYLE_H1"]
+        s_h2 = styles["STYLE_H2"]
         s_body = styles["STYLE_BODY"]
 
         all_content = collect_text(content)
@@ -82,16 +87,16 @@ class HardwareVariant(DocSetVariant):
 
         pin_rows = self._extract_pin_table(content, all_content)
         if pin_rows:
-            flowables.extend(build_data_table(
-                ["Pin / GPIO", "Signal / Function", "Direction", "Notes"],
-                pin_rows[:20],
-                title="Pin Reference",
-                brand=brand,
-            ))
+            flowables.extend(
+                build_data_table(
+                    ["Pin / GPIO", "Signal / Function", "Direction", "Notes"],
+                    pin_rows[:20],
+                    title="Pin Reference",
+                    brand=brand,
+                )
+            )
         else:
-            flowables.append(_safe_para(
-                "Pin / GPIO reference not found in structured form — see datasheet.", s_body
-            ))
+            flowables.append(_safe_para("Pin / GPIO reference not found in structured form — see datasheet.", s_body))
 
         # --- Register map ---
         flowables.append(Spacer(1, 4 * mm))
@@ -100,19 +105,23 @@ class HardwareVariant(DocSetVariant):
 
         reg_rows = self._extract_register_map(content, all_content)
         if reg_rows:
-            flowables.extend(build_data_table(
-                ["Register / Region", "Base Address", "Size", "Description"],
-                reg_rows[:12],
-                title="Memory / Register Map",
-                brand=brand,
-            ))
+            flowables.extend(
+                build_data_table(
+                    ["Register / Region", "Base Address", "Size", "Description"],
+                    reg_rows[:12],
+                    title="Memory / Register Map",
+                    brand=brand,
+                )
+            )
         else:
-            flowables.extend(build_data_table(
-                ["Register / Region", "Base Address", "Size", "Description"],
-                [["See source documentation", "—", "—", ""]],
-                title="Memory / Register Map",
-                brand=brand,
-            ))
+            flowables.extend(
+                build_data_table(
+                    ["Register / Region", "Base Address", "Size", "Description"],
+                    [["See source documentation", "—", "—", ""]],
+                    title="Memory / Register Map",
+                    brand=brand,
+                )
+            )
 
         # --- Electrical specifications ---
         flowables.append(Spacer(1, 4 * mm))
@@ -121,16 +130,18 @@ class HardwareVariant(DocSetVariant):
 
         elec_rows = self._extract_electrical_specs(content, all_content)
         if elec_rows:
-            flowables.extend(build_data_table(
-                ["Parameter", "Value", "Notes"],
-                elec_rows[:12],
-                title="Electrical Specifications",
-                brand=brand,
-            ))
+            flowables.extend(
+                build_data_table(
+                    ["Parameter", "Value", "Notes"],
+                    elec_rows[:12],
+                    title="Electrical Specifications",
+                    brand=brand,
+                )
+            )
         else:
-            flowables.append(_safe_para(
-                "Electrical specifications not found in structured form — see datasheet.", s_body
-            ))
+            flowables.append(
+                _safe_para("Electrical specifications not found in structured form — see datasheet.", s_body)
+            )
 
         # --- Boot sequence ---
         flowables.append(Spacer(1, 4 * mm))
@@ -140,25 +151,29 @@ class HardwareVariant(DocSetVariant):
         boot_stages = self._extract_boot_sequence(all_content)
         if boot_stages:
             boot_rows = [[f"{i + 1}. {stage}", ""] for i, stage in enumerate(boot_stages)]
-            flowables.extend(build_data_table(
-                ["Boot Stage", "Notes"],
-                boot_rows,
-                title="Detected Boot Sequence",
-                brand=brand,
-            ))
+            flowables.extend(
+                build_data_table(
+                    ["Boot Stage", "Notes"],
+                    boot_rows,
+                    title="Detected Boot Sequence",
+                    brand=brand,
+                )
+            )
         else:
-            flowables.extend(build_data_table(
-                ["Boot Stage", "Notes"],
-                [
-                    ["1. Power On / Reset", ""],
-                    ["2. Stage 1 Bootloader", ""],
-                    ["3. Hardware Initialisation", ""],
-                    ["4. Stage 2 Bootloader", ""],
-                    ["5. Kernel / OS Handoff", ""],
-                ],
-                title="Generic Boot Sequence — see source documents for device specifics",
-                brand=brand,
-            ))
+            flowables.extend(
+                build_data_table(
+                    ["Boot Stage", "Notes"],
+                    [
+                        ["1. Power On / Reset", ""],
+                        ["2. Stage 1 Bootloader", ""],
+                        ["3. Hardware Initialisation", ""],
+                        ["4. Stage 2 Bootloader", ""],
+                        ["5. Kernel / OS Handoff", ""],
+                    ],
+                    title="Generic Boot Sequence — see source documents for device specifics",
+                    brand=brand,
+                )
+            )
 
         return flowables
 
@@ -186,8 +201,8 @@ class HardwareVariant(DocSetVariant):
 
         # Scan inline for GPIO pin patterns: "PA5", "GPIO5", "Pin 10"
         pin_pat = re.compile(
-            r'\b(?:GPIO|PA|PB|PC|PD|PE|PF|PG|P[0-9])[\s_]?([0-9]{1,2})\b|'
-            r'\bPin\s+(\d{1,3})\b',
+            r"\b(?:GPIO|PA|PB|PC|PD|PE|PF|PG|P[0-9])[\s_]?([0-9]{1,2})\b|"
+            r"\bPin\s+(\d{1,3})\b",
             re.IGNORECASE,
         )
         for m in pin_pat.finditer(all_content):
@@ -248,8 +263,8 @@ class HardwareVariant(DocSetVariant):
 
         # Scan inline
         spec_pat = re.compile(
-            r'([A-Za-z][A-Za-z\s_]{2,30})\s*[:\=]\s*'
-            r'(\d+(?:\.\d+)?\s*(?:V|mV|A|mA|W|mW|MHz|kHz|GHz|pF|nF|µF))',
+            r"([A-Za-z][A-Za-z\s_]{2,30})\s*[:\=]\s*"
+            r"(\d+(?:\.\d+)?\s*(?:V|mV|A|mA|W|mW|MHz|kHz|GHz|pF|nF|µF))",
             re.IGNORECASE,
         )
         for m in spec_pat.finditer(all_content):

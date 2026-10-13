@@ -1,4 +1,5 @@
 """Tests for briefkit template registry and generation."""
+
 from __future__ import annotations
 
 import copy
@@ -16,10 +17,22 @@ from briefkit.templates import get_template, list_templates
 _ALL_TEMPLATE_NAMES = list_templates()
 
 _PRESET_REQUIRED_KEYS = {
-    "primary", "secondary", "accent", "body_text", "caption",
-    "background", "rule", "success", "warning", "danger",
-    "code_bg", "table_alt",
-    "font_body", "font_heading", "font_mono", "font_caption",
+    "primary",
+    "secondary",
+    "accent",
+    "body_text",
+    "caption",
+    "background",
+    "rule",
+    "success",
+    "warning",
+    "danger",
+    "code_bg",
+    "table_alt",
+    "font_body",
+    "font_heading",
+    "font_mono",
+    "font_caption",
 }
 
 
@@ -50,11 +63,31 @@ class TestTemplateRegistry:
     def test_list_templates_includes_all_twenty_five(self):
         names = [t["name"] if isinstance(t, dict) else t for t in list_templates()]
         expected = {
-            "briefing", "report", "book", "manual", "academic",
-            "minimal", "letter", "contract", "register", "minutes", "novel",
-            "proposal", "policy", "invoice", "quote", "certificate", "resume",
-            "evaluation", "newsletter", "sop", "memo", "whitepaper", "datasheet",
-            "playbook", "deck",
+            "briefing",
+            "report",
+            "book",
+            "manual",
+            "academic",
+            "minimal",
+            "letter",
+            "contract",
+            "register",
+            "minutes",
+            "novel",
+            "proposal",
+            "policy",
+            "invoice",
+            "quote",
+            "certificate",
+            "resume",
+            "evaluation",
+            "newsletter",
+            "sop",
+            "memo",
+            "whitepaper",
+            "datasheet",
+            "playbook",
+            "deck",
         }
         assert expected.issubset(set(names))
 
@@ -70,13 +103,36 @@ class TestTemplateRegistry:
         with pytest.raises(ValueError):
             get_template("nonexistent_template_xyz")
 
-    @pytest.mark.parametrize("name", [
-        "briefing", "report", "book", "manual", "academic",
-        "minimal", "letter", "contract", "register", "minutes", "novel",
-        "proposal", "policy", "invoice", "quote", "certificate", "resume",
-        "evaluation", "newsletter", "sop", "memo", "whitepaper", "datasheet",
-        "playbook", "deck",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "briefing",
+            "report",
+            "book",
+            "manual",
+            "academic",
+            "minimal",
+            "letter",
+            "contract",
+            "register",
+            "minutes",
+            "novel",
+            "proposal",
+            "policy",
+            "invoice",
+            "quote",
+            "certificate",
+            "resume",
+            "evaluation",
+            "newsletter",
+            "sop",
+            "memo",
+            "whitepaper",
+            "datasheet",
+            "playbook",
+            "deck",
+        ],
+    )
     def test_get_template_returns_class(self, name):
         cls = get_template(name)
         assert cls is not None
@@ -118,9 +174,7 @@ class TestTemplateGeneration:
     # -----------------------------------------------------------------------
 
     @pytest.mark.parametrize("template_name", _ALL_TEMPLATE_NAMES)
-    def test_all_templates_generate_valid_pdf(
-        self, template_name, basic_fixture, tmp_path
-    ):
+    def test_all_templates_generate_valid_pdf(self, template_name, basic_fixture, tmp_path):
         """Every registered template must produce a non-empty .pdf file."""
         cfg = _make_config(str(tmp_path))
         cls = get_template(template_name)
@@ -138,9 +192,7 @@ class TestTemplateGeneration:
     # -----------------------------------------------------------------------
 
     @pytest.mark.parametrize("template_name", _ALL_TEMPLATE_NAMES)
-    def test_all_templates_pdf_readable_with_pages(
-        self, template_name, basic_fixture, tmp_path
-    ):
+    def test_all_templates_pdf_readable_with_pages(self, template_name, basic_fixture, tmp_path):
         """Every generated PDF must be readable by pypdf and have >= 1 page."""
         from pypdf import PdfReader
 
@@ -150,14 +202,10 @@ class TestTemplateGeneration:
         result = tmpl.generate()
 
         reader = PdfReader(str(result))
-        assert len(reader.pages) >= 1, (
-            f"{template_name}: PDF has {len(reader.pages)} pages, expected >= 1"
-        )
+        assert len(reader.pages) >= 1, f"{template_name}: PDF has {len(reader.pages)} pages, expected >= 1"
 
     @pytest.mark.parametrize("template_name", _ALL_TEMPLATE_NAMES)
-    def test_all_templates_pdf_metadata_are_strings(
-        self, template_name, basic_fixture, tmp_path
-    ):
+    def test_all_templates_pdf_metadata_are_strings(self, template_name, basic_fixture, tmp_path):
         """Title, author, and creator metadata fields must be strings (not None)."""
         from pypdf import PdfReader
 
@@ -177,8 +225,7 @@ class TestTemplateGeneration:
             ("creator", meta.creator),
         ):
             assert isinstance(value, str), (
-                f"{template_name}: metadata.{field_name} is {type(value).__name__!r}, "
-                f"expected str (value={value!r})"
+                f"{template_name}: metadata.{field_name} is {type(value).__name__!r}, expected str (value={value!r})"
             )
 
 
@@ -198,9 +245,7 @@ class TestColorPresets:
         """Every preset must contain all keys in _PRESET_REQUIRED_KEYS."""
         preset = get_preset(preset_name)
         missing = _PRESET_REQUIRED_KEYS - set(preset.keys())
-        assert not missing, (
-            f"Preset {preset_name!r} is missing required keys: {sorted(missing)}"
-        )
+        assert not missing, f"Preset {preset_name!r} is missing required keys: {sorted(missing)}"
 
     @pytest.mark.parametrize("preset_name", list_presets())
     def test_preset_color_values_are_strings(self, preset_name):

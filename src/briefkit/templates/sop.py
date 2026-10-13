@@ -98,22 +98,37 @@ class SOPTemplate(BaseBriefingTemplate):
 
         # ---- Styles ----
         heading_style = _ps(
-            "SOPHeading", brand=b, fontSize=_HEAD_SIZE,
-            textColor=black, fontName="Helvetica-Bold",
-            spaceBefore=8, spaceAfter=4,
+            "SOPHeading",
+            brand=b,
+            fontSize=_HEAD_SIZE,
+            textColor=black,
+            fontName="Helvetica-Bold",
+            spaceBefore=8,
+            spaceAfter=4,
         )
         cell_style = _ps(
-            "SOPCell", brand=b, fontSize=_BODY_SIZE,
-            textColor=black, leading=13,
+            "SOPCell",
+            brand=b,
+            fontSize=_BODY_SIZE,
+            textColor=black,
+            leading=13,
         )
         cell_bold = _ps(
-            "SOPCellBold", brand=b, fontSize=_BODY_SIZE,
-            textColor=black, fontName="Helvetica-Bold", leading=13,
+            "SOPCellBold",
+            brand=b,
+            fontSize=_BODY_SIZE,
+            textColor=black,
+            fontName="Helvetica-Bold",
+            leading=13,
         )
         cell_grey = _ps(
-            "SOPCellGrey", brand=b, fontSize=_HEAD_SIZE,
-            textColor=black, fontName="Helvetica-Bold",
-            leading=14, alignment=1,
+            "SOPCellGrey",
+            brand=b,
+            fontSize=_HEAD_SIZE,
+            textColor=black,
+            fontName="Helvetica-Bold",
+            leading=14,
+            alignment=1,
         )
 
         # ================================================================
@@ -123,13 +138,17 @@ class SOPTemplate(BaseBriefingTemplate):
         # Row 1: full-width grey banner
         row1 = [[Paragraph("STANDARD OPERATING PROCEDURE (SOP)", cell_grey)]]
         t1 = Table(row1, colWidths=[self.content_width])
-        t1.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), _GREY_BG),
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-            ("BOX", (0, 0), (-1, -1), _BORDER_W, black),
-            ("TOPPADDING", (0, 0), (-1, -1), 6),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-        ]))
+        t1.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), _GREY_BG),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("BOX", (0, 0), (-1, -1), _BORDER_W, black),
+                    ("TOPPADDING", (0, 0), (-1, -1), 6),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ]
+            )
+        )
         story.append(t1)
 
         # Row 2-4: metadata grid
@@ -156,19 +175,24 @@ class SOPTemplate(BaseBriefingTemplate):
         ]
         # Row 2: proc no | value | revision | effective date value
         meta_data[0][3] = Paragraph(
-            _safe_text(self.date_str), cell_style,
+            _safe_text(self.date_str),
+            cell_style,
         )
 
         t_meta = Table(meta_data, colWidths=[col_w] * 4)
-        t_meta.setStyle(TableStyle([
-            ("BOX", (0, 0), (-1, -1), _BORDER_W, black),
-            ("INNERGRID", (0, 0), (-1, -1), _BORDER_W, black),
-            ("BACKGROUND", (0, 0), (0, -1), _GREY_BG),
-            ("BACKGROUND", (2, 0), (2, -1), _GREY_BG),
-            ("TOPPADDING", (0, 0), (-1, -1), 4),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-            ("LEFTPADDING", (0, 0), (-1, -1), 4),
-        ]))
+        t_meta.setStyle(
+            TableStyle(
+                [
+                    ("BOX", (0, 0), (-1, -1), _BORDER_W, black),
+                    ("INNERGRID", (0, 0), (-1, -1), _BORDER_W, black),
+                    ("BACKGROUND", (0, 0), (0, -1), _GREY_BG),
+                    ("BACKGROUND", (2, 0), (2, -1), _GREY_BG),
+                    ("TOPPADDING", (0, 0), (-1, -1), 4),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 4),
+                ]
+            )
+        )
         story.append(t_meta)
         story.append(Spacer(1, 6 * mm))
 
@@ -192,18 +216,24 @@ class SOPTemplate(BaseBriefingTemplate):
             Paragraph("<b>Date</b>", cell_bold),
         ]
         approval_rows = [
-            [Paragraph("Author", cell_style),
-             Paragraph("", cell_style),
-             Paragraph(sig_line, cell_style),
-             Paragraph("", cell_style)],
-            [Paragraph("Peer Reviewer", cell_style),
-             Paragraph("", cell_style),
-             Paragraph(sig_line, cell_style),
-             Paragraph("", cell_style)],
-            [Paragraph("Principal Investigator", cell_style),
-             Paragraph("", cell_style),
-             Paragraph(sig_line, cell_style),
-             Paragraph("", cell_style)],
+            [
+                Paragraph("Author", cell_style),
+                Paragraph("", cell_style),
+                Paragraph(sig_line, cell_style),
+                Paragraph("", cell_style),
+            ],
+            [
+                Paragraph("Peer Reviewer", cell_style),
+                Paragraph("", cell_style),
+                Paragraph(sig_line, cell_style),
+                Paragraph("", cell_style),
+            ],
+            [
+                Paragraph("Principal Investigator", cell_style),
+                Paragraph("", cell_style),
+                Paragraph(sig_line, cell_style),
+                Paragraph("", cell_style),
+            ],
         ]
         t_approval = Table(
             [approval_header, *approval_rows],
@@ -214,14 +244,18 @@ class SOPTemplate(BaseBriefingTemplate):
                 self.content_width * 0.20,
             ],
         )
-        t_approval.setStyle(TableStyle([
-            ("BOX", (0, 0), (-1, -1), _BORDER_W, black),
-            ("INNERGRID", (0, 0), (-1, -1), _BORDER_W, black),
-            ("BACKGROUND", (0, 0), (-1, 0), _GREY_BG),
-            ("TOPPADDING", (0, 0), (-1, -1), 4),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-            ("LEFTPADDING", (0, 0), (-1, -1), 4),
-        ]))
+        t_approval.setStyle(
+            TableStyle(
+                [
+                    ("BOX", (0, 0), (-1, -1), _BORDER_W, black),
+                    ("INNERGRID", (0, 0), (-1, -1), _BORDER_W, black),
+                    ("BACKGROUND", (0, 0), (-1, 0), _GREY_BG),
+                    ("TOPPADDING", (0, 0), (-1, -1), 4),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 4),
+                ]
+            )
+        )
         story.append(t_approval)
 
         # ================================================================
@@ -236,10 +270,7 @@ class SOPTemplate(BaseBriefingTemplate):
             Paragraph("<b>Effective Date</b>", cell_bold),
             Paragraph("<b>Description of Change</b>", cell_bold),
         ]
-        ch_empty = [
-            [Paragraph("", cell_style)] * 3
-            for _ in range(5)
-        ]
+        ch_empty = [[Paragraph("", cell_style)] * 3 for _ in range(5)]
         t_ch = Table(
             [ch_header, *ch_empty],
             colWidths=[
@@ -248,15 +279,19 @@ class SOPTemplate(BaseBriefingTemplate):
                 self.content_width * 0.60,
             ],
         )
-        t_ch.setStyle(TableStyle([
-            ("BOX", (0, 0), (-1, -1), _BORDER_W, black),
-            ("INNERGRID", (0, 0), (-1, -1), _BORDER_W, black),
-            ("BACKGROUND", (0, 0), (-1, 0), _GREY_BG),
-            ("TOPPADDING", (0, 0), (-1, -1), 4),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-            ("LEFTPADDING", (0, 0), (-1, -1), 4),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ]))
+        t_ch.setStyle(
+            TableStyle(
+                [
+                    ("BOX", (0, 0), (-1, -1), _BORDER_W, black),
+                    ("INNERGRID", (0, 0), (-1, -1), _BORDER_W, black),
+                    ("BACKGROUND", (0, 0), (-1, 0), _GREY_BG),
+                    ("TOPPADDING", (0, 0), (-1, -1), 4),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 4),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ]
+            )
+        )
         story.append(t_ch)
         story.append(Spacer(1, 8 * mm))
 
@@ -364,7 +399,8 @@ class SOPTemplate(BaseBriefingTemplate):
             canvas.setFont("Helvetica-Bold", 10)
             canvas.setFillColor(black)
             canvas.drawCentredString(
-                pw / 2, doc_inner.pagesize[1] - 15 * mm,
+                pw / 2,
+                doc_inner.pagesize[1] - 15 * mm,
                 "STANDARD OPERATING PROCEDURE",
             )
 
@@ -372,14 +408,16 @@ class SOPTemplate(BaseBriefingTemplate):
             if revision_text:
                 canvas.setFont("Helvetica", 8)
                 canvas.drawRightString(
-                    pw - left_m, doc_inner.pagesize[1] - 15 * mm,
+                    pw - left_m,
+                    doc_inner.pagesize[1] - 15 * mm,
                     revision_text,
                 )
 
             # Footer: page number
             canvas.setFont("Helvetica", 8)
             canvas.drawCentredString(
-                pw / 2, 12 * mm,
+                pw / 2,
+                12 * mm,
                 f"Page {doc_inner.page}",
             )
 

@@ -74,17 +74,27 @@ class MemoTemplate(BaseBriefingTemplate):
 
         # ---- Styles ----
         title_style = _ps(
-            "MemoTitle", brand=b, fontSize=14,
-            textColor=black, fontName="Helvetica-Bold",
+            "MemoTitle",
+            brand=b,
+            fontSize=14,
+            textColor=black,
+            fontName="Helvetica-Bold",
             spaceAfter=2,
         )
         body_style = _ps(
-            "MemoBody", brand=b, fontSize=10,
-            textColor=black, leading=14, spaceAfter=6,
+            "MemoBody",
+            brand=b,
+            fontSize=10,
+            textColor=black,
+            leading=14,
+            spaceAfter=6,
         )
         closing_style = _ps(
-            "MemoClosing", brand=b, fontSize=10,
-            textColor=black, fontName="Helvetica-Oblique",
+            "MemoClosing",
+            brand=b,
+            fontSize=10,
+            textColor=black,
+            fontName="Helvetica-Oblique",
             spaceBefore=12,
         )
 
@@ -108,19 +118,16 @@ class MemoTemplate(BaseBriefingTemplate):
             ("Subject:", _safe_text(title), True),
         ]
         for label, value, bold_value in meta_pairs:
-            line_text = (
-                f'<font color="#666666"><b>{label}</b></font>'
-                f"&nbsp;&nbsp;&nbsp;{_safe_text(value)}"
-            )
+            line_text = f'<font color="#666666"><b>{label}</b></font>&nbsp;&nbsp;&nbsp;{_safe_text(value)}'
             if bold_value:
-                line_text = (
-                    f'<font color="#666666"><b>{label}</b></font>'
-                    f"&nbsp;&nbsp;&nbsp;<b>{_safe_text(value)}</b>"
-                )
+                line_text = f'<font color="#666666"><b>{label}</b></font>&nbsp;&nbsp;&nbsp;<b>{_safe_text(value)}</b>'
             # Use body_style as base but with the leading from label_style
             meta_style = _ps(
-                f"MemoMeta_{label}", brand=b, fontSize=10,
-                textColor=black, leading=16,
+                f"MemoMeta_{label}",
+                brand=b,
+                fontSize=10,
+                textColor=black,
+                leading=16,
             )
             story.append(_safe_para(line_text, meta_style))
 
@@ -173,11 +180,15 @@ class MemoTemplate(BaseBriefingTemplate):
     def _rule(self) -> Table:
         """Build a 1pt black horizontal rule spanning content width."""
         rule = Table([[""]], colWidths=[self.content_width], rowHeights=[1])
-        rule.setStyle(TableStyle([
-            ("LINEABOVE", (0, 0), (-1, -1), 1, black),
-            ("TOPPADDING", (0, 0), (-1, -1), 0),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-        ]))
+        rule.setStyle(
+            TableStyle(
+                [
+                    ("LINEABOVE", (0, 0), (-1, -1), 1, black),
+                    ("TOPPADDING", (0, 0), (-1, -1), 0),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                ]
+            )
+        )
         return rule
 
     def _render_flat(self, blocks: list[dict], body_style) -> list:

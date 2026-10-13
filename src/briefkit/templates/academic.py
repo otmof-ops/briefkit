@@ -48,25 +48,35 @@ class AcademicTemplate(BaseBriefingTemplate):
 
         title = content.get("title", self.target_path.name.replace("-", " ").title())
         b = self.brand
-        primary   = _hex(b, "primary")
+        primary = _hex(b, "primary")
         caption_c = _hex(b, "caption")
-        body_c    = _hex(b, "body_text")
+        body_c = _hex(b, "body_text")
 
         # Update running header
 
         # --- Title Page (minimalist, no cover graphics) ---
         title_style = _ps(
-            "AcadTitle", brand=b,
-            fontSize=24, textColor=primary,
-            fontName="Helvetica-Bold", alignment=1, leading=30,
+            "AcadTitle",
+            brand=b,
+            fontSize=24,
+            textColor=primary,
+            fontName="Helvetica-Bold",
+            alignment=1,
+            leading=30,
         )
         author_style = _ps(
-            "AcadAuthor", brand=b,
-            fontSize=12, textColor=body_c, alignment=1,
+            "AcadAuthor",
+            brand=b,
+            fontSize=12,
+            textColor=body_c,
+            alignment=1,
         )
         caption_style = _ps(
-            "AcadTitleCaption", brand=b,
-            fontSize=10, textColor=caption_c, alignment=1,
+            "AcadTitleCaption",
+            brand=b,
+            fontSize=10,
+            textColor=caption_c,
+            alignment=1,
         )
 
         org = b.get("org", "")
@@ -89,15 +99,15 @@ class AcademicTemplate(BaseBriefingTemplate):
 
         # Pre-build sections for TOC
         cfg = self.config
-        abstract_text        = self._derive_abstract(content)
-        intro_flowables      = [] if should_skip(cfg, "introduction")      else self._build_introduction(content)
+        abstract_text = self._derive_abstract(content)
+        intro_flowables = [] if should_skip(cfg, "introduction") else self._build_introduction(content)
         lit_review_flowables = [] if should_skip(cfg, "literature_review") else self._build_literature_review(content)
-        body_flowables       = self._build_body(content)
-        results_flowables    = [] if should_skip(cfg, "results")           else self._build_results(content)
-        discussion_flowables = [] if should_skip(cfg, "discussion")        else self._build_discussion(content)
-        conclusion_flowables = [] if should_skip(cfg, "conclusion")        else self._build_conclusion(content)
-        appendix_flowables   = [] if should_skip(cfg, "appendices")        else self._build_appendices(content)
-        ref_flowables        = [] if should_skip(cfg, "references")        else self._build_references(content)
+        body_flowables = self._build_body(content)
+        results_flowables = [] if should_skip(cfg, "results") else self._build_results(content)
+        discussion_flowables = [] if should_skip(cfg, "discussion") else self._build_discussion(content)
+        conclusion_flowables = [] if should_skip(cfg, "conclusion") else self._build_conclusion(content)
+        appendix_flowables = [] if should_skip(cfg, "appendices") else self._build_appendices(content)
+        ref_flowables = [] if should_skip(cfg, "references") else self._build_references(content)
 
         # TOC
         if not should_skip(cfg, "toc"):
@@ -138,14 +148,18 @@ class AcademicTemplate(BaseBriefingTemplate):
             if terms:
                 story.append(Spacer(1, 2 * mm))
                 kw_style = _ps(
-                    "AcadKeywords", brand=b,
-                    fontSize=9, textColor=caption_c,
+                    "AcadKeywords",
+                    brand=b,
+                    fontSize=9,
+                    textColor=caption_c,
                     fontName="Helvetica-Oblique",
                 )
-                story.append(Paragraph(
-                    "<b>Keywords:</b> " + ", ".join(terms),
-                    kw_style,
-                ))
+                story.append(
+                    Paragraph(
+                        "<b>Keywords:</b> " + ", ".join(terms),
+                        kw_style,
+                    )
+                )
 
             story.append(PageBreak())
 
@@ -190,24 +204,24 @@ class AcademicTemplate(BaseBriefingTemplate):
         """
         Derive a 250-word-max abstract from content.
         """
-        overview    = content.get("overview", "")
+        overview = content.get("overview", "")
         orientation = content.get("orientation", "")
-        title       = content.get("title", "this study")
-        subsystems  = content.get("subsystems", [])
+        title = content.get("title", "this study")
+        subsystems = content.get("subsystems", [])
 
         parts: list[str] = []
 
         # Opening: first paragraph of overview or orientation
         if overview:
-            paras = [p.strip() for p in re.split(r'\n\n+', overview) if p.strip()]
+            paras = [p.strip() for p in re.split(r"\n\n+", overview) if p.strip()]
             for para in paras:
-                clean = re.sub(r'#+\s*', '', para).strip()
+                clean = re.sub(r"#+\s*", "", para).strip()
                 if len(clean) > 50:
                     parts.append(clean)
                     break
 
         if not parts and orientation:
-            m = re.search(r'^(?!#)(.{60,})', orientation, re.MULTILINE)
+            m = re.search(r"^(?!#)(.{60,})", orientation, re.MULTILINE)
             if m:
                 parts.append(m.group(1).strip())
 
@@ -230,7 +244,7 @@ class AcademicTemplate(BaseBriefingTemplate):
         findings: list[str] = []
         for sub in subsystems[:3]:
             raw = sub.get("content", "").replace("\n", " ")
-            for s in re.split(r'(?<=[.!?])\s+', raw):
+            for s in re.split(r"(?<=[.!?])\s+", raw):
                 s = s.strip().lstrip("#- *>`|")
                 if len(s) > 40 and not s.startswith("```"):
                     findings.append(s[:120])
@@ -272,12 +286,14 @@ class AcademicTemplate(BaseBriefingTemplate):
                 flowables.extend(self.render_blocks([block]))
         else:
             subsystems = content.get("subsystems", [])
-            flowables.append(Paragraph(
-                f"This paper presents an analysis of {title}, comprising "
-                f"{len(subsystems)} section(s). The following sections present "
-                f"literature context, detailed analysis, results, and conclusions.",
-                self.styles["STYLE_BODY"],
-            ))
+            flowables.append(
+                Paragraph(
+                    f"This paper presents an analysis of {title}, comprising "
+                    f"{len(subsystems)} section(s). The following sections present "
+                    f"literature context, detailed analysis, results, and conclusions.",
+                    self.styles["STYLE_BODY"],
+                )
+            )
 
         return flowables
 
@@ -297,20 +313,22 @@ class AcademicTemplate(BaseBriefingTemplate):
         flowables = []
         flowables.append(Paragraph("2. Literature Review", self.styles["STYLE_H1"]))
         flowables.append(Spacer(1, 2 * mm))
-        flowables.append(Paragraph(
-            "The following sources inform the analysis presented in this paper.",
-            self.styles["STYLE_BODY"],
-        ))
+        flowables.append(
+            Paragraph(
+                "The following sources inform the analysis presented in this paper.",
+                self.styles["STYLE_BODY"],
+            )
+        )
         flowables.append(Spacer(1, 2 * mm))
 
         # Group by type
         papers = [s for s in bibliography if s.get("type") == "paper"]
-        books  = [s for s in bibliography if s.get("type") == "book"]
-        specs  = [s for s in bibliography if s.get("type") == "specification"]
-        other  = [s for s in bibliography if s.get("type") not in ("paper", "book", "specification")]
+        books = [s for s in bibliography if s.get("type") == "book"]
+        specs = [s for s in bibliography if s.get("type") == "specification"]
+        other = [s for s in bibliography if s.get("type") not in ("paper", "book", "specification")]
 
         _hex(self.brand, "caption")
-        body_c    = _hex(self.brand, "body_text")
+        body_c = _hex(self.brand, "body_text")
 
         def _render_group(label: str, sources: list) -> None:
             if not sources:
@@ -319,19 +337,29 @@ class AcademicTemplate(BaseBriefingTemplate):
             flowables.append(Spacer(1, 1.5 * mm))
             for src in sources[:8]:
                 authors = src.get("authors", "") or ""
-                year    = src.get("year", "n.d.")
-                title_  = src.get("title", "") or ""
+                year = src.get("year", "n.d.")
+                title_ = src.get("title", "") or ""
                 if authors and title_:
                     cite = f"{authors} ({year}). {title_}."
                 elif title_:
                     cite = f"{title_} ({year})."
                 else:
                     cite = f"({year})."
-                flowables.append(Paragraph(cite, _ps(
-                    "LitReviewEntry", brand=self.brand,
-                    fontSize=10, textColor=body_c, leading=14,
-                    leftIndent=12, firstLineIndent=-12, spaceAfter=4,
-                )))
+                flowables.append(
+                    Paragraph(
+                        cite,
+                        _ps(
+                            "LitReviewEntry",
+                            brand=self.brand,
+                            fontSize=10,
+                            textColor=body_c,
+                            leading=14,
+                            leftIndent=12,
+                            firstLineIndent=-12,
+                            spaceAfter=4,
+                        ),
+                    )
+                )
 
         _render_group("Academic Papers", papers)
         _render_group("Books and Monographs", books)
@@ -399,20 +427,19 @@ class AcademicTemplate(BaseBriefingTemplate):
         flowables = []
         flowables.append(Paragraph("4. Results", self.styles["STYLE_H1"]))
         flowables.append(Spacer(1, 2 * mm))
-        flowables.append(Paragraph(
-            "The following tables present quantitative and structured findings "
-            "extracted from the source material.",
-            self.styles["STYLE_BODY"],
-        ))
+        flowables.append(
+            Paragraph(
+                "The following tables present quantitative and structured findings extracted from the source material.",
+                self.styles["STYLE_BODY"],
+            )
+        )
         flowables.append(Spacer(1, 2 * mm))
 
         for i, (section_name, tbl) in enumerate(all_tables[:8], 1):
-            flowables.append(Paragraph(
-                f"Table {i}: {section_name}", self.styles["STYLE_CAPTION"]
-            ))
-            flowables.extend(build_data_table(
-                tbl["headers"], tbl["rows"], brand=self.brand, content_width=self.content_width
-            ))
+            flowables.append(Paragraph(f"Table {i}: {section_name}", self.styles["STYLE_CAPTION"]))
+            flowables.extend(
+                build_data_table(tbl["headers"], tbl["rows"], brand=self.brand, content_width=self.content_width)
+            )
             flowables.append(Spacer(1, 2 * mm))
 
         return flowables
@@ -429,23 +456,33 @@ class AcademicTemplate(BaseBriefingTemplate):
         title = content.get("title", "the subject matter")
         subsystems = content.get("subsystems", [])
 
-        flowables.append(Paragraph(
-            f"The analysis of {title} reveals several notable themes across the "
-            f"{len(subsystems)} section(s) examined.",
-            self.styles["STYLE_BODY"],
-        ))
+        flowables.append(
+            Paragraph(
+                f"The analysis of {title} reveals several notable themes across the "
+                f"{len(subsystems)} section(s) examined.",
+                self.styles["STYLE_BODY"],
+            )
+        )
         flowables.append(Spacer(1, 2 * mm))
 
         # Derive discussion points from insights (blockquotes)
         for sub in subsystems[:5]:
             for insight in sub.get("insights", [])[:1]:
                 if len(insight) > 30:
-                    flowables.append(Paragraph(
-                        f"<i>{sub['name']}:</i> {insight[:300]}",
-                        _ps("DiscussionItem", brand=self.brand,
-                            fontSize=10, textColor=_hex(self.brand, "body_text"),
-                            leading=14, leftIndent=12, spaceAfter=4),
-                    ))
+                    flowables.append(
+                        Paragraph(
+                            f"<i>{sub['name']}:</i> {insight[:300]}",
+                            _ps(
+                                "DiscussionItem",
+                                brand=self.brand,
+                                fontSize=10,
+                                textColor=_hex(self.brand, "body_text"),
+                                leading=14,
+                                leftIndent=12,
+                                spaceAfter=4,
+                            ),
+                        )
+                    )
 
         # Guide content as additional discussion material
         guide = content.get("guide_content", "")
@@ -468,15 +505,17 @@ class AcademicTemplate(BaseBriefingTemplate):
         title = content.get("title", "this study")
         subsystems = content.get("subsystems", [])
         terms_count = len(content.get("terms", {}))
-        bib_count   = len(content.get("bibliography", []))
+        bib_count = len(content.get("bibliography", []))
 
-        flowables.append(Paragraph(
-            f"This paper has presented a structured analysis of {title}, drawing on "
-            f"{len(subsystems)} primary content section(s). "
-            f"A total of {terms_count} key terms were identified, and "
-            f"{bib_count} source(s) were cited.",
-            self.styles["STYLE_BODY"],
-        ))
+        flowables.append(
+            Paragraph(
+                f"This paper has presented a structured analysis of {title}, drawing on "
+                f"{len(subsystems)} primary content section(s). "
+                f"A total of {terms_count} key terms were identified, and "
+                f"{bib_count} source(s) were cited.",
+                self.styles["STYLE_BODY"],
+            )
+        )
         flowables.append(Spacer(1, 2 * mm))
 
         brilliance = content.get("brilliance_summary", "")
@@ -484,17 +523,17 @@ class AcademicTemplate(BaseBriefingTemplate):
             # Use first paragraph of brilliance as concluding insight
             for block in parse_markdown(brilliance)[:3]:
                 if block["type"] == "paragraph":
-                    flowables.append(Paragraph(
-                        block["text"], self.styles["STYLE_BODY"]
-                    ))
+                    flowables.append(Paragraph(block["text"], self.styles["STYLE_BODY"]))
                     break
 
         flowables.append(Spacer(1, 2 * mm))
-        flowables.append(Paragraph(
-            "Further research should examine the cross-cutting themes identified "
-            "in the analysis and explore their implications in adjacent domains.",
-            self.styles["STYLE_BODY"],
-        ))
+        flowables.append(
+            Paragraph(
+                "Further research should examine the cross-cutting themes identified "
+                "in the analysis and explore their implications in adjacent domains.",
+                self.styles["STYLE_BODY"],
+            )
+        )
 
         return flowables
 
@@ -518,9 +557,14 @@ class AcademicTemplate(BaseBriefingTemplate):
 
         body_c = _hex(self.brand, "body_text")
         ref_style = _ps(
-            "AcadRef", brand=self.brand,
-            fontSize=10, textColor=body_c, leading=14,
-            leftIndent=18, firstLineIndent=-18, spaceAfter=6,
+            "AcadRef",
+            brand=self.brand,
+            fontSize=10,
+            textColor=body_c,
+            leading=14,
+            leftIndent=18,
+            firstLineIndent=-18,
+            spaceAfter=6,
         )
 
         # Sort by author then year
@@ -532,9 +576,9 @@ class AcademicTemplate(BaseBriefingTemplate):
 
         for src in sorted(sources, key=_sort_key):
             authors = src.get("authors", "") or ""
-            year    = src.get("year", "n.d.") or "n.d."
-            title_  = src.get("title", "") or ""
-            doi     = src.get("doi", "") or ""
+            year = src.get("year", "n.d.") or "n.d."
+            title_ = src.get("title", "") or ""
+            doi = src.get("doi", "") or ""
             src_type = src.get("type", "other")
 
             if src_type == "case":
@@ -563,8 +607,7 @@ class AcademicTemplate(BaseBriefingTemplate):
         Build appendices from appendix*.md files or engineering-brilliance.md.
         """
         appendix_files = sorted(
-            list(self.target_path.glob("appendix*.md"))
-            + list(self.target_path.glob("appendices.md"))
+            list(self.target_path.glob("appendix*.md")) + list(self.target_path.glob("appendices.md"))
         )
         brilliance = content.get("brilliance_summary", "")
 
@@ -579,17 +622,13 @@ class AcademicTemplate(BaseBriefingTemplate):
             for i, fp in enumerate(appendix_files, 1):
                 raw = fp.read_text(encoding="utf-8", errors="replace")
                 label = fp.stem.replace("-", " ").title()
-                flowables.append(Paragraph(
-                    f"Appendix {chr(64+i)}: {label}", self.styles["STYLE_H2"]
-                ))
+                flowables.append(Paragraph(f"Appendix {chr(64 + i)}: {label}", self.styles["STYLE_H2"]))
                 flowables.append(Spacer(1, 1.5 * mm))
                 for block in parse_markdown(raw)[:30]:
                     flowables.extend(self.render_blocks([block]))
                 flowables.append(Spacer(1, 2 * mm))
         elif brilliance:
-            flowables.append(Paragraph(
-                "Appendix A: Supplementary Analysis", self.styles["STYLE_H2"]
-            ))
+            flowables.append(Paragraph("Appendix A: Supplementary Analysis", self.styles["STYLE_H2"]))
             flowables.append(Spacer(1, 1.5 * mm))
             for block in parse_markdown(brilliance)[:20]:
                 flowables.extend(self.render_blocks([block]))
@@ -609,10 +648,14 @@ class AcademicTemplate(BaseBriefingTemplate):
     def build_back_cover(self) -> list:
         """No back cover for academic papers — just a colophon line."""
         from reportlab.platypus import Spacer as _Sp
+
         caption_c = _hex(self.brand, "caption")
         cp_style = _ps(
-            "AcadColophon", brand=self.brand,
-            fontSize=8, textColor=caption_c, alignment=1,
+            "AcadColophon",
+            brand=self.brand,
+            fontSize=8,
+            textColor=caption_c,
+            alignment=1,
         )
         return [
             _Sp(1, 20 * mm),

@@ -1,11 +1,11 @@
 """Tests for briefkit batch processing."""
+
 from __future__ import annotations
 
 from briefkit.batch import _is_current, find_targets
 
 
 class TestFindTargets:
-
     def test_finds_basic_fixture(self, basic_fixture, default_config):
         targets = find_targets(basic_fixture.parent, default_config)
         assert len(targets) >= 1
@@ -27,7 +27,6 @@ class TestFindTargets:
 
 
 class TestIsCurrent:
-
     def test_missing_pdf_returns_false(self, basic_fixture, default_config):
         pdf = basic_fixture / "nonexistent.pdf"
         assert _is_current(basic_fixture, pdf, default_config) is False
@@ -37,6 +36,7 @@ class TestIsCurrent:
         pdf.write_bytes(b"%PDF-1.4 test")
         # Touch the PDF to be newer than sources
         import time
+
         time.sleep(0.1)
         pdf.write_bytes(b"%PDF-1.4 test updated")
         # This won't be current because basic_fixture md files are newer

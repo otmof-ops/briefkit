@@ -19,11 +19,24 @@ from briefkit.variants import DocSetVariant, _register, collect_text
 
 # Common research methodology terms
 _METHODOLOGY_TERMS = {
-    "qualitative", "quantitative", "mixed methods", "ethnography",
-    "grounded theory", "phenomenology", "case study", "survey",
-    "experiment", "quasi-experimental", "longitudinal", "cross-sectional",
-    "randomized controlled trial", "systematic review", "meta-analysis",
-    "content analysis", "discourse analysis", "thematic analysis",
+    "qualitative",
+    "quantitative",
+    "mixed methods",
+    "ethnography",
+    "grounded theory",
+    "phenomenology",
+    "case study",
+    "survey",
+    "experiment",
+    "quasi-experimental",
+    "longitudinal",
+    "cross-sectional",
+    "randomized controlled trial",
+    "systematic review",
+    "meta-analysis",
+    "content analysis",
+    "discourse analysis",
+    "thematic analysis",
 }
 
 # Dataset / corpus markers
@@ -48,13 +61,17 @@ class ResearchVariant(DocSetVariant):
 
     name = "research"
     auto_detect_keywords = [
-        "hypothesis", "methodology", "sample size", "p-value",
-        "dataset", "reproducibility",
+        "hypothesis",
+        "methodology",
+        "sample size",
+        "p-value",
+        "dataset",
+        "reproducibility",
     ]
 
     def build_variant_sections(self, content, flowables, styles, brand):
-        s_h1   = styles["STYLE_H1"]
-        s_h2   = styles["STYLE_H2"]
+        s_h1 = styles["STYLE_H1"]
+        s_h2 = styles["STYLE_H2"]
         s_body = styles["STYLE_BODY"]
 
         all_content = collect_text(content)
@@ -69,17 +86,21 @@ class ResearchVariant(DocSetVariant):
 
         meth_rows = self._extract_methodology(content, all_content)
         if meth_rows:
-            flowables.extend(build_data_table(
-                ["Aspect", "Detail"],
-                meth_rows,
-                title="Methodology Overview",
-                brand=brand,
-            ))
+            flowables.extend(
+                build_data_table(
+                    ["Aspect", "Detail"],
+                    meth_rows,
+                    title="Methodology Overview",
+                    brand=brand,
+                )
+            )
         else:
-            flowables.append(_safe_para(
-                "Methodology details not found in structured form — see numbered documents.",
-                s_body,
-            ))
+            flowables.append(
+                _safe_para(
+                    "Methodology details not found in structured form — see numbered documents.",
+                    s_body,
+                )
+            )
 
         # --- Dataset description ---
         flowables.append(Spacer(1, 4 * mm))
@@ -88,17 +109,21 @@ class ResearchVariant(DocSetVariant):
 
         dataset_rows = self._extract_datasets(content, all_content)
         if dataset_rows:
-            flowables.extend(build_data_table(
-                ["Dataset / Corpus", "Size / Split", "Source", "Notes"],
-                dataset_rows[:10],
-                title="Datasets Referenced",
-                brand=brand,
-            ))
+            flowables.extend(
+                build_data_table(
+                    ["Dataset / Corpus", "Size / Split", "Source", "Notes"],
+                    dataset_rows[:10],
+                    title="Datasets Referenced",
+                    brand=brand,
+                )
+            )
         else:
-            flowables.append(_safe_para(
-                "Dataset information not found in structured form — see numbered documents.",
-                s_body,
-            ))
+            flowables.append(
+                _safe_para(
+                    "Dataset information not found in structured form — see numbered documents.",
+                    s_body,
+                )
+            )
 
         # --- Reproducibility checklist ---
         flowables.append(Spacer(1, 4 * mm))
@@ -116,11 +141,13 @@ class ResearchVariant(DocSetVariant):
             flowables.append(build_callout_box("\n".join(lines), "insight", brand))
         else:
             checklist_text = "\n".join(f"- {item}" for item in _REPRO_CHECKLIST)
-            flowables.append(build_callout_box(
-                "Verify the following for reproducibility:\n" + checklist_text,
-                "insight",
-                brand,
-            ))
+            flowables.append(
+                build_callout_box(
+                    "Verify the following for reproducibility:\n" + checklist_text,
+                    "insight",
+                    brand,
+                )
+            )
 
         return flowables
 
@@ -150,12 +177,12 @@ class ResearchVariant(DocSetVariant):
                 detected_methods.append(term.title())
 
         # Sample size
-        sample_m = re.search(r'n\s*=\s*(\d[\d,]+)', all_content, re.IGNORECASE)
+        sample_m = re.search(r"n\s*=\s*(\d[\d,]+)", all_content, re.IGNORECASE)
         if sample_m:
             rows.append(["Sample Size", f"n = {sample_m.group(1)}"])
 
         # p-value threshold
-        p_m = re.search(r'(?:p\s*[<>=]\s*)(0\.\d+)', all_content, re.IGNORECASE)
+        p_m = re.search(r"(?:p\s*[<>=]\s*)(0\.\d+)", all_content, re.IGNORECASE)
         if p_m:
             rows.append(["Significance Threshold", f"p {p_m.group(0).split('p')[-1].strip()}"])
 
@@ -165,8 +192,9 @@ class ResearchVariant(DocSetVariant):
 
         # Duration / follow-up
         dur_m = re.search(
-            r'(?:follow.?up|duration|study\s+period)[:\s]+(\d[\d\s]*(?:weeks?|months?|years?))',
-            all_content, re.IGNORECASE,
+            r"(?:follow.?up|duration|study\s+period)[:\s]+(\d[\d\s]*(?:weeks?|months?|years?))",
+            all_content,
+            re.IGNORECASE,
         )
         if dur_m:
             rows.append(["Study Duration", dur_m.group(1).strip()])
@@ -194,8 +222,8 @@ class ResearchVariant(DocSetVariant):
 
         # Scan inline for named datasets (common patterns)
         ds_pat = re.compile(
-            r'\b([A-Z][A-Za-z0-9\-]+(?:\s+[A-Za-z0-9]+)?)\s+'
-            r'(?:dataset|corpus|benchmark|database|collection)',
+            r"\b([A-Z][A-Za-z0-9\-]+(?:\s+[A-Za-z0-9]+)?)\s+"
+            r"(?:dataset|corpus|benchmark|database|collection)",
             re.IGNORECASE,
         )
         for m in ds_pat.finditer(all_content):
@@ -210,28 +238,28 @@ class ResearchVariant(DocSetVariant):
     def _check_reproducibility(self, all_content):
         repro_patterns = {
             "Source code available (link or repository referenced in document)": [
-                r'github\.com|gitlab\.com|bitbucket\.org|source\s+code|repository',
+                r"github\.com|gitlab\.com|bitbucket\.org|source\s+code|repository",
             ],
             "Dataset available or access instructions provided": [
-                r'dataset\s+available|data\s+available|download\s+at|access\s+at',
+                r"dataset\s+available|data\s+available|download\s+at|access\s+at",
             ],
             "Random seeds and initialisation conditions documented": [
-                r'random\s+seed|seed\s*=\s*\d|torch\.manual_seed|numpy\.random\.seed',
+                r"random\s+seed|seed\s*=\s*\d|torch\.manual_seed|numpy\.random\.seed",
             ],
             "Hardware and software environment described": [
-                r'GPU|NVIDIA|CPU|RAM|Python\s+\d|PyTorch|TensorFlow|CUDA',
+                r"GPU|NVIDIA|CPU|RAM|Python\s+\d|PyTorch|TensorFlow|CUDA",
             ],
             "Statistical tests and significance thresholds stated": [
-                r'p\s*[<>=]\s*0\.\d|t-test|chi-square|ANOVA|Mann.Whitney',
+                r"p\s*[<>=]\s*0\.\d|t-test|chi-square|ANOVA|Mann.Whitney",
             ],
             "Pre-registration or registered report protocol noted": [
-                r'pre.?registr|registered\s+report|OSF|ClinicalTrials\.gov',
+                r"pre.?registr|registered\s+report|OSF|ClinicalTrials\.gov",
             ],
             "Data preprocessing steps documented": [
-                r'preprocessing|pre-processing|normaliz|standardiz|tokeniz|clean',
+                r"preprocessing|pre-processing|normaliz|standardiz|tokeniz|clean",
             ],
             "Evaluation metrics defined with formulae or citations": [
-                r'accuracy|F1\s+score|BLEU|ROUGE|precision|recall|AUC|ROC',
+                r"accuracy|F1\s+score|BLEU|ROUGE|precision|recall|AUC|ROC",
             ],
         }
 

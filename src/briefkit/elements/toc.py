@@ -28,7 +28,7 @@ def build_toc(sections, brand=None, content_width=None):
     """
     b = _get_brand(brand)
     cw = content_width or CONTENT_WIDTH  # noqa: F841
-    primary   = _hex(b, "primary")
+    primary = _hex(b, "primary")
     secondary = _hex(b, "secondary")
 
     from reportlab.lib.units import mm

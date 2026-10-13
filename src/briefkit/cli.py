@@ -22,6 +22,7 @@ from typing import Any
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _load_config(args: argparse.Namespace) -> dict[str, Any]:
     """Load and return the resolved config, applying any CLI flag overrides."""
     from briefkit.config import load_config  # noqa: PLC0415
@@ -33,6 +34,7 @@ def _load_config(args: argparse.Namespace) -> dict[str, Any]:
     if getattr(args, "preset", None):
         cfg["brand"]["preset"] = args.preset
         from briefkit.config import resolve_brand  # noqa: PLC0415
+
         cfg = resolve_brand(cfg)
 
     if getattr(args, "template", None):
@@ -101,6 +103,7 @@ def _emit(data: Any, as_json: bool, quiet: bool = False) -> None:
 # Subcommand handlers
 # ---------------------------------------------------------------------------
 
+
 def cmd_generate(args: argparse.Namespace) -> int:
     """Generate a briefing PDF for a single directory."""
     from briefkit.batch import _generate_one  # noqa: PLC0415
@@ -150,6 +153,7 @@ def cmd_generate(args: argparse.Namespace) -> int:
     # README) produces a helpful error instead of a 6-page empty PDF.
     try:
         from briefkit.extractor import extract_content
+
         pre = extract_content(path, level=3, config=cfg)
     except Exception:
         pre = None
@@ -193,19 +197,16 @@ def _warn_on_truncation(content: dict, cfg: dict) -> None:
 
     limit = cfg.get("content", {}).get("max_words_per_section")
     print(
-        f"WARNING: {len(dropped)} document(s) exceeded "
-        f"content.max_words_per_section ({limit}) and were truncated:",
+        f"WARNING: {len(dropped)} document(s) exceeded content.max_words_per_section ({limit}) and were truncated:",
         file=sys.stderr,
     )
     for d in dropped:
         print(
-            f"  {d['filename']}: kept {d['words_kept']:,} of "
-            f"{d['words_total']:,} words",
+            f"  {d['filename']}: kept {d['words_kept']:,} of {d['words_total']:,} words",
             file=sys.stderr,
         )
     print(
-        "  Set content.max_words_per_section to 0 in briefkit.yml to emit "
-        "documents in full.",
+        "  Set content.max_words_per_section to 0 in briefkit.yml to emit documents in full.",
         file=sys.stderr,
     )
 
@@ -243,7 +244,7 @@ def _print_empty_extraction_error(path: Path, cfg: dict) -> None:
         f"    (a) Rename chapters to match the numbered pattern (e.g. 01-intro.md, 02-...).\n"
         f"    (b) Override the pattern in briefkit.yml:\n"
         f"          content:\n"
-        f"            numbered_doc_pattern: \"*.md\"\n"
+        f'            numbered_doc_pattern: "*.md"\n'
         f"    (c) See `briefkit generate --help` for more options.\n",
         file=sys.stderr,
     )
@@ -497,6 +498,7 @@ def cmd_assign_ids(args: argparse.Namespace) -> int:
 
     try:
         from briefkit import doc_ids as doc_ids_module  # noqa: PLC0415
+
         count = doc_ids_module.assign(path, cfg, dry_run=dry_run)
         if not quiet:
             print(f"Assigned IDs to {count} document(s)")
@@ -526,6 +528,7 @@ def cmd_quality(args: argparse.Namespace) -> int:
 
     try:
         from briefkit.quality import run_quality_gates  # noqa: PLC0415
+
         passed, lines = run_quality_gates(pdf_path)
         report = {"pdf": str(pdf_path), "passed": passed, "checks": lines}
     except Exception as exc:
@@ -575,9 +578,7 @@ def cmd_selftest(args: argparse.Namespace) -> int:
     return cmd_generate(args)
 
 
-def _selftest_inline(
-    args: argparse.Namespace, quiet: bool = False, as_json: bool = False
-) -> int:
+def _selftest_inline(args: argparse.Namespace, quiet: bool = False, as_json: bool = False) -> int:
     """Run a selftest using a temporary in-memory fixture."""
     import tempfile  # noqa: PLC0415
 
@@ -624,6 +625,7 @@ def cmd_config(args: argparse.Namespace) -> int:
         # Pretty-print as YAML if available, else JSON
         try:
             import yaml  # noqa: PLC0415
+
             print(yaml.dump(cfg, default_flow_style=False, allow_unicode=True))
         except ImportError:
             print(json.dumps(cfg, indent=2, default=str))
@@ -638,6 +640,7 @@ def cmd_templates(args: argparse.Namespace) -> int:
 
     try:
         from briefkit import templates as templates_module  # noqa: PLC0415
+
         template_list = templates_module.list_templates()
     except ImportError:
         print("Error: briefkit.templates unavailable.", file=sys.stderr)
@@ -725,7 +728,7 @@ def cmd_licenses(args: argparse.Namespace) -> int:
 
     print("  Set in briefkit.yml:")
     print("    license:")
-    print('      preset: MIT       # or any preset name above')
+    print("      preset: MIT       # or any preset name above")
     print()
     print("  WARNING: Projects without a license default to 'All Rights Reserved'")
     print("  under copyright law. Always specify a license for shared work.\n")
@@ -736,6 +739,7 @@ def cmd_licenses(args: argparse.Namespace) -> int:
 # ---------------------------------------------------------------------------
 # Argument parser construction
 # ---------------------------------------------------------------------------
+
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -757,12 +761,14 @@ def _build_parser() -> argparse.ArgumentParser:
     # Global flags
     global_flags = argparse.ArgumentParser(add_help=False)
     global_flags.add_argument(
-        "--config", "-c",
+        "--config",
+        "-c",
         metavar="FILE",
         help="Path to briefkit.yml (default: auto-discover from CWD)",
     )
     global_flags.add_argument(
-        "--quiet", "-q",
+        "--quiet",
+        "-q",
         action="store_true",
         default=False,
         help="Suppress non-error output",
@@ -789,27 +795,32 @@ def _build_parser() -> argparse.ArgumentParser:
     # Generation flags (shared by generate, batch, preview)
     gen_flags = argparse.ArgumentParser(add_help=False)
     gen_flags.add_argument(
-        "--template", "-t",
+        "--template",
+        "-t",
         metavar="NAME",
         help="Template preset to use (e.g. briefing, summary, technical)",
     )
     gen_flags.add_argument(
-        "--preset", "-p",
+        "--preset",
+        "-p",
         metavar="NAME",
         help="Color preset (e.g. navy, charcoal, ocean, cyber, neon)",
     )
     gen_flags.add_argument(
-        "--variant", "-v",
+        "--variant",
+        "-v",
         metavar="NAME",
         help="Output variant (e.g. aiml, legal, medical, engineering, hardware). Use 'none' to suppress variant sections entirely; omit to auto-detect.",
     )
     gen_flags.add_argument(
-        "--output", "-o",
+        "--output",
+        "-o",
         metavar="PATH",
         help="Override output PDF path",
     )
     gen_flags.add_argument(
-        "--force", "-f",
+        "--force",
+        "-f",
         action="store_true",
         default=False,
         help="Regenerate even if output is current",
@@ -874,7 +885,8 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Directory to initialise (default: current directory)",
     )
     p_init.add_argument(
-        "--force", "-f",
+        "--force",
+        "-f",
         action="store_true",
         default=False,
         help="Overwrite existing briefkit.yml",
@@ -979,6 +991,7 @@ def _build_parser() -> argparse.ArgumentParser:
 def _get_version() -> str:
     try:
         from importlib.metadata import version  # noqa: PLC0415
+
         return f"briefkit {version('briefkit')}"
     except Exception:  # PackageNotFoundError or ImportError  # noqa: BLE001
         return "briefkit (unknown version)"
@@ -987,6 +1000,7 @@ def _get_version() -> str:
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
+
 
 def main(argv: list[str] | None = None) -> int:
     """
@@ -1005,6 +1019,7 @@ def main(argv: list[str] | None = None) -> int:
         verbose = getattr(args, "verbose", False)
         if verbose:
             import traceback  # noqa: PLC0415
+
             traceback.print_exc()
         else:
             print(f"Error: {exc}", file=sys.stderr)

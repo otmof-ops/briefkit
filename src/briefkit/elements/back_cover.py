@@ -45,51 +45,62 @@ def build_back_cover(date=None, generator_note="", brand=None, content_width=Non
     cw = content_width or CONTENT_WIDTH
     build_styles(b)
 
-    primary   = _hex(b, "primary")
+    primary = _hex(b, "primary")
     secondary = _hex(b, "secondary")
-    caption   = _hex(b, "caption")
+    caption = _hex(b, "caption")
 
-    org     = b.get("org", "")
+    org = b.get("org", "")
     tagline = b.get("tagline", "")
-    url     = b.get("url", "")
-    abn     = b.get("abn", "")
+    url = b.get("url", "")
+    abn = b.get("abn", "")
 
     if date is None:
         date = datetime.date.today()
     if isinstance(date, str):
         date_str = date
-        year     = datetime.date.today().year
+        year = datetime.date.today().year
     else:
         date_str = date.strftime("%d %B %Y")
-        year     = date.year
+        year = date.year
 
-    raw_cr    = b.get("copyright", "\u00a9 {year}")
+    raw_cr = b.get("copyright", "\u00a9 {year}")
     copyright = _safe_text(raw_cr.replace("{year}", str(year)))
 
     # Sanitize all YAML-sourced strings before PDF rendering
-    org      = _safe_text(org)
-    tagline  = _safe_text(tagline)
-    url      = _safe_text(url)
-    abn      = _safe_text(abn)
+    org = _safe_text(org)
+    tagline = _safe_text(tagline)
+    url = _safe_text(url)
+    abn = _safe_text(abn)
 
     flowables = []
     flowables.append(PageBreak())
 
     # --- Top primary bar ---
     org_display = org if org else "\u00a0"
-    top_data = [[
-        Paragraph(
-            f'<font color="white"><b>{org_display}</b></font>',
-            _ps("BKBackCoverTop", brand=b, fontSize=12, textColor=white,
-                fontName=b.get("font_heading", "Helvetica-Bold")),
-        ),
-    ]]
+    top_data = [
+        [
+            Paragraph(
+                f'<font color="white"><b>{org_display}</b></font>',
+                _ps(
+                    "BKBackCoverTop",
+                    brand=b,
+                    fontSize=12,
+                    textColor=white,
+                    fontName=b.get("font_heading", "Helvetica-Bold"),
+                ),
+            ),
+        ]
+    ]
     top_bar = Table(top_data, colWidths=[cw], rowHeights=[16 * mm])
-    top_bar.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), primary),
-        ("VALIGN",     (0, 0), (-1, -1), "MIDDLE"),
-        ("ALIGN",      (0, 0), (-1, -1), "CENTER"),
-    ]))
+    top_bar.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), primary),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ]
+        )
+    )
     flowables.append(top_bar)
     flowables.append(Spacer(1, 40 * mm))
 
@@ -141,18 +152,22 @@ def build_back_cover(date=None, generator_note="", brand=None, content_width=Non
         alignment=1,
     )
     if date_str:
-        flowables.append(Paragraph(
-            f"This document was generated on {date_str}.",
-            meta_style,
-        ))
+        flowables.append(
+            Paragraph(
+                f"This document was generated on {date_str}.",
+                meta_style,
+            )
+        )
 
     abn_part = f" | ABN {abn}" if abn else ""
     license_notice = _safe_text(b.get("_license_notice", ""))
     rights = "All rights reserved." if not license_notice else ""
-    flowables.append(Paragraph(
-        f"{copyright}{abn_part}. {rights}",
-        meta_style,
-    ))
+    flowables.append(
+        Paragraph(
+            f"{copyright}{abn_part}. {rights}",
+            meta_style,
+        )
+    )
 
     if license_notice:
         flowables.append(Paragraph(license_notice, meta_style))
@@ -161,18 +176,24 @@ def build_back_cover(date=None, generator_note="", brand=None, content_width=Non
 
     # --- Bottom primary bar (optional generator note) ---
     if generator_note:
-        bottom_data = [[
-            Paragraph(
-                f'<font color="white">{generator_note}</font>',
-                _ps("BKBackCoverBottomText", brand=b, fontSize=7, textColor=white),
-            ),
-        ]]
+        bottom_data = [
+            [
+                Paragraph(
+                    f'<font color="white">{generator_note}</font>',
+                    _ps("BKBackCoverBottomText", brand=b, fontSize=7, textColor=white),
+                ),
+            ]
+        ]
         bottom_bar = Table(bottom_data, colWidths=[cw], rowHeights=[10 * mm])
-        bottom_bar.setStyle(TableStyle([
-            ("BACKGROUND",  (0, 0), (-1, -1), primary),
-            ("VALIGN",      (0, 0), (-1, -1), "MIDDLE"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 8),
-        ]))
+        bottom_bar.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), primary),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 8),
+                ]
+            )
+        )
         flowables.append(bottom_bar)
 
     return flowables

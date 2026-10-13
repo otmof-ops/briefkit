@@ -1,11 +1,11 @@
 """Tests for briefkit variant system."""
+
 from __future__ import annotations
 
 from briefkit.variants import auto_detect_variant, get_variant, list_variants
 
 
 class TestVariantRegistry:
-
     def test_list_variants_non_empty(self):
         variants = list_variants()
         assert len(variants) > 0
@@ -15,9 +15,18 @@ class TestVariantRegistry:
 
     def test_list_variants_includes_all_twelve(self):
         expected = {
-            "aiml", "legal", "medical", "engineering", "research",
-            "api", "gaming", "finance", "species", "historical",
-            "hardware", "religion",
+            "aiml",
+            "legal",
+            "medical",
+            "engineering",
+            "research",
+            "api",
+            "gaming",
+            "finance",
+            "species",
+            "historical",
+            "hardware",
+            "religion",
         }
         actual = set(list_variants())
         assert expected.issubset(actual)
@@ -48,6 +57,7 @@ class TestVariantRegistry:
 
     def test_variant_build_sections_returns_list(self):
         from briefkit.styles import build_styles
+
         v = get_variant("legal")
         styles = build_styles()
         result = v.build_variant_sections(

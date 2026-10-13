@@ -132,13 +132,13 @@ SKIPPABLE_SECTIONS: tuple[str, ...] = (
 #: Canonical spacing tokens in millimetres. Use these instead of raw
 #: numbers so a single site-wide tweak reflows every template.
 SPACING: dict[str, float] = {
-    "tight":    1.0,
-    "small":    2.0,
-    "medium":   4.0,
-    "large":    8.0,
-    "xlarge":  12.0,
+    "tight": 1.0,
+    "small": 2.0,
+    "medium": 4.0,
+    "large": 8.0,
+    "xlarge": 12.0,
     "section": 16.0,
-    "page":    24.0,
+    "page": 24.0,
 }
 
 #: Default CondPageBreak threshold in mm — if less than this remains on
@@ -156,6 +156,7 @@ DEFAULT_MAX_SPACER_MM: float = 60.0
 # Config readers
 # ---------------------------------------------------------------------------
 
+
 def _project_cfg(config: dict | None) -> dict:
     if not config:
         return {}
@@ -171,10 +172,7 @@ def should_skip(config: dict | None, section: str) -> bool:
     than silently doing nothing.
     """
     if section not in SKIPPABLE_SECTIONS:
-        raise ValueError(
-            f"Unknown skippable section {section!r}. "
-            f"Valid names: {', '.join(SKIPPABLE_SECTIONS)}"
-        )
+        raise ValueError(f"Unknown skippable section {section!r}. Valid names: {', '.join(SKIPPABLE_SECTIONS)}")
     return bool(_project_cfg(config).get(f"skip_{section}", False))
 
 
@@ -189,9 +187,7 @@ def section_break_mode(config: dict | None) -> str:
 def min_section_space(config: dict | None) -> float:
     """Return the CondPageBreak threshold in mm."""
     try:
-        return float(_project_cfg(config).get(
-            "min_section_space_mm", DEFAULT_MIN_SECTION_SPACE_MM
-        ))
+        return float(_project_cfg(config).get("min_section_space_mm", DEFAULT_MIN_SECTION_SPACE_MM))
     except (TypeError, ValueError):
         return DEFAULT_MIN_SECTION_SPACE_MM
 
@@ -199,9 +195,7 @@ def min_section_space(config: dict | None) -> float:
 def max_spacer_mm(config: dict | None) -> float:
     """Return the Spacer cap in mm."""
     try:
-        return float(_project_cfg(config).get(
-            "max_spacer_mm", DEFAULT_MAX_SPACER_MM
-        ))
+        return float(_project_cfg(config).get("max_spacer_mm", DEFAULT_MAX_SPACER_MM))
     except (TypeError, ValueError):
         return DEFAULT_MAX_SPACER_MM
 
@@ -209,6 +203,7 @@ def max_spacer_mm(config: dict | None) -> float:
 # ---------------------------------------------------------------------------
 # Flowable builders
 # ---------------------------------------------------------------------------
+
 
 def section_break(
     story: list,
@@ -344,9 +339,7 @@ def chapter_opener(
             # Clearing this prevents the KeepTogether from being dragged
             # into a split with an oversized *following* flowable.
             first.keepWithNext = False
-        story.append(KeepTogether(
-            [title_para, Spacer(1, spacer_mm * mm), first]
-        ))
+        story.append(KeepTogether([title_para, Spacer(1, spacer_mm * mm), first]))
         story.extend(body_flowables[1:])
     else:
         story.append(title_para)

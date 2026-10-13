@@ -34,32 +34,32 @@ _CONSERVATION_STATUSES = [
 # Key characteristic extraction patterns (attribute → list of regex patterns)
 _CHAR_PATTERNS = {
     "Diet": [
-        r'\bdiet\b[:\s]+([^.\n]{5,60})',
-        r'\bfeeds?\s+on\s+([^.\n]{5,60})',
-        r'\b(herbivore|carnivore|omnivore|insectivore|detritivore)\b',
+        r"\bdiet\b[:\s]+([^.\n]{5,60})",
+        r"\bfeeds?\s+on\s+([^.\n]{5,60})",
+        r"\b(herbivore|carnivore|omnivore|insectivore|detritivore)\b",
     ],
     "Habitat": [
-        r'\bhabitat[:\s]+([^.\n]{5,60})',
-        r'\bnative\s+to\s+([^.\n]{5,60})',
-        r'\bdistributed\s+(?:across|throughout|in)\s+([^.\n]{5,60})',
-        r'\bfound\s+in\s+([^.\n]{5,60})',
+        r"\bhabitat[:\s]+([^.\n]{5,60})",
+        r"\bnative\s+to\s+([^.\n]{5,60})",
+        r"\bdistributed\s+(?:across|throughout|in)\s+([^.\n]{5,60})",
+        r"\bfound\s+in\s+([^.\n]{5,60})",
     ],
     "Lifespan": [
-        r'\blifespan[:\s]+([^.\n]{5,40})',
-        r'\blives?\s+for\s+([^.\n]{5,40})',
-        r'\baverage\s+(?:age|lifespan)[:\s]+([^.\n]{5,40})',
+        r"\blifespan[:\s]+([^.\n]{5,40})",
+        r"\blives?\s+for\s+([^.\n]{5,40})",
+        r"\baverage\s+(?:age|lifespan)[:\s]+([^.\n]{5,40})",
     ],
     "Size / Mass": [
-        r'\bweight[:\s]+([^.\n]{5,40})',
-        r'\bmass[:\s]+([^.\n]{5,40})',
-        r'\blength[:\s]+([^.\n]{5,40})',
-        r'\bwingspan[:\s]+([^.\n]{5,40})',
+        r"\bweight[:\s]+([^.\n]{5,40})",
+        r"\bmass[:\s]+([^.\n]{5,40})",
+        r"\blength[:\s]+([^.\n]{5,40})",
+        r"\bwingspan[:\s]+([^.\n]{5,40})",
     ],
     "Reproduction": [
-        r'\bgestation[:\s]+([^.\n]{5,40})',
-        r'\bclutch\s+size[:\s]+([^.\n]{5,30})',
-        r'\bbrood[:\s]+([^.\n]{5,30})',
-        r'\bincubation[:\s]+([^.\n]{5,40})',
+        r"\bgestation[:\s]+([^.\n]{5,40})",
+        r"\bclutch\s+size[:\s]+([^.\n]{5,30})",
+        r"\bbrood[:\s]+([^.\n]{5,30})",
+        r"\bincubation[:\s]+([^.\n]{5,40})",
     ],
 }
 
@@ -70,13 +70,18 @@ class SpeciesVariant(DocSetVariant):
 
     name = "species"
     auto_detect_keywords = [
-        "species", "genus", "habitat", "conservation",
-        "morphology", "taxonomy", "specimen",
+        "species",
+        "genus",
+        "habitat",
+        "conservation",
+        "morphology",
+        "taxonomy",
+        "specimen",
     ]
 
     def build_variant_sections(self, content, flowables, styles, brand):
-        s_h1   = styles["STYLE_H1"]
-        s_h2   = styles["STYLE_H2"]
+        s_h1 = styles["STYLE_H1"]
+        s_h2 = styles["STYLE_H2"]
         s_body = styles["STYLE_BODY"]
 
         all_content = collect_text(content)
@@ -91,17 +96,21 @@ class SpeciesVariant(DocSetVariant):
 
         taxonomy_rows = self._extract_taxonomy(content, all_content)
         if taxonomy_rows:
-            flowables.extend(build_data_table(
-                ["Rank", "Taxon"],
-                taxonomy_rows,
-                title="Taxonomy",
-                brand=brand,
-            ))
+            flowables.extend(
+                build_data_table(
+                    ["Rank", "Taxon"],
+                    taxonomy_rows,
+                    title="Taxonomy",
+                    brand=brand,
+                )
+            )
         else:
-            flowables.append(_safe_para(
-                "Taxonomic classification not found in source documents — see numbered docs.",
-                s_body,
-            ))
+            flowables.append(
+                _safe_para(
+                    "Taxonomic classification not found in source documents — see numbered docs.",
+                    s_body,
+                )
+            )
 
         # --- Conservation status ---
         flowables.append(Spacer(1, 4 * mm))
@@ -110,18 +119,20 @@ class SpeciesVariant(DocSetVariant):
 
         status_found, status_note = self._extract_conservation_status(all_content)
         if status_found:
-            box_type = "warning" if status_found in (
-                "Critically Endangered", "Endangered", "Extinct in the Wild", "Extinct"
-            ) else "insight"
-            flowables.append(build_callout_box(
-                f"IUCN Status: {status_found}\n{status_note}",
-                box_type,
-                brand,
-            ))
+            box_type = (
+                "warning"
+                if status_found in ("Critically Endangered", "Endangered", "Extinct in the Wild", "Extinct")
+                else "insight"
+            )
+            flowables.append(
+                build_callout_box(
+                    f"IUCN Status: {status_found}\n{status_note}",
+                    box_type,
+                    brand,
+                )
+            )
         else:
-            flowables.append(_safe_para(
-                "Conservation status not found — see source documents.", s_body
-            ))
+            flowables.append(_safe_para("Conservation status not found — see source documents.", s_body))
 
         # --- Key characteristics ---
         flowables.append(Spacer(1, 4 * mm))
@@ -129,12 +140,14 @@ class SpeciesVariant(DocSetVariant):
         flowables.append(Spacer(1, 2 * mm))
 
         char_rows = self._extract_characteristics(all_content, status_found)
-        flowables.extend(build_data_table(
-            ["Attribute", "Value"],
-            char_rows,
-            title="Species Quick Reference",
-            brand=brand,
-        ))
+        flowables.extend(
+            build_data_table(
+                ["Attribute", "Value"],
+                char_rows,
+                title="Species Quick Reference",
+                brand=brand,
+            )
+        )
 
         # --- Morphology notes ---
         morphology_content = self._extract_morphology(content, all_content)
@@ -156,8 +169,9 @@ class SpeciesVariant(DocSetVariant):
 
         for rank in _TAXONOMIC_RANKS:
             m = re.search(
-                rf'\b{rank}\s*[:\-]\s*([A-Za-z][a-z]+(?:\s+[a-z]+)?)',
-                all_content, re.IGNORECASE,
+                rf"\b{rank}\s*[:\-]\s*([A-Za-z][a-z]+(?:\s+[a-z]+)?)",
+                all_content,
+                re.IGNORECASE,
             )
             if m:
                 rows.append([rank, m.group(1).strip()])
@@ -175,7 +189,7 @@ class SpeciesVariant(DocSetVariant):
                                 break
 
         # Scientific name (italicised binomial *Genus species*)
-        binomial_m = re.search(r'\*([A-Z][a-z]+\s+[a-z]+)\*', all_content)
+        binomial_m = re.search(r"\*([A-Z][a-z]+\s+[a-z]+)\*", all_content)
         if binomial_m and not any(r[0] == "Species" for r in rows):
             rows.append(["Scientific Name", binomial_m.group(1)])
 
@@ -186,8 +200,9 @@ class SpeciesVariant(DocSetVariant):
             if re.search(re.escape(status), all_content, re.IGNORECASE):
                 # Grab context sentence
                 m = re.search(
-                    r'([^.\n]{0,80}' + re.escape(status) + r'[^.\n]{0,80})',
-                    all_content, re.IGNORECASE,
+                    r"([^.\n]{0,80}" + re.escape(status) + r"[^.\n]{0,80})",
+                    all_content,
+                    re.IGNORECASE,
                 )
                 note = m.group(1).strip() if m else ""
                 return status, note
@@ -209,8 +224,8 @@ class SpeciesVariant(DocSetVariant):
     def _extract_morphology(self, content, all_content):
         notes = []
         morph_pat = re.compile(
-            r'(?:^|\n)\s*(?:morph(?:ology|ological)?|plumage|colou?ration|pelage'
-            r'|scale|fin|wing|tail|beak|bill)[:\s]+([^\n]{15,200})',
+            r"(?:^|\n)\s*(?:morph(?:ology|ological)?|plumage|colou?ration|pelage"
+            r"|scale|fin|wing|tail|beak|bill)[:\s]+([^\n]{15,200})",
             re.IGNORECASE | re.MULTILINE,
         )
         seen = set()

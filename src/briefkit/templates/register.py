@@ -90,7 +90,8 @@ def _register_header_footer(canvas, doc):
     canvas.setFont(b.get("font_body", "Helvetica"), 7)
     canvas.setFillColor(HexColor(b.get("caption", "#666666")))
     canvas.drawCentredString(
-        page_width / 2, bottom_y + 1.5 * mm,
+        page_width / 2,
+        bottom_y + 1.5 * mm,
         f"Page {doc.page}",
     )
 
@@ -147,10 +148,13 @@ class RegisterTemplate(BaseBriefingTemplate):
 
         # Title
         title_style = _ps(
-            "RegisterTitle", brand=self.brand,
-            fontSize=26, fontName="Helvetica-Bold",
+            "RegisterTitle",
+            brand=self.brand,
+            fontSize=26,
+            fontName="Helvetica-Bold",
             textColor=_hex(self.brand, "primary"),
-            alignment=1, spaceAfter=8,
+            alignment=1,
+            spaceAfter=8,
         )
         flowables.append(Paragraph(title, title_style))
         flowables.append(Spacer(1, 6 * mm))
@@ -159,17 +163,22 @@ class RegisterTemplate(BaseBriefingTemplate):
         org = self.brand.get("org", "")
         if org:
             org_style = _ps(
-                "RegisterOrg", brand=self.brand,
-                fontSize=14, textColor=_hex(self.brand, "caption"),
-                alignment=1, spaceAfter=4,
+                "RegisterOrg",
+                brand=self.brand,
+                fontSize=14,
+                textColor=_hex(self.brand, "caption"),
+                alignment=1,
+                spaceAfter=4,
             )
             flowables.append(Paragraph(org, org_style))
             flowables.append(Spacer(1, 4 * mm))
 
         # Date
         date_style = _ps(
-            "RegisterDate", brand=self.brand,
-            fontSize=11, textColor=_hex(self.brand, "caption"),
+            "RegisterDate",
+            brand=self.brand,
+            fontSize=11,
+            textColor=_hex(self.brand, "caption"),
             alignment=1,
         )
         flowables.append(Paragraph(self.date_str, date_style))
@@ -235,29 +244,30 @@ class RegisterTemplate(BaseBriefingTemplate):
                     sanitised = [("" if cell is None else cell) for cell in row]
                     padded = list(sanitised) + [""] * max(0, col_count - len(sanitised))
                     padded = padded[:col_count]
-                    table_data.append([
-                        _safe_para(str(cell), styles["STYLE_TABLE_BODY"])
-                        for cell in padded
-                    ])
+                    table_data.append([_safe_para(str(cell), styles["STYLE_TABLE_BODY"]) for cell in padded])
 
             t = Table(
                 table_data,
                 colWidths=[col_width] * col_count,
                 repeatRows=1,
             )
-            t.setStyle(TableStyle([
-                ("BACKGROUND",    (0, 0), (-1, 0),  primary),
-                ("TEXTCOLOR",     (0, 0), (-1, 0),  white),
-                ("FONTNAME",      (0, 0), (-1, 0),  "Helvetica-Bold"),
-                ("FONTSIZE",      (0, 0), (-1, 0),  9),
-                ("VALIGN",        (0, 0), (-1, -1), "TOP"),
-                ("TOPPADDING",    (0, 0), (-1, -1), 4),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-                ("LEFTPADDING",   (0, 0), (-1, -1), 5),
-                ("RIGHTPADDING",  (0, 0), (-1, -1), 5),
-                ("GRID",          (0, 0), (-1, -1), 0.4, rule_c),
-                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [white, table_alt]),
-            ]))
+            t.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, 0), primary),
+                        ("TEXTCOLOR", (0, 0), (-1, 0), white),
+                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                        ("FONTSIZE", (0, 0), (-1, 0), 9),
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("TOPPADDING", (0, 0), (-1, -1), 4),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 5),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+                        ("GRID", (0, 0), (-1, -1), 0.4, rule_c),
+                        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [white, table_alt]),
+                    ]
+                )
+            )
 
             flowables.append(t)
             flowables.append(Spacer(1, 6 * mm))
@@ -281,9 +291,12 @@ class RegisterTemplate(BaseBriefingTemplate):
             return flowables
 
         for idx, sub in enumerate(subsystems, 1):
-            flowables.append(Paragraph(
-                f"{idx}. {sub['name']}", self.styles["STYLE_H2"],
-            ))
+            flowables.append(
+                Paragraph(
+                    f"{idx}. {sub['name']}",
+                    self.styles["STYLE_H2"],
+                )
+            )
             flowables.append(Spacer(1, 3 * mm))
 
             blocks = sub.get("blocks") or parse_markdown(sub.get("content", ""))
@@ -311,23 +324,33 @@ class RegisterTemplate(BaseBriefingTemplate):
         flowables: list = []
 
         _ps(
-            "RegisterRule", brand=self.brand,
-            fontSize=1, spaceAfter=4,
+            "RegisterRule",
+            brand=self.brand,
+            fontSize=1,
+            spaceAfter=4,
         )
         flowables.append(Spacer(1, 2 * mm))
 
         stat_style = _ps(
-            "RegisterStat", brand=self.brand,
-            fontSize=9, textColor=_hex(self.brand, "caption"),
+            "RegisterStat",
+            brand=self.brand,
+            fontSize=9,
+            textColor=_hex(self.brand, "caption"),
             leading=13,
         )
 
-        flowables.append(Paragraph(
-            f"Total rows: {total_rows}", stat_style,
-        ))
-        flowables.append(Paragraph(
-            f"Generated: {self.date_str}", stat_style,
-        ))
+        flowables.append(
+            Paragraph(
+                f"Total rows: {total_rows}",
+                stat_style,
+            )
+        )
+        flowables.append(
+            Paragraph(
+                f"Generated: {self.date_str}",
+                stat_style,
+            )
+        )
 
         return flowables
 
@@ -346,9 +369,12 @@ class RegisterTemplate(BaseBriefingTemplate):
         doc_ids_cfg = self.config.get("doc_ids", {})
         if doc_ids_cfg.get("enabled", True):
             from briefkit.doc_ids import get_or_assign_doc_id
+
             self.doc_id = get_or_assign_doc_id(
-                self.target_path, self.level,
-                title, config=self.config,
+                self.target_path,
+                self.level,
+                title,
+                config=self.config,
             )
 
         # Populate register header/footer state

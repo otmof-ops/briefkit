@@ -68,15 +68,22 @@ class LetterTemplate(BaseBriefingTemplate):
         # --- Letterhead ---
         if org:
             lh_style = _ps(
-                "LetterHead", brand=b, fontSize=14, textColor=primary,
-                fontName="Helvetica-Bold", spaceAfter=2,
+                "LetterHead",
+                brand=b,
+                fontSize=14,
+                textColor=primary,
+                fontName="Helvetica-Bold",
+                spaceAfter=2,
             )
             story.append(Paragraph(org, lh_style))
 
         tagline = project.get("tagline", "")
         if tagline:
             tag_style = _ps(
-                "LetterTagline", brand=b, fontSize=9, textColor=caption_c,
+                "LetterTagline",
+                brand=b,
+                fontSize=9,
+                textColor=caption_c,
                 fontName="Helvetica-Oblique",
             )
             story.append(Paragraph(tagline, tag_style))
@@ -89,9 +96,13 @@ class LetterTemplate(BaseBriefingTemplate):
         # Divider line
         story.append(Spacer(1, 3 * mm))
         divider = Table([[""]], colWidths=[self.content_width], rowHeights=[1])
-        divider.setStyle(TableStyle([
-            ("LINEABOVE", (0, 0), (-1, -1), 1, HexColor(b.get("primary", "#1B2A4A"))),
-        ]))
+        divider.setStyle(
+            TableStyle(
+                [
+                    ("LINEABOVE", (0, 0), (-1, -1), 1, HexColor(b.get("primary", "#1B2A4A"))),
+                ]
+            )
+        )
         story.append(divider)
         story.append(Spacer(1, 8 * mm))
 
@@ -104,7 +115,10 @@ class LetterTemplate(BaseBriefingTemplate):
         title = content.get("title", "")
         if title:
             ref_style = _ps(
-                "LetterRef", brand=b, fontSize=10, textColor=body_c,
+                "LetterRef",
+                brand=b,
+                fontSize=10,
+                textColor=body_c,
                 fontName="Helvetica-Bold",
             )
             story.append(Paragraph(f"RE: {title}", ref_style))
@@ -128,8 +142,13 @@ class LetterTemplate(BaseBriefingTemplate):
             name = sub.get("name", "")
             if name:
                 h_style = _ps(
-                    "LetterH2", brand=b, fontSize=11, textColor=primary,
-                    fontName="Helvetica-Bold", spaceBefore=6, spaceAfter=3,
+                    "LetterH2",
+                    brand=b,
+                    fontSize=11,
+                    textColor=primary,
+                    fontName="Helvetica-Bold",
+                    spaceBefore=6,
+                    spaceAfter=3,
                 )
                 story.append(_safe_para(name, h_style))
 
@@ -157,7 +176,10 @@ class LetterTemplate(BaseBriefingTemplate):
 
         # Signature block
         sig_style = _ps(
-            "LetterSig", brand=b, fontSize=10, textColor=body_c,
+            "LetterSig",
+            brand=b,
+            fontSize=10,
+            textColor=body_c,
             fontName="Helvetica-Bold",
         )
         if org:
@@ -186,9 +208,12 @@ class LetterTemplate(BaseBriefingTemplate):
         doc_ids_cfg = self.config.get("doc_ids", {})
         if doc_ids_cfg.get("enabled", True):
             from briefkit.doc_ids import get_or_assign_doc_id
+
             self.doc_id = get_or_assign_doc_id(
-                self.target_path, self.level,
-                content.get("title", ""), config=self.config,
+                self.target_path,
+                self.level,
+                content.get("title", ""),
+                config=self.config,
             )
 
         # Header/footer state
@@ -197,7 +222,7 @@ class LetterTemplate(BaseBriefingTemplate):
         margins = layout.get("margins", {})
         top_m = margins.get("top", 25) * mm
         bottom_m = margins.get("bottom", 22) * mm
-        left_m = margins.get("left", 25) * mm   # Wider margins for letters
+        left_m = margins.get("left", 25) * mm  # Wider margins for letters
         right_m = margins.get("right", 25) * mm
 
         page_size = _PAGE_SIZES.get(layout.get("page_size", "A4"), A4)
@@ -222,7 +247,8 @@ class LetterTemplate(BaseBriefingTemplate):
             canvas.setFont("Helvetica", 8)
             canvas.setFillColor(caption_color)
             canvas.drawCentredString(
-                doc_inner.pagesize[0] / 2, 12 * mm,
+                doc_inner.pagesize[0] / 2,
+                12 * mm,
                 f"Page {doc_inner.page}",
             )
             canvas.restoreState()

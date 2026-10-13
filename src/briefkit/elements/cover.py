@@ -46,14 +46,14 @@ def build_cover_page(title, subtitle, path, level, date, doc_id="", brand=None, 
     cw = content_width or CONTENT_WIDTH
     styles = build_styles(b)
 
-    primary   = _hex(b, "primary")
+    primary = _hex(b, "primary")
     secondary = _hex(b, "secondary")
-    accent    = _hex(b, "accent")
-    caption   = _hex(b, "caption")
+    accent = _hex(b, "accent")
+    caption = _hex(b, "caption")
 
-    org      = b.get("org", "")
-    abn      = b.get("abn", "")
-    tagline  = b.get("tagline", "")
+    org = b.get("org", "")
+    abn = b.get("abn", "")
+    tagline = b.get("tagline", "")
 
     level_labels = {
         1: "DIVISION BRIEFING",
@@ -72,27 +72,39 @@ def build_cover_page(title, subtitle, path, level, date, doc_id="", brand=None, 
 
     # --- Top bar (primary color) ---
     left_text = f'<font color="white"><b>{org}</b></font>' if org else '<font color="white"><b>\u00a0</b></font>'
-    navy_bar_data = [[
-        Paragraph(
-            left_text,
-            _ps("CoverTopBarLeft", brand=b, fontSize=10, textColor=white, fontName=b.get("font_heading", "Helvetica-Bold")),
-        ),
-        Paragraph(
-            f'<font color="white">{level_label}</font>',
-            _ps("CoverTopBarRight", brand=b, fontSize=9, textColor=white, alignment=2),
-        ),
-    ]]
+    navy_bar_data = [
+        [
+            Paragraph(
+                left_text,
+                _ps(
+                    "CoverTopBarLeft",
+                    brand=b,
+                    fontSize=10,
+                    textColor=white,
+                    fontName=b.get("font_heading", "Helvetica-Bold"),
+                ),
+            ),
+            Paragraph(
+                f'<font color="white">{level_label}</font>',
+                _ps("CoverTopBarRight", brand=b, fontSize=9, textColor=white, alignment=2),
+            ),
+        ]
+    ]
     navy_bar = Table(
         navy_bar_data,
         colWidths=[cw * 0.6, cw * 0.4],
         rowHeights=[14 * mm],
     )
-    navy_bar.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), primary),
-        ("VALIGN",     (0, 0), (-1, -1), "MIDDLE"),
-        ("LEFTPADDING",  (0, 0), (0, -1), 6),
-        ("RIGHTPADDING", (-1, 0), (-1, -1), 6),
-    ]))
+    navy_bar.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), primary),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING", (0, 0), (0, -1), 6),
+                ("RIGHTPADDING", (-1, 0), (-1, -1), 6),
+            ]
+        )
+    )
     flowables.append(navy_bar)
     flowables.append(Spacer(1, 30 * mm))
 
@@ -103,7 +115,10 @@ def build_cover_page(title, subtitle, path, level, date, doc_id="", brand=None, 
     # (28 pt) and long titles overflowed the cover. Now we build a
     # dynamic style and actually use it.
     title_font_size = 28
-    while stringWidth(str(title), b.get("font_heading", "Helvetica-Bold"), title_font_size) > cw * 0.85 and title_font_size > 16:
+    while (
+        stringWidth(str(title), b.get("font_heading", "Helvetica-Bold"), title_font_size) > cw * 0.85
+        and title_font_size > 16
+    ):
         title_font_size -= 2
 
     if title_font_size == 28:
@@ -139,11 +154,15 @@ def build_cover_page(title, subtitle, path, level, date, doc_id="", brand=None, 
     # --- Accent divider ---
     divider_data = [[""]]
     divider = Table(divider_data, colWidths=[cw], rowHeights=[3])
-    divider.setStyle(TableStyle([
-        ("BACKGROUND",    (0, 0), (-1, -1), accent),
-        ("TOPPADDING",    (0, 0), (-1, -1), 0),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-    ]))
+    divider.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), accent),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            ]
+        )
+    )
     flowables.append(divider)
     flowables.append(Spacer(1, 8 * mm))
 
@@ -161,47 +180,71 @@ def build_cover_page(title, subtitle, path, level, date, doc_id="", brand=None, 
     flowables.append(Spacer(1, 4 * mm))
 
     # --- Level badge (secondary color pill) ---
-    badge_data = [[
-        Paragraph(
-            f'<font color="white"><b>{level_label}</b></font>',
-            _ps("CoverBadge", brand=b, fontSize=9, textColor=white,
-                fontName=b.get("font_heading", "Helvetica-Bold"), alignment=1),
-        )
-    ]]
+    badge_data = [
+        [
+            Paragraph(
+                f'<font color="white"><b>{level_label}</b></font>',
+                _ps(
+                    "CoverBadge",
+                    brand=b,
+                    fontSize=9,
+                    textColor=white,
+                    fontName=b.get("font_heading", "Helvetica-Bold"),
+                    alignment=1,
+                ),
+            )
+        ]
+    ]
     badge = Table(badge_data, colWidths=[80 * mm], rowHeights=[8 * mm])
-    badge.setStyle(TableStyle([
-        ("BACKGROUND",    (0, 0), (-1, -1), secondary),
-        ("ALIGN",         (0, 0), (-1, -1), "CENTER"),
-        ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
-        ("ROUNDEDCORNERS", [4, 4, 4, 4]),
-    ]))
+    badge.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), secondary),
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("ROUNDEDCORNERS", [4, 4, 4, 4]),
+            ]
+        )
+    )
     badge_wrapper = Table([[badge]], colWidths=[cw])
-    badge_wrapper.setStyle(TableStyle([
-        ("ALIGN",         (0, 0), (-1, -1), "CENTER"),
-        ("TOPPADDING",    (0, 0), (-1, -1), 0),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-    ]))
+    badge_wrapper.setStyle(
+        TableStyle(
+            [
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            ]
+        )
+    )
     flowables.append(badge_wrapper)
     flowables.append(Spacer(1, 30 * mm))
 
     # --- Date / version row ---
     date_str = date if isinstance(date, str) else date.strftime("%d %B %Y")
-    meta_data = [[
-        Paragraph(f"<b>Generated:</b> {date_str}", styles["STYLE_CAPTION"]),
-    ]]
+    meta_data = [
+        [
+            Paragraph(f"<b>Generated:</b> {date_str}", styles["STYLE_CAPTION"]),
+        ]
+    ]
     meta = Table(meta_data, colWidths=[cw])
-    meta.setStyle(TableStyle([
-        ("TOPPADDING",    (0, 0), (-1, -1), 0),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-    ]))
+    meta.setStyle(
+        TableStyle(
+            [
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            ]
+        )
+    )
     flowables.append(meta)
 
     # --- Document ID ---
     if doc_id:
-        flowables.append(Paragraph(
-            f"Document ID: {doc_id}",
-            _ps("CoverDocID", brand=b, fontSize=10, textColor=caption, alignment=1),
-        ))
+        flowables.append(
+            Paragraph(
+                f"Document ID: {doc_id}",
+                _ps("CoverDocID", brand=b, fontSize=10, textColor=caption, alignment=1),
+            )
+        )
 
     flowables.append(Spacer(1, 20 * mm))
 
@@ -211,30 +254,44 @@ def build_cover_page(title, subtitle, path, level, date, doc_id="", brand=None, 
     org_display = org if org else ""
 
     footer_left_content = f'<font color="white">{org_display}{abn_part}</font>'
-    footer_right_content = f'<font color="white">{tagline_part}</font>' if tagline_part else '<font color="white">\u00a0</font>'
+    footer_right_content = (
+        f'<font color="white">{tagline_part}</font>' if tagline_part else '<font color="white">\u00a0</font>'
+    )
 
-    footer_data = [[
-        Paragraph(
-            footer_left_content,
-            _ps("CoverFooterLeft", brand=b, fontSize=7, textColor=white),
-        ),
-        Paragraph(
-            footer_right_content,
-            _ps("CoverFooterRight", brand=b, fontSize=7, textColor=white,
-                fontName=b.get("font_caption", "Helvetica-Oblique"), alignment=2),
-        ),
-    ]]
+    footer_data = [
+        [
+            Paragraph(
+                footer_left_content,
+                _ps("CoverFooterLeft", brand=b, fontSize=7, textColor=white),
+            ),
+            Paragraph(
+                footer_right_content,
+                _ps(
+                    "CoverFooterRight",
+                    brand=b,
+                    fontSize=7,
+                    textColor=white,
+                    fontName=b.get("font_caption", "Helvetica-Oblique"),
+                    alignment=2,
+                ),
+            ),
+        ]
+    ]
     footer_bar = Table(
         footer_data,
         colWidths=[cw * 0.6, cw * 0.4],
         rowHeights=[10 * mm],
     )
-    footer_bar.setStyle(TableStyle([
-        ("BACKGROUND",   (0, 0), (-1, -1), primary),
-        ("VALIGN",       (0, 0), (-1, -1), "MIDDLE"),
-        ("LEFTPADDING",  (0, 0), (0, -1),  6),
-        ("RIGHTPADDING", (-1, 0), (-1, -1), 6),
-    ]))
+    footer_bar.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), primary),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING", (0, 0), (0, -1), 6),
+                ("RIGHTPADDING", (-1, 0), (-1, -1), 6),
+            ]
+        )
+    )
     flowables.append(footer_bar)
     flowables.append(PageBreak())
 

@@ -53,29 +53,29 @@ from briefkit.styles import (
 # ---------------------------------------------------------------------------
 
 _ACTION_PATTERN = re.compile(
-    r'(?:^|\n)\s*(?:\*\*)?(?:Action(?:\s*Item)?|TODO|ACTION\s*ITEM)[:\s]+\s*'
-    r'(.{10,300})',
+    r"(?:^|\n)\s*(?:\*\*)?(?:Action(?:\s*Item)?|TODO|ACTION\s*ITEM)[:\s]+\s*"
+    r"(.{10,300})",
     re.IGNORECASE | re.MULTILINE,
 )
 
 _RESOLUTION_PATTERN = re.compile(
-    r'(?:^|\n)\s*(?:\*\*)?(?:RESOLVED|RESOLUTION)[:\s]+\s*(.{10,400})',
+    r"(?:^|\n)\s*(?:\*\*)?(?:RESOLVED|RESOLUTION)[:\s]+\s*(.{10,400})",
     re.IGNORECASE | re.MULTILINE,
 )
 
 _ATTENDEE_SECTION_PATTERN = re.compile(
-    r'(?:^|\n)#+\s*(?:Attendees?|Present|Participants?|Apologies)\s*\n'
-    r'((?:\s*[\*\-]\s+.+\n?)+)',
+    r"(?:^|\n)#+\s*(?:Attendees?|Present|Participants?|Apologies)\s*\n"
+    r"((?:\s*[\*\-]\s+.+\n?)+)",
     re.IGNORECASE | re.MULTILINE,
 )
 
 _NEXT_MEETING_PATTERN = re.compile(
-    r'(?:^|\n)(?:#+\s*)?(?:Next\s+Meeting)[:\s]+\s*(.{5,200})',
+    r"(?:^|\n)(?:#+\s*)?(?:Next\s+Meeting)[:\s]+\s*(.{5,200})",
     re.IGNORECASE | re.MULTILINE,
 )
 
 _ADJOURN_PATTERN = re.compile(
-    r'(?:adjourned|closed|ended)\s+(?:at\s+)?(\d{1,2}[:\.]?\d{0,2}\s*(?:am|pm|AM|PM)?)',
+    r"(?:adjourned|closed|ended)\s+(?:at\s+)?(\d{1,2}[:\.]?\d{0,2}\s*(?:am|pm|AM|PM)?)",
     re.IGNORECASE,
 )
 
@@ -127,7 +127,8 @@ def _minutes_header_footer(canvas, doc):
     canvas.setFont("Helvetica", 7)
     canvas.setFillColor(caption_c)
     canvas.drawCentredString(
-        page_width / 2, bottom_y + 1.5 * mm,
+        page_width / 2,
+        bottom_y + 1.5 * mm,
         f"Page {doc.page}",
     )
 
@@ -214,18 +215,24 @@ class MinutesTemplate(BaseBriefingTemplate):
 
         # Title
         title_style = _ps(
-            "MinutesTitle", brand=self.brand,
-            fontSize=22, fontName="Helvetica-Bold",
+            "MinutesTitle",
+            brand=self.brand,
+            fontSize=22,
+            fontName="Helvetica-Bold",
             textColor=_hex(self.brand, "primary"),
-            alignment=1, spaceAfter=6,
+            alignment=1,
+            spaceAfter=6,
         )
         flowables.append(Paragraph(title, title_style))
 
         # Subtitle: "Meeting Minutes"
         subtitle_style = _ps(
-            "MinutesSubtitle", brand=self.brand,
-            fontSize=13, textColor=_hex(self.brand, "caption"),
-            alignment=1, spaceAfter=8,
+            "MinutesSubtitle",
+            brand=self.brand,
+            fontSize=13,
+            textColor=_hex(self.brand, "caption"),
+            alignment=1,
+            spaceAfter=8,
         )
         flowables.append(Paragraph("Meeting Minutes", subtitle_style))
         flowables.append(Spacer(1, 4 * mm))
@@ -251,13 +258,17 @@ class MinutesTemplate(BaseBriefingTemplate):
         if meta_rows:
             build_styles(self.brand)
             label_style = _ps(
-                "MinutesMetaLabel", brand=self.brand,
-                fontSize=10, fontName="Helvetica-Bold",
+                "MinutesMetaLabel",
+                brand=self.brand,
+                fontSize=10,
+                fontName="Helvetica-Bold",
                 textColor=_hex(self.brand, "primary"),
             )
             value_style = _ps(
-                "MinutesMetaValue", brand=self.brand,
-                fontSize=10, textColor=_hex(self.brand, "body_text"),
+                "MinutesMetaValue",
+                brand=self.brand,
+                fontSize=10,
+                textColor=_hex(self.brand, "body_text"),
             )
 
             table_data = [
@@ -272,15 +283,18 @@ class MinutesTemplate(BaseBriefingTemplate):
                 table_data,
                 colWidths=[35 * mm, self.content_width - 35 * mm],
             )
-            t.setStyle(TableStyle([
-                ("VALIGN",        (0, 0), (-1, -1), "TOP"),
-                ("TOPPADDING",    (0, 0), (-1, -1), 3),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-                ("LEFTPADDING",   (0, 0), (-1, -1), 4),
-                ("RIGHTPADDING",  (0, 0), (-1, -1), 4),
-                ("LINEBELOW",     (0, -1), (-1, -1), 0.4,
-                 HexColor(self.brand.get("rule", "#CCCCCC"))),
-            ]))
+            t.setStyle(
+                TableStyle(
+                    [
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("TOPPADDING", (0, 0), (-1, -1), 3),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 4),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+                        ("LINEBELOW", (0, -1), (-1, -1), 0.4, HexColor(self.brand.get("rule", "#CCCCCC"))),
+                    ]
+                )
+            )
 
             flowables.append(t)
 
@@ -299,14 +313,15 @@ class MinutesTemplate(BaseBriefingTemplate):
 
         # Try structured extraction from markdown headings
         for heading_match in re.finditer(
-            r'(?:^|\n)#+\s*(Attendees?|Present|Participants?|Apologies)\s*\n'
-            r'((?:\s*[\*\-]\s+.+\n?)+)',
-            all_text, re.IGNORECASE | re.MULTILINE,
+            r"(?:^|\n)#+\s*(Attendees?|Present|Participants?|Apologies)\s*\n"
+            r"((?:\s*[\*\-]\s+.+\n?)+)",
+            all_text,
+            re.IGNORECASE | re.MULTILINE,
         ):
             category = heading_match.group(1).strip().lower()
             if category in ("attendee", "attendees", "present", "participants", "participant"):
                 category = "present"
-            names = re.findall(r'[\*\-]\s+(.+)', heading_match.group(2))
+            names = re.findall(r"[\*\-]\s+(.+)", heading_match.group(2))
             names = [n.strip() for n in names if n.strip()]
             if names:
                 result[category] = names
@@ -321,15 +336,21 @@ class MinutesTemplate(BaseBriefingTemplate):
         flowables.append(Spacer(1, 2 * mm))
 
         label_style = _ps(
-            "AttendeeLabel", brand=self.brand,
-            fontSize=10, fontName="Helvetica-Bold",
+            "AttendeeLabel",
+            brand=self.brand,
+            fontSize=10,
+            fontName="Helvetica-Bold",
             textColor=_hex(self.brand, "primary"),
-            spaceBefore=4, spaceAfter=2,
+            spaceBefore=4,
+            spaceAfter=2,
         )
         name_style = _ps(
-            "AttendeeName", brand=self.brand,
-            fontSize=10, textColor=_hex(self.brand, "body_text"),
-            leftIndent=12, spaceAfter=1,
+            "AttendeeName",
+            brand=self.brand,
+            fontSize=10,
+            textColor=_hex(self.brand, "body_text"),
+            leftIndent=12,
+            spaceAfter=1,
         )
 
         for category, names in attendees.items():
@@ -423,11 +444,13 @@ class MinutesTemplate(BaseBriefingTemplate):
                         key = desc[:50].lower()
                         if key and key not in seen:
                             seen.add(key)
-                            actions.append({
-                                "description": desc,
-                                "who": who,
-                                "when": when,
-                            })
+                            actions.append(
+                                {
+                                    "description": desc,
+                                    "who": who,
+                                    "when": when,
+                                }
+                            )
 
         return actions
 
@@ -441,16 +464,23 @@ class MinutesTemplate(BaseBriefingTemplate):
         headers = ["#", "Action", "Responsible", "Due"]
         rows = []
         for idx, action in enumerate(actions, 1):
-            rows.append([
-                str(idx),
-                action.get("description", ""),
-                action.get("who", ""),
-                action.get("when", ""),
-            ])
+            rows.append(
+                [
+                    str(idx),
+                    action.get("description", ""),
+                    action.get("who", ""),
+                    action.get("when", ""),
+                ]
+            )
 
-        flowables.extend(build_data_table(
-            headers, rows, brand=self.brand, content_width=self.content_width,
-        ))
+        flowables.extend(
+            build_data_table(
+                headers,
+                rows,
+                brand=self.brand,
+                content_width=self.content_width,
+            )
+        )
 
         return flowables
 
@@ -480,16 +510,24 @@ class MinutesTemplate(BaseBriefingTemplate):
         flowables.append(Spacer(1, 3 * mm))
 
         res_style = _ps(
-            "MinutesResolution", brand=self.brand,
-            fontSize=10, fontName="Helvetica-Bold",
+            "MinutesResolution",
+            brand=self.brand,
+            fontSize=10,
+            fontName="Helvetica-Bold",
             textColor=_hex(self.brand, "body_text"),
-            leading=14, leftIndent=12, spaceBefore=3, spaceAfter=3,
+            leading=14,
+            leftIndent=12,
+            spaceBefore=3,
+            spaceAfter=3,
         )
 
         for idx, text in enumerate(resolutions, 1):
-            flowables.append(Paragraph(
-                f"Resolution {idx}: {text}", res_style,
-            ))
+            flowables.append(
+                Paragraph(
+                    f"Resolution {idx}: {text}",
+                    res_style,
+                )
+            )
 
         return flowables
 
@@ -535,33 +573,48 @@ class MinutesTemplate(BaseBriefingTemplate):
         adjourn_time = m.group(1).strip() if m else ""
 
         closing_style = _ps(
-            "MinutesClosing", brand=self.brand,
-            fontSize=10, textColor=_hex(self.brand, "body_text"),
-            leading=14, spaceBefore=4,
+            "MinutesClosing",
+            brand=self.brand,
+            fontSize=10,
+            textColor=_hex(self.brand, "body_text"),
+            leading=14,
+            spaceBefore=4,
         )
         sig_style = _ps(
-            "MinutesSig", brand=self.brand,
-            fontSize=10, textColor=_hex(self.brand, "body_text"),
-            leading=20, spaceBefore=16,
+            "MinutesSig",
+            brand=self.brand,
+            fontSize=10,
+            textColor=_hex(self.brand, "body_text"),
+            leading=20,
+            spaceBefore=16,
         )
 
         if adjourn_time:
-            flowables.append(Paragraph(
-                f"Meeting adjourned at {adjourn_time}.", closing_style,
-            ))
+            flowables.append(
+                Paragraph(
+                    f"Meeting adjourned at {adjourn_time}.",
+                    closing_style,
+                )
+            )
         else:
-            flowables.append(Paragraph(
-                "Meeting adjourned.", closing_style,
-            ))
+            flowables.append(
+                Paragraph(
+                    "Meeting adjourned.",
+                    closing_style,
+                )
+            )
 
         flowables.append(Spacer(1, 10 * mm))
 
         # Chair signature line
         project = self.config.get("project", {})
         chair = project.get("chair", "Chair")
-        flowables.append(Paragraph(
-            f"____________________________<br/>{chair}", sig_style,
-        ))
+        flowables.append(
+            Paragraph(
+                f"____________________________<br/>{chair}",
+                sig_style,
+            )
+        )
 
         return flowables
 
@@ -580,9 +633,12 @@ class MinutesTemplate(BaseBriefingTemplate):
         doc_ids_cfg = self.config.get("doc_ids", {})
         if doc_ids_cfg.get("enabled", True):
             from briefkit.doc_ids import get_or_assign_doc_id
+
             self.doc_id = get_or_assign_doc_id(
-                self.target_path, self.level,
-                title, config=self.config,
+                self.target_path,
+                self.level,
+                title,
+                config=self.config,
             )
 
         # Populate minutes header/footer state

@@ -63,8 +63,7 @@ class CertificateTemplate(BaseBriefingTemplate):
     def _detect_cert_type(self, title: str) -> str:
         """Derive certificate type from the content title."""
         lower = title.lower()
-        for keyword in ("achievement", "recognition", "excellence",
-                        "participation", "appreciation", "completion"):
+        for keyword in ("achievement", "recognition", "excellence", "participation", "appreciation", "completion"):
             if keyword in lower:
                 return keyword.upper()
         return "COMPLETION"
@@ -110,39 +109,62 @@ class CertificateTemplate(BaseBriefingTemplate):
 
         # --- Certificate title ---
         title_style = _ps(
-            "CertTitle", brand=b, fontSize=28, textColor=primary,
-            fontName="Helvetica-Bold", alignment=1, spaceAfter=6,
+            "CertTitle",
+            brand=b,
+            fontSize=28,
+            textColor=primary,
+            fontName="Helvetica-Bold",
+            alignment=1,
+            spaceAfter=6,
         )
         story.append(_safe_para(f"CERTIFICATE OF {cert_type}", title_style))
 
         # --- Decorative accent line ---
         story.append(Spacer(1, 4 * mm))
         line_tbl = Table([[""]], colWidths=[80 * mm], rowHeights=[0.8])
-        line_tbl.setStyle(TableStyle([
-            ("LINEABOVE", (0, 0), (-1, -1), 1.5, accent),
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-        ]))
+        line_tbl.setStyle(
+            TableStyle(
+                [
+                    ("LINEABOVE", (0, 0), (-1, -1), 1.5, accent),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ]
+            )
+        )
         # Wrap in centering table
         wrapper = Table([[line_tbl]], colWidths=[self.content_width])
-        wrapper.setStyle(TableStyle([
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ]))
+        wrapper.setStyle(
+            TableStyle(
+                [
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ]
+            )
+        )
         story.append(wrapper)
         story.append(Spacer(1, 10 * mm))
 
         # --- "This certifies that" ---
         certifies_style = _ps(
-            "CertCertifies", brand=b, fontSize=13, textColor=body_c,
-            fontName="Helvetica-Oblique", alignment=1, spaceAfter=4,
+            "CertCertifies",
+            brand=b,
+            fontSize=13,
+            textColor=body_c,
+            fontName="Helvetica-Oblique",
+            alignment=1,
+            spaceAfter=4,
         )
         story.append(_safe_para("This certifies that", certifies_style))
         story.append(Spacer(1, 6 * mm))
 
         # --- Recipient name ---
         name_style = _ps(
-            "CertRecipient", brand=b, fontSize=24, textColor=primary,
-            fontName="Helvetica-Bold", alignment=1, spaceAfter=4,
+            "CertRecipient",
+            brand=b,
+            fontSize=24,
+            textColor=primary,
+            fontName="Helvetica-Bold",
+            alignment=1,
+            spaceAfter=4,
         )
         story.append(_safe_para(_safe_text(recipient), name_style))
         story.append(Spacer(1, 6 * mm))
@@ -150,8 +172,13 @@ class CertificateTemplate(BaseBriefingTemplate):
         # --- Achievement description ---
         if description:
             desc_style = _ps(
-                "CertDesc", brand=b, fontSize=11, textColor=body_c,
-                fontName="Helvetica", alignment=1, spaceAfter=4,
+                "CertDesc",
+                brand=b,
+                fontSize=11,
+                textColor=body_c,
+                fontName="Helvetica",
+                alignment=1,
+                spaceAfter=4,
                 leading=15,
             )
             story.append(_safe_para(description, desc_style))
@@ -161,15 +188,24 @@ class CertificateTemplate(BaseBriefingTemplate):
 
         # --- Date and org ---
         date_style = _ps(
-            "CertDate", brand=b, fontSize=10, textColor=caption_c,
-            alignment=1, spaceAfter=2,
+            "CertDate",
+            brand=b,
+            fontSize=10,
+            textColor=caption_c,
+            alignment=1,
+            spaceAfter=2,
         )
         story.append(_safe_para(self.date_str, date_style))
 
         if org:
             org_style = _ps(
-                "CertOrg", brand=b, fontSize=11, textColor=body_c,
-                fontName="Helvetica-Bold", alignment=1, spaceAfter=2,
+                "CertOrg",
+                brand=b,
+                fontSize=11,
+                textColor=body_c,
+                fontName="Helvetica-Bold",
+                alignment=1,
+                spaceAfter=2,
             )
             story.append(_safe_para(org, org_style))
 
@@ -181,19 +217,30 @@ class CertificateTemplate(BaseBriefingTemplate):
             colWidths=[60 * mm],
             rowHeights=[0.5],
         )
-        sig_line.setStyle(TableStyle([
-            ("LINEBELOW", (0, 0), (-1, -1), 0.8,
-             HexColor(b.get("body_text", "#333333"))),
-        ]))
+        sig_line.setStyle(
+            TableStyle(
+                [
+                    ("LINEBELOW", (0, 0), (-1, -1), 0.8, HexColor(b.get("body_text", "#333333"))),
+                ]
+            )
+        )
         sig_wrapper = Table([[sig_line]], colWidths=[self.content_width])
-        sig_wrapper.setStyle(TableStyle([
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-        ]))
+        sig_wrapper.setStyle(
+            TableStyle(
+                [
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ]
+            )
+        )
         story.append(sig_wrapper)
 
         sig_label_style = _ps(
-            "CertSigLabel", brand=b, fontSize=9, textColor=caption_c,
-            alignment=1, spaceAfter=0,
+            "CertSigLabel",
+            brand=b,
+            fontSize=9,
+            textColor=caption_c,
+            alignment=1,
+            spaceAfter=0,
         )
         story.append(_safe_para("Authorized Signature", sig_label_style))
 
@@ -213,9 +260,12 @@ class CertificateTemplate(BaseBriefingTemplate):
         doc_ids_cfg = self.config.get("doc_ids", {})
         if doc_ids_cfg.get("enabled", True):
             from briefkit.doc_ids import get_or_assign_doc_id
+
             self.doc_id = get_or_assign_doc_id(
-                self.target_path, self.level,
-                content.get("title", ""), config=self.config,
+                self.target_path,
+                self.level,
+                content.get("title", ""),
+                config=self.config,
             )
 
         # Header/footer state — minimal for certificate

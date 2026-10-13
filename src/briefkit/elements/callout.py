@@ -12,8 +12,7 @@ from reportlab.platypus import Paragraph, Spacer, Table, TableStyle
 from briefkit.styles import CONTENT_WIDTH, _get_brand, _hex, _ps, _safe_para, build_styles
 
 
-def build_callout_box(text, box_type="insight", brand=None, content_width=None,
-                      already_escaped=False):
+def build_callout_box(text, box_type="insight", brand=None, content_width=None, already_escaped=False):
     """
     Build a callout box Table flowable.
 
@@ -43,24 +42,24 @@ def build_callout_box(text, box_type="insight", brand=None, content_width=None,
     styles = build_styles(b)
 
     secondary = _hex(b, "secondary")
-    accent    = _hex(b, "accent")
-    rule      = _hex(b, "rule")
+    accent = _hex(b, "accent")
+    rule = _hex(b, "rule")
 
     # Brand-derived semantic colors
     success_c = HexColor(b.get("success", "#00b894"))
     HexColor(b.get("warning", "#fdcb6e"))
-    danger_c  = HexColor(b.get("danger", "#d63031"))
-    code_bg   = HexColor(b.get("code_bg", "#f5f6fa"))
+    danger_c = HexColor(b.get("danger", "#d63031"))
+    code_bg = HexColor(b.get("code_bg", "#f5f6fa"))
 
-    gold_bg  = HexColor("#fef9e7")
+    gold_bg = HexColor("#fef9e7")
     green_bg = HexColor("#eafaf1")
-    red_bg   = HexColor("#fdeaea")
+    red_bg = HexColor("#fdeaea")
 
     config = {
-        "insight":  {"border": secondary, "bg": code_bg,   "label": "KEY INSIGHT"},
-        "takeaway": {"border": accent,    "bg": gold_bg,   "label": "KEY TAKEAWAYS"},
-        "warning":  {"border": danger_c,  "bg": red_bg,    "label": "WARNING"},
-        "learn":    {"border": success_c, "bg": green_bg,  "label": "WHAT YOU'LL LEARN"},
+        "insight": {"border": secondary, "bg": code_bg, "label": "KEY INSIGHT"},
+        "takeaway": {"border": accent, "bg": gold_bg, "label": "KEY TAKEAWAYS"},
+        "warning": {"border": danger_c, "bg": red_bg, "label": "WARNING"},
+        "learn": {"border": success_c, "bg": green_bg, "label": "WHAT YOU'LL LEARN"},
     }
     cfg = config.get(box_type, config["insight"])
 
@@ -90,10 +89,12 @@ def build_callout_box(text, box_type="insight", brand=None, content_width=None,
 
     content_cell = [Paragraph(cfg["label"], label_style)] + paragraphs
 
-    border_data = [[
-        "",           # left color strip (4 pt wide)
-        content_cell, # body content
-    ]]
+    border_data = [
+        [
+            "",  # left color strip (4 pt wide)
+            content_cell,  # body content
+        ]
+    ]
 
     box = Table(
         border_data,
@@ -101,20 +102,24 @@ def build_callout_box(text, box_type="insight", brand=None, content_width=None,
         spaceBefore=6,
         spaceAfter=6,
     )
-    box.setStyle(TableStyle([
-        ("BACKGROUND",   (0, 0), (0, -1), cfg["border"]),
-        ("BACKGROUND",   (1, 0), (1, -1), cfg["bg"]),
-        ("VALIGN",       (0, 0), (-1, -1), "TOP"),
-        ("TOPPADDING",   (1, 0), (1, -1), 8),
-        ("BOTTOMPADDING",(1, 0), (1, -1), 8),
-        ("LEFTPADDING",  (1, 0), (1, -1), 10),
-        ("RIGHTPADDING", (1, 0), (1, -1), 8),
-        ("TOPPADDING",   (0, 0), (0, -1), 0),
-        ("BOTTOMPADDING",(0, 0), (0, -1), 0),
-        ("LEFTPADDING",  (0, 0), (0, -1), 0),
-        ("RIGHTPADDING", (0, 0), (0, -1), 0),
-        ("BOX",          (0, 0), (-1, -1), 0.5, rule),
-    ]))
+    box.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (0, -1), cfg["border"]),
+                ("BACKGROUND", (1, 0), (1, -1), cfg["bg"]),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("TOPPADDING", (1, 0), (1, -1), 8),
+                ("BOTTOMPADDING", (1, 0), (1, -1), 8),
+                ("LEFTPADDING", (1, 0), (1, -1), 10),
+                ("RIGHTPADDING", (1, 0), (1, -1), 8),
+                ("TOPPADDING", (0, 0), (0, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (0, -1), 0),
+                ("LEFTPADDING", (0, 0), (0, -1), 0),
+                ("RIGHTPADDING", (0, 0), (0, -1), 0),
+                ("BOX", (0, 0), (-1, -1), 0.5, rule),
+            ]
+        )
+    )
     return box
 
 
@@ -159,18 +164,26 @@ def build_pull_quote(text, attribution="", brand=None, content_width=None):
 
     rule_data = [[""]]
     rule_table = Table(rule_data, colWidths=[cw * 0.7], rowHeights=[1])
-    rule_table.setStyle(TableStyle([
-        ("BACKGROUND",    (0, 0), (-1, -1), primary),
-        ("TOPPADDING",    (0, 0), (-1, -1), 0),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-        ("ALIGN",         (0, 0), (-1, -1), "CENTER"),
-    ]))
+    rule_table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), primary),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ]
+        )
+    )
     rule_wrapper = Table([[rule_table]], colWidths=[cw])
-    rule_wrapper.setStyle(TableStyle([
-        ("ALIGN",         (0, 0), (-1, -1), "CENTER"),
-        ("TOPPADDING",    (0, 0), (-1, -1), 0),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-    ]))
+    rule_wrapper.setStyle(
+        TableStyle(
+            [
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            ]
+        )
+    )
     flowables.append(rule_wrapper)
     flowables.append(Spacer(1, 4 * mm))
 
@@ -178,9 +191,12 @@ def build_pull_quote(text, attribution="", brand=None, content_width=None):
 
     if attribution:
         attr_style = _ps(
-            "PullQuoteAttr", brand=b,
-            fontSize=9, textColor=caption,
-            alignment=1, fontName=b.get("font_caption", "Helvetica-Oblique"),
+            "PullQuoteAttr",
+            brand=b,
+            fontSize=9,
+            textColor=caption,
+            alignment=1,
+            fontName=b.get("font_caption", "Helvetica-Oblique"),
         )
         flowables.append(_safe_para(f"\u2014 {attribution}", attr_style))
 

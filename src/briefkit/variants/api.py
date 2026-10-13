@@ -21,22 +21,31 @@ _HTTP_METHODS = {"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"}
 
 # Common auth scheme names
 _AUTH_SCHEMES = [
-    "Bearer token", "JWT", "OAuth 2.0", "OAuth", "API key", "HMAC",
-    "Basic Auth", "mTLS", "Session cookie", "SAML", "OpenID Connect",
+    "Bearer token",
+    "JWT",
+    "OAuth 2.0",
+    "OAuth",
+    "API key",
+    "HMAC",
+    "Basic Auth",
+    "mTLS",
+    "Session cookie",
+    "SAML",
+    "OpenID Connect",
 ]
 
 _AUTH_PATTERNS = {
-    "Bearer token":    r'\bBearer\b',
-    "JWT":             r'\bJWT\b|JSON\s+Web\s+Token',
-    "OAuth 2.0":       r'\bOAuth\s+2\.0\b',
-    "OAuth":           r'\bOAuth\b',
-    "API key":         r'\bAPI\s+key\b|apikey\b|api_key\b',
-    "HMAC":            r'\bHMAC\b',
-    "Basic Auth":      r'\bBasic\s+Auth(?:entication)?\b',
-    "mTLS":            r'\bmTLS\b|mutual\s+TLS',
-    "Session cookie":  r'\bsession\s+cookie\b|cookie-based\b',
-    "SAML":            r'\bSAML\b',
-    "OpenID Connect":  r'\bOpenID\s+Connect\b|OIDC\b',
+    "Bearer token": r"\bBearer\b",
+    "JWT": r"\bJWT\b|JSON\s+Web\s+Token",
+    "OAuth 2.0": r"\bOAuth\s+2\.0\b",
+    "OAuth": r"\bOAuth\b",
+    "API key": r"\bAPI\s+key\b|apikey\b|api_key\b",
+    "HMAC": r"\bHMAC\b",
+    "Basic Auth": r"\bBasic\s+Auth(?:entication)?\b",
+    "mTLS": r"\bmTLS\b|mutual\s+TLS",
+    "Session cookie": r"\bsession\s+cookie\b|cookie-based\b",
+    "SAML": r"\bSAML\b",
+    "OpenID Connect": r"\bOpenID\s+Connect\b|OIDC\b",
 }
 
 
@@ -46,13 +55,19 @@ class APIVariant(DocSetVariant):
 
     name = "api"
     auto_detect_keywords = [
-        "endpoint", "REST", "GET", "POST",
-        "authentication", "API", "response", "request",
+        "endpoint",
+        "REST",
+        "GET",
+        "POST",
+        "authentication",
+        "API",
+        "response",
+        "request",
     ]
 
     def build_variant_sections(self, content, flowables, styles, brand):
-        s_h1   = styles["STYLE_H1"]
-        s_h2   = styles["STYLE_H2"]
+        s_h1 = styles["STYLE_H1"]
+        s_h2 = styles["STYLE_H2"]
         s_body = styles["STYLE_BODY"]
 
         all_content = collect_text(content)
@@ -67,17 +82,21 @@ class APIVariant(DocSetVariant):
 
         endpoint_rows = self._extract_endpoints(content, all_content)
         if endpoint_rows:
-            flowables.extend(build_data_table(
-                ["Method", "Path", "Description", "Auth Required"],
-                endpoint_rows[:20],
-                title="API Endpoint Reference",
-                brand=brand,
-            ))
+            flowables.extend(
+                build_data_table(
+                    ["Method", "Path", "Description", "Auth Required"],
+                    endpoint_rows[:20],
+                    title="API Endpoint Reference",
+                    brand=brand,
+                )
+            )
         else:
-            flowables.append(_safe_para(
-                "No structured endpoint definitions found — see numbered documents.",
-                s_body,
-            ))
+            flowables.append(
+                _safe_para(
+                    "No structured endpoint definitions found — see numbered documents.",
+                    s_body,
+                )
+            )
 
         # --- Authentication reference ---
         flowables.append(Spacer(1, 4 * mm))
@@ -86,17 +105,21 @@ class APIVariant(DocSetVariant):
 
         auth_rows = self._extract_auth_schemes(all_content)
         if auth_rows:
-            flowables.extend(build_data_table(
-                ["Scheme", "Description", "Notes"],
-                auth_rows,
-                title="Authentication Mechanisms",
-                brand=brand,
-            ))
+            flowables.extend(
+                build_data_table(
+                    ["Scheme", "Description", "Notes"],
+                    auth_rows,
+                    title="Authentication Mechanisms",
+                    brand=brand,
+                )
+            )
         else:
-            flowables.append(_safe_para(
-                "No authentication scheme documentation found — see source documents.",
-                s_body,
-            ))
+            flowables.append(
+                _safe_para(
+                    "No authentication scheme documentation found — see source documents.",
+                    s_body,
+                )
+            )
 
         # --- Response codes summary ---
         flowables.append(Spacer(1, 4 * mm))
@@ -105,29 +128,33 @@ class APIVariant(DocSetVariant):
 
         code_rows = self._extract_response_codes(content, all_content)
         if code_rows:
-            flowables.extend(build_data_table(
-                ["Status Code", "Meaning", "Notes"],
-                code_rows[:12],
-                title="Response Code Reference",
-                brand=brand,
-            ))
+            flowables.extend(
+                build_data_table(
+                    ["Status Code", "Meaning", "Notes"],
+                    code_rows[:12],
+                    title="Response Code Reference",
+                    brand=brand,
+                )
+            )
         else:
             # Provide standard reference
-            flowables.extend(build_data_table(
-                ["Status Code", "Meaning", "Notes"],
-                [
-                    ["200", "OK", "Success"],
-                    ["201", "Created", "Resource created"],
-                    ["400", "Bad Request", "Invalid input"],
-                    ["401", "Unauthorized", "Authentication required"],
-                    ["403", "Forbidden", "Insufficient permissions"],
-                    ["404", "Not Found", "Resource does not exist"],
-                    ["429", "Too Many Requests", "Rate limit exceeded"],
-                    ["500", "Internal Server Error", "Server-side failure"],
-                ],
-                title="Standard HTTP Response Codes",
-                brand=brand,
-            ))
+            flowables.extend(
+                build_data_table(
+                    ["Status Code", "Meaning", "Notes"],
+                    [
+                        ["200", "OK", "Success"],
+                        ["201", "Created", "Resource created"],
+                        ["400", "Bad Request", "Invalid input"],
+                        ["401", "Unauthorized", "Authentication required"],
+                        ["403", "Forbidden", "Insufficient permissions"],
+                        ["404", "Not Found", "Resource does not exist"],
+                        ["429", "Too Many Requests", "Rate limit exceeded"],
+                        ["500", "Internal Server Error", "Server-side failure"],
+                    ],
+                    title="Standard HTTP Response Codes",
+                    brand=brand,
+                )
+            )
 
         return flowables
 
@@ -156,13 +183,13 @@ class APIVariant(DocSetVariant):
 
         # Scan for inline endpoint patterns: "GET /api/v1/resource"
         ep_pat = re.compile(
-            r'\b(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s+(/[^\s\)\]\}]{1,80})',
+            r"\b(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s+(/[^\s\)\]\}]{1,80})",
             re.IGNORECASE,
         )
         for m in ep_pat.finditer(all_content):
             method = m.group(1).upper()
-            path   = m.group(2).strip()
-            key    = method + path
+            path = m.group(2).strip()
+            key = method + path
             if key not in seen:
                 rows.append([method, path, "—", "—"])
                 seen.add(key)
@@ -197,15 +224,22 @@ class APIVariant(DocSetVariant):
 
         # Scan for status code mentions: "returns 404", "HTTP 200", "status 401"
         code_pat = re.compile(
-            r'(?:HTTP|returns?|status|code)\s+([1-5]\d{2})\b',
+            r"(?:HTTP|returns?|status|code)\s+([1-5]\d{2})\b",
             re.IGNORECASE,
         )
         _http_meanings = {
-            "200": "OK", "201": "Created", "204": "No Content",
-            "400": "Bad Request", "401": "Unauthorized", "403": "Forbidden",
-            "404": "Not Found", "405": "Method Not Allowed",
-            "422": "Unprocessable Entity", "429": "Too Many Requests",
-            "500": "Internal Server Error", "502": "Bad Gateway",
+            "200": "OK",
+            "201": "Created",
+            "204": "No Content",
+            "400": "Bad Request",
+            "401": "Unauthorized",
+            "403": "Forbidden",
+            "404": "Not Found",
+            "405": "Method Not Allowed",
+            "422": "Unprocessable Entity",
+            "429": "Too Many Requests",
+            "500": "Internal Server Error",
+            "502": "Bad Gateway",
             "503": "Service Unavailable",
         }
         for m in code_pat.finditer(all_content):

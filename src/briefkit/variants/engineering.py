@@ -19,21 +19,21 @@ from briefkit.variants import DocSetVariant, _register, collect_text
 
 # Regex for engineering unit values
 _UNIT_PAT = re.compile(
-    r'\b\d+(?:\.\d+)?\s*(?:kPa|PSI|psi|Nm|ft.?lb|mm|bar|°C|°F|MPa|kN|rpm|kW|W|V|A|Hz|kg|lb|N)\b',
+    r"\b\d+(?:\.\d+)?\s*(?:kPa|PSI|psi|Nm|ft.?lb|mm|bar|°C|°F|MPa|kN|rpm|kW|W|V|A|Hz|kg|lb|N)\b",
     re.IGNORECASE,
 )
 
 # Standards citation pattern
 _STD_PAT = re.compile(
-    r'\b(AS/?NZS\s+\d[\d.\-:]+|ISO\s+\d[\d.\-:]+|IEC\s+\d[\d.\-:]+|'
-    r'ANSI\s+\w[\w.\-]+|OSHA\s+\d[\d.\-]+|EN\s+\d[\d.\-:]+|'
-    r'ASTM\s+[A-Z]\d+(?:-\d+)?|API\s+\d+(?:[A-Z])?|NFPA\s+\d+)',
+    r"\b(AS/?NZS\s+\d[\d.\-:]+|ISO\s+\d[\d.\-:]+|IEC\s+\d[\d.\-:]+|"
+    r"ANSI\s+\w[\w.\-]+|OSHA\s+\d[\d.\-]+|EN\s+\d[\d.\-:]+|"
+    r"ASTM\s+[A-Z]\d+(?:-\d+)?|API\s+\d+(?:[A-Z])?|NFPA\s+\d+)",
     re.IGNORECASE,
 )
 
 # Safety warning pattern
 _SAFETY_PAT = re.compile(
-    r'(?:^|\n)\s*(?:⚠️|WARNING|CAUTION|DANGER|Safety:)\s*([^\n]{10,200})',
+    r"(?:^|\n)\s*(?:⚠️|WARNING|CAUTION|DANGER|Safety:)\s*([^\n]{10,200})",
     re.IGNORECASE | re.MULTILINE,
 )
 
@@ -44,13 +44,18 @@ class EngineeringVariant(DocSetVariant):
 
     name = "engineering"
     auto_detect_keywords = [
-        "tolerance", "specification", "PSI", "torque",
-        "assembly", "calibration", "load",
+        "tolerance",
+        "specification",
+        "PSI",
+        "torque",
+        "assembly",
+        "calibration",
+        "load",
     ]
 
     def build_variant_sections(self, content, flowables, styles, brand):
-        s_h1   = styles["STYLE_H1"]
-        s_h2   = styles["STYLE_H2"]
+        s_h1 = styles["STYLE_H1"]
+        s_h2 = styles["STYLE_H2"]
         s_body = styles["STYLE_BODY"]
 
         all_content = collect_text(content)
@@ -76,11 +81,13 @@ class EngineeringVariant(DocSetVariant):
             warn_text = "\n".join(f"- {w[:150]}" for w in found_warnings[:10])
             flowables.append(build_callout_box(warn_text, "warning", brand))
         else:
-            flowables.append(_safe_para(
-                "No structured safety warnings found — always consult source documentation "
-                "and relevant standards before performing engineering work.",
-                s_body,
-            ))
+            flowables.append(
+                _safe_para(
+                    "No structured safety warnings found — always consult source documentation "
+                    "and relevant standards before performing engineering work.",
+                    s_body,
+                )
+            )
 
         # --- Specifications quick-reference ---
         flowables.append(Spacer(1, 4 * mm))
@@ -102,16 +109,16 @@ class EngineeringVariant(DocSetVariant):
                             seen_specs.add(key)
 
         if spec_rows:
-            flowables.extend(build_data_table(
-                ["Parameter", "Value", "Notes"],
-                spec_rows[:15],
-                title="Engineering Specifications",
-                brand=brand,
-            ))
+            flowables.extend(
+                build_data_table(
+                    ["Parameter", "Value", "Notes"],
+                    spec_rows[:15],
+                    title="Engineering Specifications",
+                    brand=brand,
+                )
+            )
         else:
-            flowables.append(_safe_para(
-                "Structured specifications not found — see numbered documents.", s_body
-            ))
+            flowables.append(_safe_para("Structured specifications not found — see numbered documents.", s_body))
 
         # --- Standards reference ---
         flowables.append(Spacer(1, 4 * mm))
@@ -128,15 +135,15 @@ class EngineeringVariant(DocSetVariant):
                 seen_stds.add(key)
 
         if found_stds:
-            flowables.extend(build_data_table(
-                ["Standard", "Status", "Notes"],
-                found_stds[:15],
-                title="Standards Referenced",
-                brand=brand,
-            ))
+            flowables.extend(
+                build_data_table(
+                    ["Standard", "Status", "Notes"],
+                    found_stds[:15],
+                    title="Standards Referenced",
+                    brand=brand,
+                )
+            )
         else:
-            flowables.append(_safe_para(
-                "No standards citations found — see source documents.", s_body
-            ))
+            flowables.append(_safe_para("No standards citations found — see source documents.", s_body))
 
         return flowables

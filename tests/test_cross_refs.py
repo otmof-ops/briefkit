@@ -1,11 +1,11 @@
 """Tests for briefkit cross-reference extraction."""
+
 from __future__ import annotations
 
 from briefkit.cross_refs import extract_cross_refs
 
 
 class TestExtractCrossRefs:
-
     def test_empty_directory(self, tmp_path):
         refs, labels = extract_cross_refs(tmp_path)
         assert isinstance(refs, list)

@@ -16,12 +16,13 @@ from briefkit.styles import CONTENT_WIDTH, _get_brand, _hex, _safe_para, _safe_t
 
 # Semantic tint colors for comparison table cell coding
 _GREEN_BG = HexColor("#eafaf1")
-_RED_BG   = HexColor("#fdeaea")
-_GOLD_BG  = HexColor("#fef9e7")
+_RED_BG = HexColor("#fdeaea")
+_GOLD_BG = HexColor("#fef9e7")
 
 
-def build_data_table(headers, rows, title=None, brand=None, content_width=None, header_color=None,
-                     already_escaped=False):
+def build_data_table(
+    headers, rows, title=None, brand=None, content_width=None, header_color=None, already_escaped=False
+):
     """
     Build a standard data table with colored header and alternating rows.
 
@@ -47,11 +48,11 @@ def build_data_table(headers, rows, title=None, brand=None, content_width=None, 
     """
     from reportlab.pdfbase.pdfmetrics import stringWidth as sw
 
-    b       = _get_brand(brand)
-    cw      = content_width or CONTENT_WIDTH
-    styles  = build_styles(b)
-    hdr_bg  = header_color if header_color is not None else _hex(b, "primary")
-    rule    = _hex(b, "rule")
+    b = _get_brand(brand)
+    cw = content_width or CONTENT_WIDTH
+    styles = build_styles(b)
+    hdr_bg = header_color if header_color is not None else _hex(b, "primary")
+    rule = _hex(b, "rule")
 
     table_alt = HexColor(b.get("table_alt", "#f8f9fa"))
 
@@ -66,8 +67,9 @@ def build_data_table(headers, rows, title=None, brand=None, content_width=None, 
     col_count = len(headers)
 
     header_row = [
-        _safe_para(f"<b>{str(h) if already_escaped else _safe_text(str(h))}</b>",
-                   styles["STYLE_TABLE_HEADER"], already_escaped)
+        _safe_para(
+            f"<b>{str(h) if already_escaped else _safe_text(str(h))}</b>", styles["STYLE_TABLE_HEADER"], already_escaped
+        )
         for h in headers
     ]
 
@@ -77,16 +79,14 @@ def build_data_table(headers, rows, title=None, brand=None, content_width=None, 
     table_data = [header_row]
     for row in rows:
         sanitised = [("" if cell is None else cell) for cell in row]
-        padded    = list(sanitised) + [""] * max(0, col_count - len(sanitised))
-        padded    = padded[:col_count]
-        table_data.append([
-            _safe_para(str(cell), styles["STYLE_TABLE_BODY"], already_escaped) for cell in padded
-        ])
+        padded = list(sanitised) + [""] * max(0, col_count - len(sanitised))
+        padded = padded[:col_count]
+        table_data.append([_safe_para(str(cell), styles["STYLE_TABLE_BODY"], already_escaped) for cell in padded])
 
     # Content-aware column widths based on both headers and the widest
     # body cell per column (sampled from the first 50 rows for speed).
     heading_font = b.get("font_heading", "Helvetica-Bold")
-    body_font    = b.get("font_body", "Helvetica")
+    body_font = b.get("font_body", "Helvetica")
     raw: list[float] = []
     for i, h in enumerate(headers):
         w_h = sw(str(h), heading_font, 9) + 16
@@ -119,25 +119,28 @@ def build_data_table(headers, rows, title=None, brand=None, content_width=None, 
         col_widths = [w + extra * (w / total) for w in col_widths]
 
     t = Table(table_data, colWidths=col_widths, repeatRows=1, splitByRow=1)
-    t.setStyle(TableStyle([
-        ("BACKGROUND",    (0, 0), (-1, 0),  hdr_bg),
-        ("TEXTCOLOR",     (0, 0), (-1, 0),  white),
-        ("FONTNAME",      (0, 0), (-1, 0),  b.get("font_heading", "Helvetica-Bold")),
-        ("FONTSIZE",      (0, 0), (-1, 0),  9),
-        ("VALIGN",        (0, 0), (-1, -1), "TOP"),
-        ("TOPPADDING",    (0, 0), (-1, -1), 4),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-        ("LEFTPADDING",   (0, 0), (-1, -1), 5),
-        ("RIGHTPADDING",  (0, 0), (-1, -1), 5),
-        ("GRID",          (0, 0), (-1, -1), 0.4, rule),
-        ("ROWBACKGROUNDS",(0, 1), (-1, -1), [white, table_alt]),
-    ]))
+    t.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), hdr_bg),
+                ("TEXTCOLOR", (0, 0), (-1, 0), white),
+                ("FONTNAME", (0, 0), (-1, 0), b.get("font_heading", "Helvetica-Bold")),
+                ("FONTSIZE", (0, 0), (-1, 0), 9),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                ("LEFTPADDING", (0, 0), (-1, -1), 5),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+                ("GRID", (0, 0), (-1, -1), 0.4, rule),
+                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [white, table_alt]),
+            ]
+        )
+    )
     flowables.append(t)
     return flowables
 
 
-def build_comparison_table(headers, rows, brand=None, content_width=None,
-                           already_escaped=False):
+def build_comparison_table(headers, rows, brand=None, content_width=None, already_escaped=False):
     """
     Build a comparison table with color-coded cells.
 
@@ -165,11 +168,11 @@ def build_comparison_table(headers, rows, brand=None, content_width=None,
         List of flowables: Table (possibly preceded by a caption if provided
         via the title parameter — use build_data_table for captioned tables).
     """
-    b       = _get_brand(brand)
-    cw      = content_width or CONTENT_WIDTH
-    styles  = build_styles(b)
+    b = _get_brand(brand)
+    cw = content_width or CONTENT_WIDTH
+    styles = build_styles(b)
     primary = _hex(b, "primary")
-    rule    = _hex(b, "rule")
+    rule = _hex(b, "rule")
 
     table_alt = HexColor(b.get("table_alt", "#f8f9fa"))
 
@@ -182,8 +185,9 @@ def build_comparison_table(headers, rows, brand=None, content_width=None,
     col_width = cw / col_count
 
     header_row = [
-        _safe_para(f"<b>{str(h) if already_escaped else _safe_text(str(h))}</b>",
-                   styles["STYLE_TABLE_HEADER"], already_escaped)
+        _safe_para(
+            f"<b>{str(h) if already_escaped else _safe_text(str(h))}</b>", styles["STYLE_TABLE_HEADER"], already_escaped
+        )
         for h in headers
     ]
     table_data = [header_row]
@@ -193,39 +197,37 @@ def build_comparison_table(headers, rows, brand=None, content_width=None,
 
     for row in rows:
         sanitised = [("" if cell is None else cell) for cell in row]
-        padded    = list(sanitised) + [""] * max(0, col_count - len(sanitised))
-        padded    = padded[:col_count]
-        table_data.append([
-            _safe_para(str(c), styles["STYLE_TABLE_BODY"], already_escaped) for c in padded
-        ])
+        padded = list(sanitised) + [""] * max(0, col_count - len(sanitised))
+        padded = padded[:col_count]
+        table_data.append([_safe_para(str(c), styles["STYLE_TABLE_BODY"], already_escaped) for c in padded])
 
     # Weight the first (label) column ~2× the others for comparison
     # tables, where the left column is typically a row label.
     if col_count >= 3:
         first = cw * 0.28
-        rest  = (cw - first) / (col_count - 1)
+        rest = (cw - first) / (col_count - 1)
         col_widths = [first] + [rest] * (col_count - 1)
     else:
         col_widths = [col_width] * col_count
     t = Table(table_data, colWidths=col_widths, repeatRows=1, splitByRow=1)
 
     style_commands = [
-        ("BACKGROUND",   (0, 0), (-1, 0),  primary),
-        ("TEXTCOLOR",    (0, 0), (-1, 0),  white),
-        ("FONTNAME",     (0, 0), (-1, 0),  b.get("font_heading", "Helvetica-Bold")),
-        ("VALIGN",       (0, 0), (-1, -1), "MIDDLE"),
-        ("TOPPADDING",   (0, 0), (-1, -1), 4),
-        ("BOTTOMPADDING",(0, 0), (-1, -1), 4),
-        ("LEFTPADDING",  (0, 0), (-1, -1), 5),
+        ("BACKGROUND", (0, 0), (-1, 0), primary),
+        ("TEXTCOLOR", (0, 0), (-1, 0), white),
+        ("FONTNAME", (0, 0), (-1, 0), b.get("font_heading", "Helvetica-Bold")),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ("LEFTPADDING", (0, 0), (-1, -1), 5),
         ("RIGHTPADDING", (0, 0), (-1, -1), 5),
-        ("GRID",         (0, 0), (-1, -1), 0.4, rule),
-        ("FONTNAME",     (0, 1), (0, -1),  b.get("font_heading", "Helvetica-Bold")),
-        ("ROWBACKGROUNDS",(0, 1), (-1, -1), [white, table_alt]),
+        ("GRID", (0, 0), (-1, -1), 0.4, rule),
+        ("FONTNAME", (0, 1), (0, -1), b.get("font_heading", "Helvetica-Bold")),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [white, table_alt]),
     ]
 
-    positive_pat = re.compile(r'^(\+|yes|✓|check|true|supported|available)', re.I)
-    negative_pat = re.compile(r'^(\-|no|✗|x|false|unsupported|unavailable)', re.I)
-    partial_pat  = re.compile(r'^(~|partial|limited|optional)', re.I)
+    positive_pat = re.compile(r"^(\+|yes|✓|check|true|supported|available)", re.I)
+    negative_pat = re.compile(r"^(\-|no|✗|x|false|unsupported|unavailable)", re.I)
+    partial_pat = re.compile(r"^(~|partial|limited|optional)", re.I)
 
     for r_idx, row in enumerate(rows, start=1):
         padded = list(row) + [""] * max(0, col_count - len(row))

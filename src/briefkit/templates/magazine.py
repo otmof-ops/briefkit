@@ -214,18 +214,25 @@ class MagazineTemplate(BaseBriefingTemplate):
         _toc_start = len(story)
         # TOC page — "S E C T I O N 00"
         sec_label_style = _ps(
-            "MagSecLabel", brand=b,
-            fontSize=10, fontName="Helvetica-Bold",
-            textColor=HexColor(cyan), spaceBefore=4, spaceAfter=4,
+            "MagSecLabel",
+            brand=b,
+            fontSize=10,
+            fontName="Helvetica-Bold",
+            textColor=HexColor(cyan),
+            spaceBefore=4,
+            spaceAfter=4,
         )
         story.append(Paragraph("S E C T I O N 00", sec_label_style))
         story.append(Spacer(1, 4 * mm))
 
         # "Table of Contents" — Helvetica-Bold 20pt
         toc_title_style = _ps(
-            "MagTocTitle", brand=b,
-            fontSize=20, fontName="Helvetica-Bold",
-            textColor=HexColor(text_c), leading=24,
+            "MagTocTitle",
+            brand=b,
+            fontSize=20,
+            fontName="Helvetica-Bold",
+            textColor=HexColor(text_c),
+            leading=24,
         )
         story.append(Paragraph("Table of Contents", toc_title_style))
         story.append(Spacer(1, 2 * mm))
@@ -233,11 +240,15 @@ class MagazineTemplate(BaseBriefingTemplate):
         # Cyan rule: 2pt
         rule_data = [[""]]
         rule = Table(rule_data, colWidths=[self.content_width], rowHeights=[2])
-        rule.setStyle(TableStyle([
-            ("LINEBELOW", (0, 0), (-1, -1), 2, HexColor(cyan)),
-            ("TOPPADDING", (0, 0), (-1, -1), 0),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-        ]))
+        rule.setStyle(
+            TableStyle(
+                [
+                    ("LINEBELOW", (0, 0), (-1, -1), 2, HexColor(cyan)),
+                    ("TOPPADDING", (0, 0), (-1, -1), 0),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                ]
+            )
+        )
         story.append(rule)
         story.append(Spacer(1, 4 * mm))
 
@@ -245,19 +256,25 @@ class MagazineTemplate(BaseBriefingTemplate):
         toc_data = []
         for i, sub in enumerate(subsystems, 1):
             name = sub.get("name", f"Section {i}")
-            toc_data.append([
-                Paragraph(
-                    f'<b>{i:02d}</b>',
-                    _ps(f"MagTocN_{i}", brand=b, fontSize=8.5,
-                        fontName="Helvetica-Bold",
-                        textColor=HexColor(cyan), leading=11),
-                ),
-                Paragraph(
-                    _safe_text(name),
-                    _ps(f"MagTocT_{i}", brand=b, fontSize=8.5,
-                        textColor=HexColor(text_c), leading=11),
-                ),
-            ])
+            toc_data.append(
+                [
+                    Paragraph(
+                        f"<b>{i:02d}</b>",
+                        _ps(
+                            f"MagTocN_{i}",
+                            brand=b,
+                            fontSize=8.5,
+                            fontName="Helvetica-Bold",
+                            textColor=HexColor(cyan),
+                            leading=11,
+                        ),
+                    ),
+                    Paragraph(
+                        _safe_text(name),
+                        _ps(f"MagTocT_{i}", brand=b, fontSize=8.5, textColor=HexColor(text_c), leading=11),
+                    ),
+                ]
+            )
 
         if toc_data:
             toc_table = Table(
@@ -289,30 +306,49 @@ class MagazineTemplate(BaseBriefingTemplate):
             name = sub.get("name", f"Section {idx}")
 
             # "S E C T I O N nn"
-            story.append(Paragraph(
-                f"S E C T I O N {idx:02d}",
-                _ps(f"MagSL_{idx}", brand=b, fontSize=10,
-                    fontName="Helvetica-Bold",
-                    textColor=HexColor(cyan), spaceBefore=4, spaceAfter=4),
-            ))
+            story.append(
+                Paragraph(
+                    f"S E C T I O N {idx:02d}",
+                    _ps(
+                        f"MagSL_{idx}",
+                        brand=b,
+                        fontSize=10,
+                        fontName="Helvetica-Bold",
+                        textColor=HexColor(cyan),
+                        spaceBefore=4,
+                        spaceAfter=4,
+                    ),
+                )
+            )
             story.append(Spacer(1, 2 * mm))
 
             # Section title: Helvetica-Bold 20pt
-            story.append(Paragraph(
-                name,
-                _ps(f"MagST_{idx}", brand=b, fontSize=20,
-                    fontName="Helvetica-Bold",
-                    textColor=HexColor(text_c), leading=24),
-            ))
+            story.append(
+                Paragraph(
+                    name,
+                    _ps(
+                        f"MagST_{idx}",
+                        brand=b,
+                        fontSize=20,
+                        fontName="Helvetica-Bold",
+                        textColor=HexColor(text_c),
+                        leading=24,
+                    ),
+                )
+            )
             story.append(Spacer(1, 1 * mm))
 
             # Cyan rule
             rule2 = Table([[""]], colWidths=[self.content_width], rowHeights=[2])
-            rule2.setStyle(TableStyle([
-                ("LINEBELOW", (0, 0), (-1, -1), 2, HexColor(cyan)),
-                ("TOPPADDING", (0, 0), (-1, -1), 0),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-            ]))
+            rule2.setStyle(
+                TableStyle(
+                    [
+                        ("LINEBELOW", (0, 0), (-1, -1), 2, HexColor(cyan)),
+                        ("TOPPADDING", (0, 0), (-1, -1), 0),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                    ]
+                )
+            )
             story.append(rule2)
             story.append(Spacer(1, 3 * mm))
 
@@ -355,8 +391,10 @@ class MagazineTemplate(BaseBriefingTemplate):
             from briefkit.doc_ids import get_or_assign_doc_id
 
             self.doc_id = get_or_assign_doc_id(
-                self.target_path, self.level,
-                title, config=self.config,
+                self.target_path,
+                self.level,
+                title,
+                config=self.config,
             )
 
         # Template-specific config
@@ -393,7 +431,6 @@ class MagazineTemplate(BaseBriefingTemplate):
         _mag_state["date"] = footer_text
         _mag_state["is_dark"] = is_dark
         _mag_state["brand"] = b
-
 
         layout = self.config.get("layout", {})
         margins = layout.get("margins", {})
@@ -470,7 +507,7 @@ class MagazineTemplate(BaseBriefingTemplate):
             canvas.setStrokeColor(HexColor(cyan))
             canvas.setLineWidth(2)
             canvas.line(56.693, 785.197, 141.732, 785.197)  # horizontal
-            canvas.line(56.693, 785.197, 56.693, 714.331)   # vertical
+            canvas.line(56.693, 785.197, 56.693, 714.331)  # vertical
 
             # Content area origin at (62.69, 98.88)
             cx = 62.693
@@ -578,9 +615,12 @@ class MagazineTemplate(BaseBriefingTemplate):
                 for i, color_hex in enumerate(bottom_colors[:4]):
                     canvas.setFillColor(HexColor(color_hex))
                     canvas.rect(
-                        segment_w * i, 39.685,
-                        segment_w, 4.252,
-                        stroke=0, fill=1,
+                        segment_w * i,
+                        39.685,
+                        segment_w,
+                        4.252,
+                        stroke=0,
+                        fill=1,
                     )
 
             canvas.restoreState()

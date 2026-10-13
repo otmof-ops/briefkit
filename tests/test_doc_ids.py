@@ -1,4 +1,5 @@
 """Tests for the document ID system."""
+
 import json
 from pathlib import Path
 

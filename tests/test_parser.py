@@ -1,4 +1,5 @@
 """Tests for the markdown parser."""
+
 from briefkit.extractor import parse_markdown
 
 

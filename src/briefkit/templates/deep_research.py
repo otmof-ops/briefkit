@@ -160,9 +160,12 @@ class DeepResearchTemplate(BaseBriefingTemplate):
         # Contents page
         # "Contents" heading: Helvetica-Bold 22pt #1A1A2D
         contents_style = _ps(
-            "DRContents", brand=self.brand,
-            fontSize=22, fontName="Helvetica-Bold",
-            textColor=HexColor(_TOC_TITLE), leading=26,
+            "DRContents",
+            brand=self.brand,
+            fontSize=22,
+            fontName="Helvetica-Bold",
+            textColor=HexColor(_TOC_TITLE),
+            leading=26,
         )
         story.append(Paragraph("Contents", contents_style))
         story.append(Spacer(1, 2 * mm))
@@ -170,11 +173,15 @@ class DeepResearchTemplate(BaseBriefingTemplate):
         # Teal rule under "Contents"
         rule_data = [[""]]
         rule = Table(rule_data, colWidths=[470.551], rowHeights=[1.2])
-        rule.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), HexColor(_TEAL)),
-            ("TOPPADDING", (0, 0), (-1, -1), 0),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-        ]))
+        rule.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), HexColor(_TEAL)),
+                    ("TOPPADDING", (0, 0), (-1, -1), 0),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                ]
+            )
+        )
         story.append(rule)
         story.append(Spacer(1, 4 * mm))
 
@@ -184,16 +191,20 @@ class DeepResearchTemplate(BaseBriefingTemplate):
 
             # Number + title: Helvetica-Bold 10.5pt
             entry_style = _ps(
-                f"DRTocEntry_{i}", brand=self.brand,
-                fontSize=10.5, fontName="Helvetica",
-                textColor=HexColor(_BODY_TEXT), leading=20,
+                f"DRTocEntry_{i}",
+                brand=self.brand,
+                fontSize=10.5,
+                fontName="Helvetica",
+                textColor=HexColor(_BODY_TEXT),
+                leading=20,
                 leftIndent=22.677,
             )
-            story.append(Paragraph(
-                f'<font name="Helvetica-Bold" color="{_TEAL}">{i}</font>'
-                f'&nbsp;&nbsp;&nbsp;{_safe_text(name)}',
-                entry_style,
-            ))
+            story.append(
+                Paragraph(
+                    f'<font name="Helvetica-Bold" color="{_TEAL}">{i}</font>&nbsp;&nbsp;&nbsp;{_safe_text(name)}',
+                    entry_style,
+                )
+            )
 
             # Extract sub-headings as italic subtitle
             blocks = sub.get("blocks") or parse_markdown(sub.get("content", ""))
@@ -204,9 +215,12 @@ class DeepResearchTemplate(BaseBriefingTemplate):
             if sub_items:
                 summary = " \u00b7 ".join(sub_items[:5])
                 sub_style = _ps(
-                    f"DRTocSub_{i}", brand=self.brand,
-                    fontSize=9.5, fontName="Helvetica-Oblique",
-                    textColor=HexColor(_HEADER_CAPTION), leading=20,
+                    f"DRTocSub_{i}",
+                    brand=self.brand,
+                    fontSize=9.5,
+                    fontName="Helvetica-Oblique",
+                    textColor=HexColor(_HEADER_CAPTION),
+                    leading=20,
                     leftIndent=45.354,
                 )
                 story.append(Paragraph(summary[:100], sub_style))
@@ -223,26 +237,35 @@ class DeepResearchTemplate(BaseBriefingTemplate):
             # Teal rule before section
             rule_data2 = [[""]]
             rule2 = Table(rule_data2, colWidths=[470.551], rowHeights=[1])
-            rule2.setStyle(TableStyle([
-                ("BACKGROUND", (0, 0), (-1, -1), HexColor(_TEAL)),
-                ("TOPPADDING", (0, 0), (-1, -1), 0),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-            ]))
+            rule2.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, -1), HexColor(_TEAL)),
+                        ("TOPPADDING", (0, 0), (-1, -1), 0),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                    ]
+                )
+            )
             story.append(rule2)
             story.append(Spacer(1, 6 * mm))
 
             # Section header: "01" teal 22pt + title 20pt dark
             sec_style = _ps(
-                f"DRSecH_{idx}", brand=self.brand,
-                fontSize=20, fontName="Helvetica-Bold",
-                textColor=HexColor(_TOC_TITLE), leading=26,
+                f"DRSecH_{idx}",
+                brand=self.brand,
+                fontSize=20,
+                fontName="Helvetica-Bold",
+                textColor=HexColor(_TOC_TITLE),
+                leading=26,
             )
-            story.append(Paragraph(
-                f'<font name="Helvetica-Bold" size="22" color="{_TEAL}">'
-                f'{idx:02d}</font>'
-                f'&nbsp;&nbsp;&nbsp;{_safe_text(name)}',
-                sec_style,
-            ))
+            story.append(
+                Paragraph(
+                    f'<font name="Helvetica-Bold" size="22" color="{_TEAL}">'
+                    f"{idx:02d}</font>"
+                    f"&nbsp;&nbsp;&nbsp;{_safe_text(name)}",
+                    sec_style,
+                )
+            )
             story.append(Spacer(1, 3 * mm))
 
             blocks = sub.get("blocks") or parse_markdown(sub.get("content", ""))
@@ -285,8 +308,10 @@ class DeepResearchTemplate(BaseBriefingTemplate):
             from briefkit.doc_ids import get_or_assign_doc_id
 
             self.doc_id = get_or_assign_doc_id(
-                self.target_path, self.level,
-                title, config=self.config,
+                self.target_path,
+                self.level,
+                title,
+                config=self.config,
             )
 
         # Template-specific config
@@ -301,9 +326,9 @@ class DeepResearchTemplate(BaseBriefingTemplate):
             for sep in (".", "!", "?"):
                 idx = first_line.find(sep)
                 if 0 < idx < 200:
-                    first_line = first_line[:idx + 1]
+                    first_line = first_line[: idx + 1]
                     break
-            subtitle = re.sub(r'^#+\s*', '', first_line)[:200]
+            subtitle = re.sub(r"^#+\s*", "", first_line)[:200]
 
         # Auto-derive topics from subsystem names
         if not topics and subsystems:
@@ -316,7 +341,6 @@ class DeepResearchTemplate(BaseBriefingTemplate):
         _dr_state["year"] = year
         _dr_state["report_type"] = report_type.upper()
         _dr_state["brand"] = self.brand
-
 
         layout = self.config.get("layout", {})
         margins = layout.get("margins", {})

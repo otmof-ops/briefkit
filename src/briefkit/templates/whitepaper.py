@@ -70,7 +70,8 @@ def _wp_header_footer(canvas, doc):
     canvas.setFont(b.get("font_body", "Helvetica"), 8)
     canvas.setFillColor(HexColor(b.get("caption", "#666666")))
     canvas.drawCentredString(
-        page_width / 2, bottom_y + 1.5 * mm,
+        page_width / 2,
+        bottom_y + 1.5 * mm,
         str(doc.page),
     )
 
@@ -135,11 +136,13 @@ class WhitepaperTemplate(BaseBriefingTemplate):
         # ---- Back cover ----
         if not should_skip(cfg, "back_cover"):
             story.append(PageBreak())
-            story.extend(build_back_cover(
-                date=self.date,
-                brand=self.brand,
-                content_width=self.content_width,
-            ))
+            story.extend(
+                build_back_cover(
+                    date=self.date,
+                    brand=self.brand,
+                    content_width=self.content_width,
+                )
+            )
 
         return story
 
@@ -162,30 +165,39 @@ class WhitepaperTemplate(BaseBriefingTemplate):
 
         # "White Paper" label
         label_style = _ps(
-            "WPLabel", brand=self.brand,
-            fontSize=24, fontName="Helvetica-Bold",
+            "WPLabel",
+            brand=self.brand,
+            fontSize=24,
+            fontName="Helvetica-Bold",
             textColor=_hex(self.brand, "primary"),
-            alignment=1, spaceAfter=4,
+            alignment=1,
+            spaceAfter=4,
         )
         flowables.append(Paragraph("White Paper", label_style))
         flowables.append(Spacer(1, 4 * mm))
 
         # "for"
         for_style = _ps(
-            "WPFor", brand=self.brand,
-            fontSize=12, fontName="Helvetica-Oblique",
+            "WPFor",
+            brand=self.brand,
+            fontSize=12,
+            fontName="Helvetica-Oblique",
             textColor=_hex(self.brand, "caption"),
-            alignment=1, spaceAfter=4,
+            alignment=1,
+            spaceAfter=4,
         )
         flowables.append(Paragraph("for", for_style))
         flowables.append(Spacer(1, 4 * mm))
 
         # Content title
         title_style = _ps(
-            "WPTitle", brand=self.brand,
-            fontSize=18, fontName="Helvetica-Bold",
+            "WPTitle",
+            brand=self.brand,
+            fontSize=18,
+            fontName="Helvetica-Bold",
             textColor=_hex(self.brand, "primary"),
-            alignment=1, spaceAfter=6,
+            alignment=1,
+            spaceAfter=6,
         )
         flowables.append(Paragraph(_safe_text(title), title_style))
 
@@ -194,18 +206,23 @@ class WhitepaperTemplate(BaseBriefingTemplate):
         if tagline:
             flowables.append(Spacer(1, 3 * mm))
             sub_style = _ps(
-                "WPSubtitle", brand=self.brand,
-                fontSize=12, fontName="Helvetica-Oblique",
+                "WPSubtitle",
+                brand=self.brand,
+                fontSize=12,
+                fontName="Helvetica-Oblique",
                 textColor=_hex(self.brand, "caption"),
-                alignment=1, spaceAfter=4,
+                alignment=1,
+                spaceAfter=4,
             )
             flowables.append(Paragraph(_safe_text(tagline), sub_style))
 
         # Date
         flowables.append(Spacer(1, 6 * mm))
         date_style = _ps(
-            "WPDate", brand=self.brand,
-            fontSize=10, textColor=_hex(self.brand, "caption"),
+            "WPDate",
+            brand=self.brand,
+            fontSize=10,
+            textColor=_hex(self.brand, "caption"),
             alignment=1,
         )
         flowables.append(Paragraph(self.date_str, date_style))
@@ -215,14 +232,18 @@ class WhitepaperTemplate(BaseBriefingTemplate):
         if org:
             flowables.append(Spacer(1, 60 * mm))
             member_style = _ps(
-                "WPMembers", brand=self.brand,
-                fontSize=9, textColor=_hex(self.brand, "body_text"),
+                "WPMembers",
+                brand=self.brand,
+                fontSize=9,
+                textColor=_hex(self.brand, "body_text"),
                 alignment=0,
             )
-            flowables.append(Paragraph(
-                f"<b>Project Members:</b> {_safe_text(org)}",
-                member_style,
-            ))
+            flowables.append(
+                Paragraph(
+                    f"<b>Project Members:</b> {_safe_text(org)}",
+                    member_style,
+                )
+            )
 
         return flowables
 
@@ -262,9 +283,13 @@ class WhitepaperTemplate(BaseBriefingTemplate):
                     if sub_counter >= 8:
                         break
 
-        flowables.extend(build_toc(
-            toc_entries, brand=self.brand, content_width=self.content_width,
-        ))
+        flowables.extend(
+            build_toc(
+                toc_entries,
+                brand=self.brand,
+                content_width=self.content_width,
+            )
+        )
 
         return flowables
 
@@ -278,9 +303,12 @@ class WhitepaperTemplate(BaseBriefingTemplate):
 
         # Justified body style
         body_style = _ps(
-            "WPBody", brand=self.brand,
-            fontSize=11, textColor=_hex(self.brand, "body_text"),
-            leading=15, alignment=4,
+            "WPBody",
+            brand=self.brand,
+            fontSize=11,
+            textColor=_hex(self.brand, "body_text"),
+            leading=15,
+            alignment=4,
         )
 
         for idx, sub in enumerate(subsystems):
@@ -289,15 +317,20 @@ class WhitepaperTemplate(BaseBriefingTemplate):
 
             # Section heading
             heading_style = _ps(
-                f"WPH1_{idx}", brand=self.brand,
-                fontSize=14, fontName="Helvetica-Bold",
+                f"WPH1_{idx}",
+                brand=self.brand,
+                fontSize=14,
+                fontName="Helvetica-Bold",
                 textColor=_hex(self.brand, "primary"),
-                spaceBefore=6, spaceAfter=4,
+                spaceBefore=6,
+                spaceAfter=4,
             )
-            flowables.append(Paragraph(
-                f"{letter_label}. {_safe_text(name)}",
-                heading_style,
-            ))
+            flowables.append(
+                Paragraph(
+                    f"{letter_label}. {_safe_text(name)}",
+                    heading_style,
+                )
+            )
             flowables.append(Spacer(1, 3 * mm))
 
             # Render blocks with alpha-numeric sub-section numbering
@@ -314,15 +347,20 @@ class WhitepaperTemplate(BaseBriefingTemplate):
                     sub_counter += 1
                     heading_text = block.get("text", f"Sub-section {sub_counter}")
                     sub_heading_style = _ps(
-                        f"WPH2_{idx}_{sub_counter}", brand=self.brand,
-                        fontSize=12, fontName="Helvetica-Bold",
+                        f"WPH2_{idx}_{sub_counter}",
+                        brand=self.brand,
+                        fontSize=12,
+                        fontName="Helvetica-Bold",
                         textColor=_hex(self.brand, "primary"),
-                        spaceBefore=4, spaceAfter=2,
+                        spaceBefore=4,
+                        spaceAfter=2,
                     )
-                    flowables.append(Paragraph(
-                        f"{letter_label}-{sub_counter} {_safe_text(heading_text)}",
-                        sub_heading_style,
-                    ))
+                    flowables.append(
+                        Paragraph(
+                            f"{letter_label}-{sub_counter} {_safe_text(heading_text)}",
+                            sub_heading_style,
+                        )
+                    )
                     flowables.append(Spacer(1, 2 * mm))
                     rendered += 1
                     continue
@@ -367,9 +405,12 @@ class WhitepaperTemplate(BaseBriefingTemplate):
         doc_ids_cfg = self.config.get("doc_ids", {})
         if doc_ids_cfg.get("enabled", True):
             from briefkit.doc_ids import get_or_assign_doc_id
+
             self.doc_id = get_or_assign_doc_id(
-                self.target_path, self.level,
-                title, config=self.config,
+                self.target_path,
+                self.level,
+                title,
+                config=self.config,
             )
 
         # Populate module-level state for header/footer

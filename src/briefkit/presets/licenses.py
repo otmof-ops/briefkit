@@ -82,7 +82,6 @@ LICENSE_PRESETS: dict[str, dict[str, str | bool | None]] = {
         "notice": "Released under the Boost Software License 1.0.",
         "commercial": True,
     },
-
     # ── Copyleft Software Licenses ───────────────────────────────────
     "GPL-2.0": {
         "spdx": "GPL-2.0-only",
@@ -132,7 +131,6 @@ LICENSE_PRESETS: dict[str, dict[str, str | bool | None]] = {
         "notice": "Licensed under the EUPL 1.2.",
         "commercial": True,
     },
-
     # ── Source-Available Licenses ────────────────────────────────────
     "BUSL-1.1": {
         "spdx": "BUSL-1.1",
@@ -158,7 +156,6 @@ LICENSE_PRESETS: dict[str, dict[str, str | bool | None]] = {
         "notice": "Licensed under the SSPL v1.",
         "commercial": False,
     },
-
     # ── Creative Commons Licenses ────────────────────────────────────
     "CC0-1.0": {
         "spdx": "CC0-1.0",
@@ -208,7 +205,6 @@ LICENSE_PRESETS: dict[str, dict[str, str | bool | None]] = {
         "notice": "Licensed under CC BY-ND 4.0. No derivatives permitted.",
         "commercial": True,
     },
-
     # ── Specialized Licenses ─────────────────────────────────────────
     "OFL-1.1": {
         "spdx": "OFL-1.1",
@@ -226,7 +222,6 @@ LICENSE_PRESETS: dict[str, dict[str, str | bool | None]] = {
         "notice": "Licensed under the ODbL 1.0.",
         "commercial": True,
     },
-
     # ── Proprietary / All Rights Reserved ────────────────────────────
     "proprietary": {
         "spdx": "",
@@ -236,7 +231,6 @@ LICENSE_PRESETS: dict[str, dict[str, str | bool | None]] = {
         "notice": "All rights reserved. No part of this document may be reproduced without permission.",
         "commercial": None,
     },
-
     # ── Unlicensed (skip) ────────────────────────────────────────────
     "unlicensed": {
         "spdx": "",
@@ -250,30 +244,68 @@ LICENSE_PRESETS: dict[str, dict[str, str | bool | None]] = {
 
 # Ordered categories for display
 LICENSE_CATEGORIES: list[tuple[str, list[str]]] = [
-    ("Permissive (software)", [
-        "MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause",
-        "ISC", "Zlib", "BSL-1.0",
-    ]),
-    ("Copyleft (software)", [
-        "GPL-2.0", "GPL-3.0", "LGPL-3.0", "AGPL-3.0",
-        "MPL-2.0", "EUPL-1.2",
-    ]),
-    ("Source-available", [
-        "BUSL-1.1", "Elastic-2.0", "SSPL-1.0",
-    ]),
-    ("Creative Commons (content)", [
-        "CC-BY-4.0", "CC-BY-SA-4.0",
-        "CC-BY-NC-4.0", "CC-BY-NC-SA-4.0", "CC-BY-ND-4.0",
-    ]),
-    ("Public domain", [
-        "CC0-1.0", "Unlicense",
-    ]),
-    ("Specialized", [
-        "OFL-1.1", "ODbL-1.0",
-    ]),
-    ("Proprietary / Other", [
-        "proprietary", "unlicensed",
-    ]),
+    (
+        "Permissive (software)",
+        [
+            "MIT",
+            "Apache-2.0",
+            "BSD-2-Clause",
+            "BSD-3-Clause",
+            "ISC",
+            "Zlib",
+            "BSL-1.0",
+        ],
+    ),
+    (
+        "Copyleft (software)",
+        [
+            "GPL-2.0",
+            "GPL-3.0",
+            "LGPL-3.0",
+            "AGPL-3.0",
+            "MPL-2.0",
+            "EUPL-1.2",
+        ],
+    ),
+    (
+        "Source-available",
+        [
+            "BUSL-1.1",
+            "Elastic-2.0",
+            "SSPL-1.0",
+        ],
+    ),
+    (
+        "Creative Commons (content)",
+        [
+            "CC-BY-4.0",
+            "CC-BY-SA-4.0",
+            "CC-BY-NC-4.0",
+            "CC-BY-NC-SA-4.0",
+            "CC-BY-ND-4.0",
+        ],
+    ),
+    (
+        "Public domain",
+        [
+            "CC0-1.0",
+            "Unlicense",
+        ],
+    ),
+    (
+        "Specialized",
+        [
+            "OFL-1.1",
+            "ODbL-1.0",
+        ],
+    ),
+    (
+        "Proprietary / Other",
+        [
+            "proprietary",
+            "unlicensed",
+        ],
+    ),
 ]
 
 

@@ -21,6 +21,7 @@ try:
     from reportlab.lib.units import mm  # noqa: F401
 
     from briefkit.styles import CONTENT_WIDTH  # noqa: F401
+
     _HAS_DRAWING = True
 except ImportError:
     _HAS_DRAWING = False
@@ -32,23 +33,50 @@ class AIMLVariant(DocSetVariant):
 
     name = "aiml"
     auto_detect_keywords = [
-        "neural", "transformer", "training", "epoch", "loss",
-        "gradient", "attention", "embedding",
+        "neural",
+        "transformer",
+        "training",
+        "epoch",
+        "loss",
+        "gradient",
+        "attention",
+        "embedding",
     ]
 
     # Taxonomy of known hyperparameter / configuration terms
     _AI_TAXONOMY = {
-        "learning rate", "batch size", "epochs", "layers", "heads",
-        "hidden size", "dropout", "optimizer", "weight decay", "momentum",
-        "sequence length", "vocabulary", "embedding", "attention", "ffn",
-        "temperature", "top-k", "top-p", "beam", "context",
-        "learning_rate", "batch_size", "hidden_dim", "num_layers",
-        "num_heads", "max_length", "vocab_size",
+        "learning rate",
+        "batch size",
+        "epochs",
+        "layers",
+        "heads",
+        "hidden size",
+        "dropout",
+        "optimizer",
+        "weight decay",
+        "momentum",
+        "sequence length",
+        "vocabulary",
+        "embedding",
+        "attention",
+        "ffn",
+        "temperature",
+        "top-k",
+        "top-p",
+        "beam",
+        "context",
+        "learning_rate",
+        "batch_size",
+        "hidden_dim",
+        "num_layers",
+        "num_heads",
+        "max_length",
+        "vocab_size",
     }
 
     def build_variant_sections(self, content, flowables, styles, brand):
-        s_h1   = styles["STYLE_H1"]
-        s_h2   = styles["STYLE_H2"]
+        s_h1 = styles["STYLE_H1"]
+        s_h2 = styles["STYLE_H2"]
         s_body = styles["STYLE_BODY"]
 
         flowables.append(PageBreak())
@@ -62,18 +90,22 @@ class AIMLVariant(DocSetVariant):
         hp_rows = self._extract_hyperparameters(content)
 
         if hp_rows:
-            flowables.extend(build_data_table(
-                ["Parameter", "Value", "Notes"],
-                [r + [""] * max(0, 3 - len(r)) for r in hp_rows[:12]],
-                title="Hyperparameter Reference",
-                brand=brand,
-            ))
+            flowables.extend(
+                build_data_table(
+                    ["Parameter", "Value", "Notes"],
+                    [r + [""] * max(0, 3 - len(r)) for r in hp_rows[:12]],
+                    title="Hyperparameter Reference",
+                    brand=brand,
+                )
+            )
         else:
-            flowables.append(_safe_para(
-                "Hyperparameter data not structured in source documents. "
-                "See numbered deep-dive files for model configuration details.",
-                s_body,
-            ))
+            flowables.append(
+                _safe_para(
+                    "Hyperparameter data not structured in source documents. "
+                    "See numbered deep-dive files for model configuration details.",
+                    s_body,
+                )
+            )
 
         # --- Benchmark bar chart ---
         flowables.append(Spacer(1, 4 * mm))
@@ -83,9 +115,7 @@ class AIMLVariant(DocSetVariant):
         bench_data, bench_axis_label = self._extract_benchmarks(content)
 
         if bench_data:
-            flowables.extend(
-                _build_bar_chart(bench_data[:10], f"Benchmark Comparison — {bench_axis_label}", brand)
-            )
+            flowables.extend(_build_bar_chart(bench_data[:10], f"Benchmark Comparison — {bench_axis_label}", brand))
         else:
             flowables.append(_safe_para("No structured benchmark data found.", s_body))
 
@@ -99,17 +129,21 @@ class AIMLVariant(DocSetVariant):
 
         if subsystem_names:
             arch_rows = [[comp, "Component", ""] for comp in subsystem_names]
-            flowables.extend(build_data_table(
-                ["Component", "Type", "Notes"],
-                arch_rows,
-                title=f"Architecture Components — {title_name}",
-                brand=brand,
-            ))
+            flowables.extend(
+                build_data_table(
+                    ["Component", "Type", "Notes"],
+                    arch_rows,
+                    title=f"Architecture Components — {title_name}",
+                    brand=brand,
+                )
+            )
         else:
-            flowables.append(_safe_para(
-                "Architecture components — see numbered deep-dive documents.",
-                s_body,
-            ))
+            flowables.append(
+                _safe_para(
+                    "Architecture components — see numbered deep-dive documents.",
+                    s_body,
+                )
+            )
 
         return flowables
 
@@ -123,17 +157,15 @@ class AIMLVariant(DocSetVariant):
             for tbl in sub.get("tables", []):
                 headers = tbl.get("headers", [])
                 headers_low = [h.lower() for h in headers]
-                if any(h in ("parameter", "hyperparameter", "config", "setting",
-                             "configuration", "model", "architecture")
-                       for h in headers_low):
+                if any(
+                    h in ("parameter", "hyperparameter", "config", "setting", "configuration", "model", "architecture")
+                    for h in headers_low
+                ):
                     hp_rows.extend(tbl.get("rows", [])[:6])
                     break
                 elif len(headers) in (2, 3):
                     rows = tbl.get("rows", [])
-                    tech_rows = [
-                        r for r in rows
-                        if r and r[0].lower().strip() in self._AI_TAXONOMY
-                    ]
+                    tech_rows = [r for r in rows if r and r[0].lower().strip() in self._AI_TAXONOMY]
                     if len(tech_rows) >= 2:
                         hp_rows.extend(tech_rows[:6])
                         break
@@ -158,7 +190,7 @@ class AIMLVariant(DocSetVariant):
                     for row in rows:
                         if col_i < len(row):
                             try:
-                                float(re.sub(r'[^\d.]', '', str(row[col_i])))
+                                float(re.sub(r"[^\d.]", "", str(row[col_i])))
                                 parseable += 1
                             except (ValueError, TypeError):
                                 pass
@@ -170,7 +202,7 @@ class AIMLVariant(DocSetVariant):
                     for row in rows:
                         if len(row) > best_col_idx:
                             try:
-                                val = float(re.sub(r'[^\d.]', '', str(row[best_col_idx])))
+                                val = float(re.sub(r"[^\d.]", "", str(row[best_col_idx])))
                                 bench_data.append((str(row[0])[:25], val))
                                 bench_axis_label = best_col_header
                             except (ValueError, TypeError):
@@ -200,11 +232,11 @@ def _build_bar_chart(data, title="", brand=None):
     try:
         from reportlab.graphics.shapes import Drawing, Rect, String
 
-        chart_width  = float(CONTENT_WIDTH)
-        bar_height   = 10 * mm
-        gap          = 4 * mm
-        label_width  = 50 * mm
-        value_width  = chart_width - label_width - 10 * mm
+        chart_width = float(CONTENT_WIDTH)
+        bar_height = 10 * mm
+        gap = 4 * mm
+        label_width = 50 * mm
+        value_width = chart_width - label_width - 10 * mm
         chart_height = len(data) * (bar_height + gap) + 10 * mm
 
         d = Drawing(chart_width, chart_height)
@@ -232,18 +264,24 @@ def _build_bar_chart(data, title="", brand=None):
             d.add(bar)
 
             lbl = String(
-                label_width - 4, y + bar_height * 0.35,
+                label_width - 4,
+                y + bar_height * 0.35,
                 str(label)[:28],
-                fontName="Helvetica", fontSize=8,
-                fillColor=body_text, textAnchor="end",
+                fontName="Helvetica",
+                fontSize=8,
+                fillColor=body_text,
+                textAnchor="end",
             )
             d.add(lbl)
 
             val_lbl = String(
-                label_width + bar_w + 4, y + bar_height * 0.35,
+                label_width + bar_w + 4,
+                y + bar_height * 0.35,
                 str(value),
-                fontName="Helvetica-Bold", fontSize=8,
-                fillColor=secondary, textAnchor="start",
+                fontName="Helvetica-Bold",
+                fontSize=8,
+                fillColor=secondary,
+                textAnchor="start",
             )
             d.add(val_lbl)
 

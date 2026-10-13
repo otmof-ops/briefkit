@@ -1,4 +1,5 @@
 """Tests for the content extractor."""
+
 from briefkit.extractor import extract_content
 
 

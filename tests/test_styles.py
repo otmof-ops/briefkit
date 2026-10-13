@@ -1,4 +1,5 @@
 """Tests for briefkit styles module."""
+
 from __future__ import annotations
 
 from briefkit.styles import (
@@ -11,7 +12,6 @@ from briefkit.styles import (
 
 
 class TestSafeText:
-
     def test_empty_string(self):
         assert _safe_text("") == ""
 
@@ -45,7 +45,6 @@ class TestSafeText:
 
 
 class TestGetBrand:
-
     def test_default_brand_returned_when_none(self):
         b = _get_brand(None)
         assert b["primary"] == DEFAULT_BRAND["primary"]
@@ -57,7 +56,6 @@ class TestGetBrand:
 
 
 class TestBuildStyles:
-
     def test_returns_dict(self):
         styles = build_styles()
         assert isinstance(styles, dict)
@@ -75,7 +73,6 @@ class TestBuildStyles:
 
 
 class TestTruncateToWidth:
-
     def test_short_text_unchanged(self):
         result = truncate_to_width("Hi", "Helvetica", 10, 500)
         assert result == "Hi"

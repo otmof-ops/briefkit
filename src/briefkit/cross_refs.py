@@ -1,14 +1,15 @@
 """Cross-reference extraction from markdown files."""
+
 import re
 from pathlib import Path
 
 # Pre-compiled cross-reference patterns (moved to module level)
 _CROSS_REF_PAREN = re.compile(
-    r'\((?:\.\./)+([a-z0-9\-/]+)(?:/README\.md|/executive-briefing\.pdf)?\)',
+    r"\((?:\.\./)+([a-z0-9\-/]+)(?:/README\.md|/executive-briefing\.pdf)?\)",
     re.IGNORECASE,
 )
 _CROSS_REF_MD_LINK = re.compile(
-    r'\[([^\]]+)\]\((?:\.\./)+([a-z0-9\-/]+)(?:/[^\)]*)?\)',
+    r"\[([^\]]+)\]\((?:\.\./)+([a-z0-9\-/]+)(?:/[^\)]*)?\)",
     re.IGNORECASE,
 )
 
@@ -34,7 +35,7 @@ def extract_cross_refs(path, known_groups=None):
     cross_ref_abs = None
     if known_groups:
         cross_ref_abs = re.compile(
-            r'\b(' + '|'.join(re.escape(g) for g in known_groups) + r')/([a-z0-9\-/]+)',
+            r"\b(" + "|".join(re.escape(g) for g in known_groups) + r")/([a-z0-9\-/]+)",
             re.IGNORECASE,
         )
 

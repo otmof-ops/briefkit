@@ -91,9 +91,13 @@ class InvoiceTemplate(BaseBriefingTemplate):
         # Divider line
         story.append(Spacer(1, 3 * mm))
         divider = Table([[""]], colWidths=[self.content_width], rowHeights=[1.5])
-        divider.setStyle(TableStyle([
-            ("LINEABOVE", (0, 0), (-1, -1), 1.5, _GRID_COLOR),
-        ]))
+        divider.setStyle(
+            TableStyle(
+                [
+                    ("LINEABOVE", (0, 0), (-1, -1), 1.5, _GRID_COLOR),
+                ]
+            )
+        )
         story.append(divider)
         story.append(Spacer(1, 6 * mm))
 
@@ -105,8 +109,11 @@ class InvoiceTemplate(BaseBriefingTemplate):
         overview = content.get("overview", "")
         if overview:
             bill_to_label = _ps(
-                "InvoiceBillToLabel", brand=b, fontSize=9,
-                textColor=caption_c, fontName="Helvetica-Bold",
+                "InvoiceBillToLabel",
+                brand=b,
+                fontSize=9,
+                textColor=caption_c,
+                fontName="Helvetica-Bold",
                 spaceAfter=2,
             )
             story.append(Paragraph("BILL TO", bill_to_label))
@@ -135,21 +142,30 @@ class InvoiceTemplate(BaseBriefingTemplate):
         guide = content.get("guide_content", "")
         if guide:
             terms_label = _ps(
-                "InvoiceTermsLabel", brand=b, fontSize=9,
-                textColor=caption_c, fontName="Helvetica-Bold",
+                "InvoiceTermsLabel",
+                brand=b,
+                fontSize=9,
+                textColor=caption_c,
+                fontName="Helvetica-Bold",
                 spaceAfter=3,
             )
             story.append(Paragraph("PAYMENT TERMS", terms_label))
 
             terms_style = _ps(
-                "InvoiceTerms", brand=b, fontSize=9,
-                textColor=black, leading=13,
+                "InvoiceTerms",
+                brand=b,
+                fontSize=9,
+                textColor=black,
+                leading=13,
             )
             for block in parse_markdown(guide)[:10]:
                 if block.get("type") == "paragraph":
-                    story.append(_safe_para(
-                        _safe_text(block.get("text", "")), terms_style,
-                    ))
+                    story.append(
+                        _safe_para(
+                            _safe_text(block.get("text", "")),
+                            terms_style,
+                        )
+                    )
                 else:
                     story.extend(self.render_blocks([block]))
             story.append(Spacer(1, 6 * mm))
@@ -161,7 +177,11 @@ class InvoiceTemplate(BaseBriefingTemplate):
     # ------------------------------------------------------------------
 
     def _build_header_row(
-        self, org: str, project: dict, primary: HexColor, caption_c: HexColor,
+        self,
+        org: str,
+        project: dict,
+        primary: HexColor,
+        caption_c: HexColor,
     ) -> list:
         """Build the compact header with company info left and INVOICE title right."""
         flowables: list = []
@@ -171,8 +191,11 @@ class InvoiceTemplate(BaseBriefingTemplate):
         left_parts: list = []
         if org:
             org_style = _ps(
-                "InvoiceOrg", brand=b, fontSize=14,
-                textColor=black, fontName="Helvetica-Bold",
+                "InvoiceOrg",
+                brand=b,
+                fontSize=14,
+                textColor=black,
+                fontName="Helvetica-Bold",
             )
             left_parts.append(Paragraph(org, org_style))
 
@@ -183,18 +206,26 @@ class InvoiceTemplate(BaseBriefingTemplate):
                 address_parts.append(val)
         if address_parts:
             addr_style = _ps(
-                "InvoiceAddr", brand=b, fontSize=8,
-                textColor=caption_c, leading=11,
+                "InvoiceAddr",
+                brand=b,
+                fontSize=8,
+                textColor=caption_c,
+                leading=11,
             )
-            left_parts.append(Paragraph(
-                "<br/>".join(_safe_text(p) for p in address_parts),
-                addr_style,
-            ))
+            left_parts.append(
+                Paragraph(
+                    "<br/>".join(_safe_text(p) for p in address_parts),
+                    addr_style,
+                )
+            )
 
         # Build right-side content (INVOICE title)
         title_style = _ps(
-            "InvoiceTitle", brand=b, fontSize=24,
-            textColor=primary, fontName="Helvetica-Bold",
+            "InvoiceTitle",
+            brand=b,
+            fontSize=24,
+            textColor=primary,
+            fontName="Helvetica-Bold",
             alignment=2,
         )
         right_content = Paragraph("INVOICE", title_style)
@@ -208,24 +239,32 @@ class InvoiceTemplate(BaseBriefingTemplate):
                     [[p] for p in left_cell],
                     colWidths=[self.content_width * 0.6],
                 )
-                left_cell.setStyle(TableStyle([
-                    ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                    ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-                    ("TOPPADDING", (0, 0), (-1, -1), 0),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
-                ]))
+                left_cell.setStyle(
+                    TableStyle(
+                        [
+                            ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                            ("TOPPADDING", (0, 0), (-1, -1), 0),
+                            ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+                        ]
+                    )
+                )
 
             header_table = Table(
                 [[left_cell, right_content]],
                 colWidths=[self.content_width * 0.6, self.content_width * 0.4],
             )
-            header_table.setStyle(TableStyle([
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-                ("TOPPADDING", (0, 0), (-1, -1), 0),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-            ]))
+            header_table.setStyle(
+                TableStyle(
+                    [
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                        ("TOPPADDING", (0, 0), (-1, -1), 0),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                    ]
+                )
+            )
             flowables.append(header_table)
         else:
             flowables.append(right_content)
@@ -242,28 +281,39 @@ class InvoiceTemplate(BaseBriefingTemplate):
         b = self.brand
 
         label_style = _ps(
-            "InvoiceMetaLabel", brand=b, fontSize=9,
-            textColor=black, fontName="Helvetica-Bold",
+            "InvoiceMetaLabel",
+            brand=b,
+            fontSize=9,
+            textColor=black,
+            fontName="Helvetica-Bold",
         )
         value_style = _ps(
-            "InvoiceMetaValue", brand=b, fontSize=9,
+            "InvoiceMetaValue",
+            brand=b,
+            fontSize=9,
             textColor=black,
         )
 
         meta_rows = []
         if self.doc_id:
-            meta_rows.append([
-                Paragraph("Invoice #:", label_style),
-                Paragraph(str(self.doc_id), value_style),
-            ])
-        meta_rows.append([
-            Paragraph("Date:", label_style),
-            Paragraph(self.date_str, value_style),
-        ])
-        meta_rows.append([
-            Paragraph("Due Date:", label_style),
-            Paragraph("Upon receipt", value_style),
-        ])
+            meta_rows.append(
+                [
+                    Paragraph("Invoice #:", label_style),
+                    Paragraph(str(self.doc_id), value_style),
+                ]
+            )
+        meta_rows.append(
+            [
+                Paragraph("Date:", label_style),
+                Paragraph(self.date_str, value_style),
+            ]
+        )
+        meta_rows.append(
+            [
+                Paragraph("Due Date:", label_style),
+                Paragraph("Upon receipt", value_style),
+            ]
+        )
 
         if meta_rows:
             meta_table = Table(
@@ -271,13 +321,17 @@ class InvoiceTemplate(BaseBriefingTemplate):
                 colWidths=[self.content_width * 0.15, self.content_width * 0.35],
                 hAlign="RIGHT",
             )
-            meta_table.setStyle(TableStyle([
-                ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 4),
-                ("TOPPADDING", (0, 0), (-1, -1), 1),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ]))
+            meta_table.setStyle(
+                TableStyle(
+                    [
+                        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+                        ("TOPPADDING", (0, 0), (-1, -1), 1),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ]
+                )
+            )
             flowables.append(meta_table)
 
         return flowables
@@ -346,9 +400,7 @@ class InvoiceTemplate(BaseBriefingTemplate):
             if col_count == 5:
                 # Use directly
                 for row in tbl.get("rows", []):
-                    sanitised = [
-                        str(c) if c is not None else "" for c in row
-                    ]
+                    sanitised = [str(c) if c is not None else "" for c in row]
                     padded = (sanitised + [""] * 5)[:5]
                     rows.append(padded)
             else:
@@ -359,9 +411,7 @@ class InvoiceTemplate(BaseBriefingTemplate):
                 else:
                     # Unmappable — flatten all rows as description lines
                     for row in tbl.get("rows", []):
-                        desc = " | ".join(
-                            str(c) for c in row if c is not None
-                        )
+                        desc = " | ".join(str(c) for c in row if c is not None)
                         rows.append(["1", desc, "\u2014", "\u2014", "\u2014"])
 
         return rows
@@ -377,28 +427,28 @@ class InvoiceTemplate(BaseBriefingTemplate):
         b = self.brand
 
         header_style = _ps(
-            "InvTblHeader", brand=b, fontSize=9,
-            textColor=black, fontName="Helvetica-Bold",
+            "InvTblHeader",
+            brand=b,
+            fontSize=9,
+            textColor=black,
+            fontName="Helvetica-Bold",
         )
         body_style = _ps(
-            "InvTblBody", brand=b, fontSize=9,
-            textColor=black, fontName="Helvetica",
+            "InvTblBody",
+            brand=b,
+            fontSize=9,
+            textColor=black,
+            fontName="Helvetica",
         )
 
         data_rows = self._build_line_items(tables)
 
         # Build header row
-        header_row = [
-            Paragraph(f"<b>{h}</b>", header_style)
-            for h in _CANONICAL_HEADERS
-        ]
+        header_row = [Paragraph(f"<b>{h}</b>", header_style) for h in _CANONICAL_HEADERS]
         table_data = [header_row]
 
         for row in data_rows:
-            table_data.append([
-                _safe_para(_safe_text(str(cell)), body_style)
-                for cell in row
-            ])
+            table_data.append([_safe_para(_safe_text(str(cell)), body_style) for cell in row])
 
         # Column widths: Qty 10%, Description 40%, Rate 15%, Adjust 15%, Sub Total 20%
         col_widths = [
@@ -414,22 +464,26 @@ class InvoiceTemplate(BaseBriefingTemplate):
             colWidths=col_widths,
             repeatRows=1,
         )
-        line_table.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), _HEADER_BG),
-            ("TEXTCOLOR", (0, 0), (-1, 0), black),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, 0), 9),
-            ("TEXTCOLOR", (0, 1), (-1, -1), black),
-            ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
-            ("FONTSIZE", (0, 1), (-1, -1), 9),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("TOPPADDING", (0, 0), (-1, -1), 4),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-            ("LEFTPADDING", (0, 0), (-1, -1), 5),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 5),
-            ("GRID", (0, 0), (-1, -1), 0.4, _GRID_COLOR),
-            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [white, _ROW_ALT]),
-        ]))
+        line_table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), _HEADER_BG),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), black),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("FONTSIZE", (0, 0), (-1, 0), 9),
+                    ("TEXTCOLOR", (0, 1), (-1, -1), black),
+                    ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+                    ("FONTSIZE", (0, 1), (-1, -1), 9),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("TOPPADDING", (0, 0), (-1, -1), 4),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 5),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+                    ("GRID", (0, 0), (-1, -1), 0.4, _GRID_COLOR),
+                    ("ROWBACKGROUNDS", (0, 1), (-1, -1), [white, _ROW_ALT]),
+                ]
+            )
+        )
 
         flowables.append(line_table)
         flowables.append(Spacer(1, 4 * mm))
@@ -453,29 +507,34 @@ class InvoiceTemplate(BaseBriefingTemplate):
             return flowables
 
         header_style = _ps(
-            "InvTblHeader", brand=b, fontSize=9,
-            textColor=black, fontName="Helvetica-Bold",
+            "InvTblHeader",
+            brand=b,
+            fontSize=9,
+            textColor=black,
+            fontName="Helvetica-Bold",
         )
         body_style = _ps(
-            "InvTblBody", brand=b, fontSize=9,
-            textColor=black, fontName="Helvetica",
+            "InvTblBody",
+            brand=b,
+            fontSize=9,
+            textColor=black,
+            fontName="Helvetica",
         )
 
-        header_row = [
-            Paragraph(f"<b>{h}</b>", header_style)
-            for h in _CANONICAL_HEADERS
-        ]
+        header_row = [Paragraph(f"<b>{h}</b>", header_style) for h in _CANONICAL_HEADERS]
         table_data = [header_row]
 
         for sub in subsystems[:30]:
             name = sub.get("name", "Item")
-            table_data.append([
-                _safe_para("1", body_style),
-                _safe_para(_safe_text(name), body_style),
-                _safe_para("\u2014", body_style),
-                _safe_para("\u2014", body_style),
-                _safe_para("\u2014", body_style),
-            ])
+            table_data.append(
+                [
+                    _safe_para("1", body_style),
+                    _safe_para(_safe_text(name), body_style),
+                    _safe_para("\u2014", body_style),
+                    _safe_para("\u2014", body_style),
+                    _safe_para("\u2014", body_style),
+                ]
+            )
 
         col_widths = [
             self.content_width * 0.10,
@@ -490,22 +549,26 @@ class InvoiceTemplate(BaseBriefingTemplate):
             colWidths=col_widths,
             repeatRows=1,
         )
-        item_table.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), _HEADER_BG),
-            ("TEXTCOLOR", (0, 0), (-1, 0), black),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, 0), 9),
-            ("TEXTCOLOR", (0, 1), (-1, -1), black),
-            ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
-            ("FONTSIZE", (0, 1), (-1, -1), 9),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("TOPPADDING", (0, 0), (-1, -1), 4),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-            ("LEFTPADDING", (0, 0), (-1, -1), 5),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 5),
-            ("GRID", (0, 0), (-1, -1), 0.4, _GRID_COLOR),
-            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [white, _ROW_ALT]),
-        ]))
+        item_table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), _HEADER_BG),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), black),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("FONTSIZE", (0, 0), (-1, 0), 9),
+                    ("TEXTCOLOR", (0, 1), (-1, -1), black),
+                    ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+                    ("FONTSIZE", (0, 1), (-1, -1), 9),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("TOPPADDING", (0, 0), (-1, -1), 4),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 5),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+                    ("GRID", (0, 0), (-1, -1), 0.4, _GRID_COLOR),
+                    ("ROWBACKGROUNDS", (0, 1), (-1, -1), [white, _ROW_ALT]),
+                ]
+            )
+        )
 
         flowables.append(item_table)
         flowables.append(Spacer(1, 4 * mm))
@@ -526,7 +589,9 @@ class InvoiceTemplate(BaseBriefingTemplate):
             return None
 
     def _compute_totals(
-        self, tables: list[dict], content: dict | None = None,
+        self,
+        tables: list[dict],
+        content: dict | None = None,
     ) -> tuple[str, str, str]:
         """Compute Sub Total, Tax, and Total from the rightmost column.
 
@@ -567,7 +632,10 @@ class InvoiceTemplate(BaseBriefingTemplate):
         return ("See line items", "\u2014", "See line items")
 
     def _build_totals_block(
-        self, tables: list[dict], body_c: HexColor, primary: HexColor,
+        self,
+        tables: list[dict],
+        body_c: HexColor,
+        primary: HexColor,
         content: dict | None = None,
     ) -> list:
         """Build Sub Total -> Tax -> Total right-aligned below the table.
@@ -578,20 +646,31 @@ class InvoiceTemplate(BaseBriefingTemplate):
         b = self.brand
 
         label_style = _ps(
-            "InvoiceTotalLabel", brand=b, fontSize=10,
+            "InvoiceTotalLabel",
+            brand=b,
+            fontSize=10,
             textColor=black,
         )
         total_label_style = _ps(
-            "InvoiceTotalBold", brand=b, fontSize=11,
-            textColor=black, fontName="Helvetica-Bold",
+            "InvoiceTotalBold",
+            brand=b,
+            fontSize=11,
+            textColor=black,
+            fontName="Helvetica-Bold",
         )
         value_style = _ps(
-            "InvoiceTotalValue", brand=b, fontSize=10,
-            textColor=black, alignment=2,
+            "InvoiceTotalValue",
+            brand=b,
+            fontSize=10,
+            textColor=black,
+            alignment=2,
         )
         total_value_style = _ps(
-            "InvoiceTotalValueBold", brand=b, fontSize=11,
-            textColor=black, fontName="Helvetica-Bold",
+            "InvoiceTotalValueBold",
+            brand=b,
+            fontSize=11,
+            textColor=black,
+            fontName="Helvetica-Bold",
             alignment=2,
         )
 
@@ -617,14 +696,18 @@ class InvoiceTemplate(BaseBriefingTemplate):
             colWidths=[self.content_width * 0.15, self.content_width * 0.2],
             hAlign="RIGHT",
         )
-        totals_table.setStyle(TableStyle([
-            ("LEFTPADDING", (0, 0), (-1, -1), 4),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 4),
-            ("TOPPADDING", (0, 0), (-1, -1), 3),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-            ("LINEABOVE", (0, 0), (-1, 0), 0.4, _GRID_COLOR),
-            ("LINEABOVE", (0, -1), (-1, -1), 1, black),
-        ]))
+        totals_table.setStyle(
+            TableStyle(
+                [
+                    ("LEFTPADDING", (0, 0), (-1, -1), 4),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+                    ("TOPPADDING", (0, 0), (-1, -1), 3),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+                    ("LINEABOVE", (0, 0), (-1, 0), 0.4, _GRID_COLOR),
+                    ("LINEABOVE", (0, -1), (-1, -1), 1, black),
+                ]
+            )
+        )
 
         flowables.append(Spacer(1, 2 * mm))
         flowables.append(totals_table)
@@ -636,20 +719,29 @@ class InvoiceTemplate(BaseBriefingTemplate):
     # ------------------------------------------------------------------
 
     def _build_payment_details(
-        self, content: dict, brand: dict,
-        caption_c: HexColor, body_c: HexColor,
+        self,
+        content: dict,
+        brand: dict,
+        caption_c: HexColor,
+        body_c: HexColor,
     ) -> list:
         """Build a PAYMENT DETAILS section from guide_content or placeholder."""
         flowables: list = []
 
         label_style = _ps(
-            "InvoicePayLabel", brand=brand, fontSize=9,
-            textColor=caption_c, fontName="Helvetica-Bold",
+            "InvoicePayLabel",
+            brand=brand,
+            fontSize=9,
+            textColor=caption_c,
+            fontName="Helvetica-Bold",
             spaceAfter=3,
         )
         detail_style = _ps(
-            "InvoicePayDetail", brand=brand, fontSize=9,
-            textColor=black, leading=13,
+            "InvoicePayDetail",
+            brand=brand,
+            fontSize=9,
+            textColor=black,
+            leading=13,
         )
 
         flowables.append(Paragraph("PAYMENT DETAILS", label_style))
@@ -658,9 +750,12 @@ class InvoiceTemplate(BaseBriefingTemplate):
         if guide:
             for block in parse_markdown(guide)[:10]:
                 if block.get("type") == "paragraph":
-                    flowables.append(_safe_para(
-                        _safe_text(block.get("text", "")), detail_style,
-                    ))
+                    flowables.append(
+                        _safe_para(
+                            _safe_text(block.get("text", "")),
+                            detail_style,
+                        )
+                    )
                 else:
                     flowables.extend(self.render_blocks([block]))
         else:
@@ -687,8 +782,10 @@ class InvoiceTemplate(BaseBriefingTemplate):
             from briefkit.doc_ids import get_or_assign_doc_id
 
             self.doc_id = get_or_assign_doc_id(
-                self.target_path, self.level,
-                content.get("title", ""), config=self.config,
+                self.target_path,
+                self.level,
+                content.get("title", ""),
+                config=self.config,
             )
 
         # Header/footer state
@@ -724,7 +821,8 @@ class InvoiceTemplate(BaseBriefingTemplate):
             # Payment terms line
             terms_y = 14 * mm
             canvas.drawString(
-                doc_inner.leftMargin, terms_y,
+                doc_inner.leftMargin,
+                terms_y,
                 "Payment is due within 30 days from date of invoice.",
             )
 
@@ -732,10 +830,13 @@ class InvoiceTemplate(BaseBriefingTemplate):
             footer_y = 10 * mm
             if org:
                 canvas.drawString(
-                    doc_inner.leftMargin, footer_y, org,
+                    doc_inner.leftMargin,
+                    footer_y,
+                    org,
                 )
             canvas.drawRightString(
-                doc_inner.pagesize[0] - doc_inner.rightMargin, footer_y,
+                doc_inner.pagesize[0] - doc_inner.rightMargin,
+                footer_y,
                 f"Page {doc_inner.page}",
             )
             canvas.restoreState()

@@ -18,6 +18,7 @@ from briefkit.extractor import _strip_inline, parse_markdown
 # Smart punctuation
 # ---------------------------------------------------------------------------
 
+
 class TestSmartPunctuation:
     def test_straight_double_quotes_become_curly(self):
         out = _strip_inline('She said "hello" to me.')
@@ -49,6 +50,7 @@ class TestSmartPunctuation:
 # Link URL preservation
 # ---------------------------------------------------------------------------
 
+
 class TestLinkPreservation:
     def test_url_survives_into_link_tag(self):
         out = _strip_inline("See [docs](https://example.com) here.")
@@ -59,7 +61,7 @@ class TestLinkPreservation:
     def test_href_uses_straight_quotes_not_smart(self):
         # Regression: an earlier iteration ran smart-punctuation AFTER
         # the link substitution, turning href="..." into href=“...”.
-        out = _strip_inline('Click [here](https://x.com) for details.')
+        out = _strip_inline("Click [here](https://x.com) for details.")
         assert 'href="https://x.com"' in out
         # The curly quotes should appear around nothing here (no
         # double-quoted prose), so the only " characters in the output
@@ -76,6 +78,7 @@ class TestLinkPreservation:
 # ---------------------------------------------------------------------------
 # XML escaping of prose
 # ---------------------------------------------------------------------------
+
 
 class TestProseEscaping:
     def test_ampersand_escaped(self):
@@ -95,26 +98,23 @@ class TestProseEscaping:
 # Skip-flag typo detection
 # ---------------------------------------------------------------------------
 
+
 class TestSkipFlagTypoDetection:
     def test_unknown_skip_flag_raises_validation_error(self, tmp_path):
         from briefkit.config import load_config
+
         cfg_file = tmp_path / "briefkit.yml"
         cfg_file.write_text(
-            "project:\n"
-            "  name: test\n"
-            "  skip_prefece: true\n"  # typo!
+            "project:\n  name: test\n  skip_prefece: true\n"  # typo!
         )
         with pytest.raises(ValueError, match=r"skip_prefece"):
             load_config(cfg_file)
 
     def test_skip_flag_suggests_closest_match(self, tmp_path):
         from briefkit.config import load_config
+
         cfg_file = tmp_path / "briefkit.yml"
-        cfg_file.write_text(
-            "project:\n"
-            "  name: test\n"
-            "  skip_prefece: true\n"
-        )
+        cfg_file.write_text("project:\n  name: test\n  skip_prefece: true\n")
         try:
             load_config(cfg_file)
         except ValueError as exc:
@@ -124,12 +124,9 @@ class TestSkipFlagTypoDetection:
 
     def test_valid_skip_flag_accepted(self, tmp_path):
         from briefkit.config import load_config
+
         cfg_file = tmp_path / "briefkit.yml"
-        cfg_file.write_text(
-            "project:\n"
-            "  name: test\n"
-            "  skip_preface: true\n"
-        )
+        cfg_file.write_text("project:\n  name: test\n  skip_preface: true\n")
         cfg = load_config(cfg_file)
         assert cfg["project"]["skip_preface"] is True
 
@@ -138,9 +135,11 @@ class TestSkipFlagTypoDetection:
 # Paragraph style defaults
 # ---------------------------------------------------------------------------
 
+
 class TestParagraphStyleDefaults:
     def test_default_style_has_widow_orphan_control(self):
         from briefkit.styles import _ps
+
         style = _ps("TestDefault")
         # allowWidows=0 means a single line widow at the top of the
         # next page is NOT permitted; allowOrphans=0 means the last
@@ -150,11 +149,13 @@ class TestParagraphStyleDefaults:
 
     def test_default_style_has_word_wrap(self):
         from briefkit.styles import _ps
+
         style = _ps("TestDefault2")
         assert getattr(style, "wordWrap", None) in ("LTR", "CJK")
 
     def test_h1_has_outline_level(self):
         from briefkit.styles import build_styles
+
         styles = build_styles()
         assert getattr(styles["STYLE_H1"], "outlineLevel", None) == 0
         assert getattr(styles["STYLE_H2"], "outlineLevel", None) == 1
@@ -164,6 +165,7 @@ class TestParagraphStyleDefaults:
 # ---------------------------------------------------------------------------
 # Table separator detection (regression: em-dash smart-punct broke separator)
 # ---------------------------------------------------------------------------
+
 
 class TestTableSeparatorRobustness:
     def test_basic_table_still_parses_after_smart_punct(self):

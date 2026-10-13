@@ -1,4 +1,5 @@
 """Quality gates for generated PDFs — two-tier thresholds."""
+
 from __future__ import annotations
 
 from pathlib import Path

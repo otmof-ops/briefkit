@@ -21,36 +21,47 @@ from reportlab.platypus import Paragraph
 # =============================================================================
 
 DEFAULT_BRAND = {
-    "primary":      "#1B2A4A",
-    "secondary":    "#2E86AB",
-    "accent":       "#E8C547",
-    "body_text":    "#2C2C2C",
-    "caption":      "#666666",
-    "background":   "#FFFFFF",
-    "rule":         "#CCCCCC",
-    "success":      "#00b894",
-    "warning":      "#fdcb6e",
-    "danger":       "#d63031",
-    "code_bg":      "#f5f6fa",
-    "table_alt":    "#f8f9fa",
-    "font_body":    "Helvetica",
+    "primary": "#1B2A4A",
+    "secondary": "#2E86AB",
+    "accent": "#E8C547",
+    "body_text": "#2C2C2C",
+    "caption": "#666666",
+    "background": "#FFFFFF",
+    "rule": "#CCCCCC",
+    "success": "#00b894",
+    "warning": "#fdcb6e",
+    "danger": "#d63031",
+    "code_bg": "#f5f6fa",
+    "table_alt": "#f8f9fa",
+    "font_body": "Helvetica",
     "font_heading": "Helvetica-Bold",
-    "font_mono":    "Courier",
+    "font_mono": "Courier",
     "font_caption": "Helvetica-Oblique",
-    "org":          "",
-    "tagline":      "",
-    "abn":          "",
-    "logo":         "",
-    "copyright":    "\u00a9 {year}",
-    "url":          "",
+    "org": "",
+    "tagline": "",
+    "abn": "",
+    "logo": "",
+    "copyright": "\u00a9 {year}",
+    "url": "",
 }
 
 
-_SAFE_FONTS = frozenset({
-    'Courier', 'Courier-Bold', 'Courier-Oblique', 'Courier-BoldOblique',
-    'Helvetica', 'Helvetica-Bold', 'Helvetica-Oblique', 'Helvetica-BoldOblique',
-    'Times-Roman', 'Times-Bold', 'Times-Italic', 'Times-BoldItalic',
-})
+_SAFE_FONTS = frozenset(
+    {
+        "Courier",
+        "Courier-Bold",
+        "Courier-Oblique",
+        "Courier-BoldOblique",
+        "Helvetica",
+        "Helvetica-Bold",
+        "Helvetica-Oblique",
+        "Helvetica-BoldOblique",
+        "Times-Roman",
+        "Times-Bold",
+        "Times-Italic",
+        "Times-BoldItalic",
+    }
+)
 
 
 def _get_brand(brand=None):
@@ -77,22 +88,23 @@ def _hex(brand, key):
 # PAGE LAYOUT CONSTANTS
 # =============================================================================
 
-PAGE_SIZE      = A4
+PAGE_SIZE = A4
 # Margins widened from 20 mm to 25 mm to bring the measure (characters per
 # line) from ~96 cpc down to ~75 cpc at 10/14 body, inside the professional
 # typography target range of 45–75 cpc.
-MARGIN_TOP     = 25 * mm
-MARGIN_BOTTOM  = 22 * mm
-MARGIN_LEFT    = 25 * mm
-MARGIN_RIGHT   = 25 * mm
-CONTENT_WIDTH  = 160 * mm   # 210mm - 25mm left - 25mm right (A4)
-GUTTER         = 8 * mm
+MARGIN_TOP = 25 * mm
+MARGIN_BOTTOM = 22 * mm
+MARGIN_LEFT = 25 * mm
+MARGIN_RIGHT = 25 * mm
+CONTENT_WIDTH = 160 * mm  # 210mm - 25mm left - 25mm right (A4)
+GUTTER = 8 * mm
 
 
 def compute_content_width(page_size=None, margins=None):
     """Calculate content width from page size and margins."""
     if page_size is None:
         from reportlab.lib.pagesizes import A4
+
         page_size = A4
     if margins is None:
         margins = {}
@@ -104,6 +116,7 @@ def compute_content_width(page_size=None, margins=None):
 def truncate_to_width(text, font_name, font_size, max_width):
     """Truncate text with ellipsis if it exceeds max_width in given font."""
     from reportlab.pdfbase.pdfmetrics import stringWidth
+
     if not text:
         return text
     if stringWidth(str(text), font_name, font_size) <= max_width:
@@ -128,21 +141,22 @@ def get_layout(page_size=None):
     mt = MARGIN_TOP
     mb = MARGIN_BOTTOM
     return {
-        "page_size":     ps,
-        "page_width":    width,
-        "page_height":   height,
-        "margin_top":    mt,
+        "page_size": ps,
+        "page_width": width,
+        "page_height": height,
+        "margin_top": mt,
         "margin_bottom": mb,
-        "margin_left":   ml,
-        "margin_right":  mr,
+        "margin_left": ml,
+        "margin_right": mr,
         "content_width": width - ml - mr,
-        "gutter":        GUTTER,
+        "gutter": GUTTER,
     }
 
 
 # =============================================================================
 # TEXT UTILITIES
 # =============================================================================
+
 
 def _safe_text(text, already_escaped: bool = False):
     """Sanitize text for ReportLab's XML parser.
@@ -175,20 +189,20 @@ def _safe_text(text, already_escaped: bool = False):
         # Strategy: escape ALL < > then unescape the allowed ones.
         text = xml.sax.saxutils.escape(text)
         # Restore allowed tags
-        for tag in ['b', 'i', 'u', 'br/', 'br', 'super', 'sub', 'strike']:
-            text = text.replace(f'&lt;{tag}&gt;', f'<{tag}>')
-            text = text.replace(f'&lt;/{tag}&gt;', f'</{tag}>')
+        for tag in ["b", "i", "u", "br/", "br", "super", "sub", "strike"]:
+            text = text.replace(f"&lt;{tag}&gt;", f"<{tag}>")
+            text = text.replace(f"&lt;/{tag}&gt;", f"</{tag}>")
         # Restore font tags with attributes.
         # The attribute class must allow ``&`` (e.g. inside escaped URLs in
         # href attributes on link tags, or &quot;-escaped name values) so
         # we use a non-greedy ``.+?`` bounded by ``&gt;`` instead of the
         # old ``[^&]+`` which silently dropped tags whose attribute values
         # contained ampersands.
-        text = re.sub(r'&lt;font (.+?)&gt;', r'<font \1>', text)
-        text = text.replace('&lt;/font&gt;', '</font>')
+        text = re.sub(r"&lt;font (.+?)&gt;", r"<font \1>", text)
+        text = text.replace("&lt;/font&gt;", "</font>")
         # Restore link tags (clickable URLs from markdown links)
-        text = re.sub(r'&lt;link (.+?)&gt;', r'<link \1>', text)
-        text = text.replace('&lt;/link&gt;', '</link>')
+        text = re.sub(r"&lt;link (.+?)&gt;", r"<link \1>", text)
+        text = text.replace("&lt;/link&gt;", "</link>")
 
     # After restoring font tags, sanitize attributes to allowlist
     def _sanitize_font_attrs(match):
@@ -208,23 +222,24 @@ def _safe_text(text, already_escaped: bool = False):
         color_match = re.search(r'color="(#[0-9A-Fa-f]{6})"', tag_content)
         if color_match:
             parts.append(f'color="{color_match.group(1)}"')
-        return f'<font {" ".join(parts)}>'
+        return f"<font {' '.join(parts)}>"
 
-    text = re.sub(r'<font ([^>]+)>', _sanitize_font_attrs, text)
+    text = re.sub(r"<font ([^>]+)>", _sanitize_font_attrs, text)
 
     # Close any unclosed tags (from content truncation mid-tag)
-    open_tags = re.findall(r'<(b|i|u|font|strike)[^>]*>', text)
-    close_tags = re.findall(r'</(b|i|u|font|strike)>', text)
-    for tag in reversed(open_tags[len(close_tags):]):
-        text += f'</{tag}>'
+    open_tags = re.findall(r"<(b|i|u|font|strike)[^>]*>", text)
+    close_tags = re.findall(r"</(b|i|u|font|strike)>", text)
+    for tag in reversed(open_tags[len(close_tags) :]):
+        text += f"</{tag}>"
 
     # Insert zero-width spaces in very long words to prevent Paragraph overflow
     def _break_long_word(m):
         word = m.group(0)
         if len(word) > 60:
-            return '&#8203;'.join(word[i:i+60] for i in range(0, len(word), 60))
+            return "&#8203;".join(word[i : i + 60] for i in range(0, len(word), 60))
         return word
-    text = re.sub(r'\S{61,}', _break_long_word, text)
+
+    text = re.sub(r"\S{61,}", _break_long_word, text)
     return text
 
 
@@ -237,8 +252,8 @@ def _safe_para(text, style, already_escaped: bool = False):
     try:
         return Paragraph(_safe_text(text, already_escaped), style)
     except Exception:
-        clean = re.sub(r'<[^>]+>', '', text)
-        clean = clean.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+        clean = re.sub(r"<[^>]+>", "", text)
+        clean = clean.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         try:
             return Paragraph(clean, style)
         except Exception:
@@ -270,16 +285,16 @@ def _ps(name, brand=None, **kw):
     """
     b = _get_brand(brand)
     defaults = {
-        "fontName":      b.get("font_body", "Helvetica"),
-        "textColor":     _hex(b, "body_text"),
-        "spaceAfter":    8,
-        "spaceBefore":   0,
-        "leading":       14,
+        "fontName": b.get("font_body", "Helvetica"),
+        "textColor": _hex(b, "body_text"),
+        "spaceAfter": 8,
+        "spaceBefore": 0,
+        "leading": 14,
         # Widow / orphan control — prevents single-line strandings.
-        "allowWidows":   0,
-        "allowOrphans":  0,
+        "allowWidows": 0,
+        "allowOrphans": 0,
         # Default word wrap — cells override to CJK.
-        "wordWrap":      "LTR",
+        "wordWrap": "LTR",
     }
     defaults.update(kw)
     return ParagraphStyle(name, **defaults)
@@ -288,6 +303,7 @@ def _ps(name, brand=None, **kw):
 # =============================================================================
 # NAMED STYLE BUILDERS
 # =============================================================================
+
 
 def build_styles(brand=None):
     """
@@ -304,14 +320,14 @@ def _build_styles_cached(brand_key):
     """Cached implementation of build_styles."""
     b = dict(brand_key)
 
-    primary   = _hex(b, "primary")
+    primary = _hex(b, "primary")
     secondary = _hex(b, "secondary")
     body_text = _hex(b, "body_text")
-    caption   = _hex(b, "caption")
+    caption = _hex(b, "caption")
     # Derived semantic aliases matching source conventions
-    otm_navy  = primary
+    otm_navy = primary
     otm_steel = secondary
-    bg_grey   = HexColor(b.get("code_bg", "#f5f6fa"))
+    bg_grey = HexColor(b.get("code_bg", "#f5f6fa"))
     table_alt = HexColor(b.get("table_alt", "#f8f9fa"))
 
     styles = {}
@@ -324,7 +340,7 @@ def _build_styles_cached(brand_key):
         fontName=b.get("font_heading", "Helvetica-Bold"),
         fontSize=28,
         textColor=otm_navy,
-        leading=36,          # 28 pt / 36 pt
+        leading=36,  # 28 pt / 36 pt
         spaceAfter=12,
         spaceBefore=0,
         alignment=1,
@@ -337,8 +353,8 @@ def _build_styles_cached(brand_key):
         fontName=b.get("font_heading", "Helvetica-Bold"),
         fontSize=18,
         textColor=otm_navy,
-        leading=24,          # 18 pt / 24 pt — 4 pt multiple
-        spaceBefore=20,      # 4 pt multiple
+        leading=24,  # 18 pt / 24 pt — 4 pt multiple
+        spaceBefore=20,  # 4 pt multiple
         spaceAfter=8,
         keepWithNext=True,
         outlineLevel=0,
@@ -350,7 +366,7 @@ def _build_styles_cached(brand_key):
         fontName=b.get("font_heading", "Helvetica-Bold"),
         fontSize=14,
         textColor=otm_navy,
-        leading=20,          # 14 pt / 20 pt
+        leading=20,  # 14 pt / 20 pt
         spaceBefore=16,
         spaceAfter=4,
         keepWithNext=True,
@@ -363,7 +379,7 @@ def _build_styles_cached(brand_key):
         fontName=b.get("font_heading", "Helvetica-Bold"),
         fontSize=12,
         textColor=otm_steel,
-        leading=16,          # 12 pt / 16 pt
+        leading=16,  # 12 pt / 16 pt
         spaceBefore=12,
         spaceAfter=4,
         keepWithNext=True,
@@ -373,8 +389,8 @@ def _build_styles_cached(brand_key):
     styles["STYLE_BODY"] = _ps(
         "BKBody",
         brand=b,
-        fontSize=11,         # bumped from 10 for measure; paired with 25 mm margins
-        leading=16,          # 11 pt / 16 pt — 4 pt multiple
+        fontSize=11,  # bumped from 10 for measure; paired with 25 mm margins
+        leading=16,  # 11 pt / 16 pt — 4 pt multiple
         spaceAfter=8,
         spaceBefore=0,
     )
@@ -504,11 +520,11 @@ def _build_styles_cached(brand_key):
     )
 
     # Store derived colors on the dict for use by element builders
-    styles["_primary"]   = otm_navy
+    styles["_primary"] = otm_navy
     styles["_secondary"] = otm_steel
-    styles["_caption"]   = caption
+    styles["_caption"] = caption
     styles["_body_text"] = body_text
-    styles["_bg_grey"]   = bg_grey
+    styles["_bg_grey"] = bg_grey
     styles["_table_alt"] = table_alt
 
     return styles

@@ -88,6 +88,7 @@ _PAGE_SIZES = {
 # Helper flowables
 # ---------------------------------------------------------------------------
 
+
 class HierarchyTreeFlowable(Flowable):
     """Indented hierarchy tree drawn directly on the canvas."""
 
@@ -104,26 +105,26 @@ class HierarchyTreeFlowable(Flowable):
 
     def draw(self):
         b = self._brand
-        primary  = HexColor(b.get("primary",   "#1B2A4A"))
-        body_c   = HexColor(b.get("body_text", "#2C2C2C"))
+        primary = HexColor(b.get("primary", "#1B2A4A"))
+        body_c = HexColor(b.get("body_text", "#2C2C2C"))
         c = self.canv
         y = self.height - 4
         for level, label in self.tree_data:
             indent = level * 14 + 2
             prefix = "\u2022 " if level > 0 else ""
-            font   = "Helvetica-Bold" if level == 0 else "Helvetica"
-            size   = 10 if level == 0 else 9
-            col    = primary if level == 0 else body_c
+            font = "Helvetica-Bold" if level == 0 else "Helvetica"
+            size = 10 if level == 0 else 9
+            col = primary if level == 0 else body_c
             c.setFillColor(col)
             c.setFont(font, size)
             c.drawString(indent, y, f"{prefix}{str(label)}")
             y -= 14
 
 
-
 # ---------------------------------------------------------------------------
 # Level detection
 # ---------------------------------------------------------------------------
+
 
 def detect_level(
     target_path: str | Path,
@@ -167,10 +168,10 @@ def detect_level(
     return assigned
 
 
-
 # ---------------------------------------------------------------------------
 # BaseBriefingTemplate
 # ---------------------------------------------------------------------------
+
 
 class BaseBriefingTemplate:
     """
@@ -200,8 +201,8 @@ class BaseBriefingTemplate:
         output_path: str | Path | None = None,
     ):
         self.target_path = Path(target_path).resolve()
-        self.config      = config or {}
-        self.brand       = self.config.get("brand", {})
+        self.config = config or {}
+        self.brand = self.config.get("brand", {})
 
         # Store license notice separately — not in brand dict to avoid
         # polluting the build_styles() LRU cache key
@@ -211,6 +212,7 @@ class BaseBriefingTemplate:
         # Resolve project root from config
         self._project_root: Path | None = None
         from briefkit.config import find_project_root
+
         pr = find_project_root(self.target_path)
         if pr:
             self._project_root = pr
@@ -226,10 +228,10 @@ class BaseBriefingTemplate:
         else:
             self.output_path = self.target_path / output_filename
 
-        self.content:   dict = {}
-        self.date:      datetime.date = datetime.date.today()
-        self.date_str:  str = self.date.strftime("%d %B %Y")
-        self.doc_id:    str = ""
+        self.content: dict = {}
+        self.date: datetime.date = datetime.date.today()
+        self.date_str: str = self.date.strftime("%d %B %Y")
+        self.doc_id: str = ""
 
         # Compute dynamic content width
         layout = self.config.get("layout", {})
@@ -292,8 +294,9 @@ class BaseBriefingTemplate:
             self._render_truncations: list[dict] = []
         self._render_truncations.append({"source": source, "blocks_dropped": dropped})
 
-    def render_body_blocks(self, blocks: list[dict], limit: int = 0,
-                           skip_top_headings: bool = True) -> tuple[list, int]:
+    def render_body_blocks(
+        self, blocks: list[dict], limit: int = 0, skip_top_headings: bool = True
+    ) -> tuple[list, int]:
         """
         Render a source document's blocks for the body section.
 
@@ -309,8 +312,7 @@ class BaseBriefingTemplate:
         flowables: list = []
         rendered = 0
         for idx, block in enumerate(blocks):
-            if (skip_top_headings and block.get("type") == "heading"
-                    and block.get("level", 99) <= 2):
+            if skip_top_headings and block.get("type") == "heading" and block.get("level", 99) <= 2:
                 continue
             if limit and rendered >= limit:
                 return flowables, len(blocks) - idx
@@ -354,7 +356,7 @@ class BaseBriefingTemplate:
             # Code blocks are the exception: they are deliberately kept raw.
             if btype == "heading":
                 level = block["level"]
-                text  = block["text"]
+                text = block["text"]
                 if level == 1:
                     flowables.append(_safe_para(text, self.styles["STYLE_H1"], True))
                 elif level == 2:
@@ -368,10 +370,10 @@ class BaseBriefingTemplate:
                     flowables.append(_safe_para(text, self.styles["STYLE_BODY"], True))
 
             elif btype == "list_item":
-                text    = block.get("text", "")
+                text = block.get("text", "")
                 ordered = block.get("ordered", False)
-                idx     = block.get("index", 0)
-                bullet  = f"{idx}. " if ordered else "\u2022 "
+                idx = block.get("index", 0)
+                bullet = f"{idx}. " if ordered else "\u2022 "
                 flowables.append(_safe_para(f"{bullet}{text}", self.styles["STYLE_LIST_ITEM"], True))
 
             elif btype == "code":
@@ -380,6 +382,7 @@ class BaseBriefingTemplate:
                 # We bypass _safe_para because _safe_text would re-escape
                 # &nbsp; entities.
                 from reportlab.platypus import Paragraph as _RLParagraph
+
                 raw = block.get("text", "")
                 # Hard-wrap lines longer than a safe character count.
                 # 90 chars at 9-pt Courier ≈ 162 pt (57 mm), well within
@@ -425,8 +428,9 @@ class BaseBriefingTemplate:
 
             elif btype == "blockquote":
                 text = block.get("text", "")
-                callout = build_callout_box(text, "insight", brand=self.brand,
-                                            content_width=self.content_width, already_escaped=True)
+                callout = build_callout_box(
+                    text, "insight", brand=self.brand, content_width=self.content_width, already_escaped=True
+                )
                 # Wrap in KeepTogether so a mid-callout page break can't
                 # leave half a coloured left border on one page.
                 if isinstance(callout, list):
@@ -436,18 +440,25 @@ class BaseBriefingTemplate:
 
             elif btype == "table":
                 headers = block.get("headers", [])
-                rows    = block.get("rows", [])
-                flowables.extend(build_data_table(headers, rows, brand=self.brand,
-                                                  content_width=self.content_width, already_escaped=True))
+                rows = block.get("rows", [])
+                flowables.extend(
+                    build_data_table(
+                        headers, rows, brand=self.brand, content_width=self.content_width, already_escaped=True
+                    )
+                )
 
             elif btype == "rule":
                 rule_data = [[""]]
-                rule_tbl  = Table(rule_data, colWidths=[self.content_width], rowHeights=[1])
-                rule_tbl.setStyle(TableStyle([
-                    ("BACKGROUND",    (0, 0), (-1, -1), rule_c),
-                    ("TOPPADDING",    (0, 0), (-1, -1), 0),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-                ]))
+                rule_tbl = Table(rule_data, colWidths=[self.content_width], rowHeights=[1])
+                rule_tbl.setStyle(
+                    TableStyle(
+                        [
+                            ("BACKGROUND", (0, 0), (-1, -1), rule_c),
+                            ("TOPPADDING", (0, 0), (-1, -1), 0),
+                            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                        ]
+                    )
+                )
                 flowables.append(rule_tbl)
 
         return flowables
@@ -467,15 +478,15 @@ class BaseBriefingTemplate:
         flowables.append(Paragraph("1. Executive Summary", self.styles["STYLE_H1"]))
         flowables.append(Spacer(1, 3 * mm))
 
-        overview    = content.get("overview", "")
+        overview = content.get("overview", "")
         orientation = content.get("orientation", "")
-        title       = content.get("title", "the selected documentation")
+        title = content.get("title", "the selected documentation")
 
         what_para = ""
-        why_para  = ""
-        who_para  = ""
+        why_para = ""
+        who_para = ""
         if orientation:
-            ori_blocks  = parse_markdown(orientation)
+            ori_blocks = parse_markdown(orientation)
             current_sec = None
             section_texts: dict[str, str] = {}
             for blk in ori_blocks:
@@ -493,8 +504,8 @@ class BaseBriefingTemplate:
                     if current_sec not in section_texts:
                         section_texts[current_sec] = blk["text"]
             what_para = section_texts.get("what", "")
-            why_para  = section_texts.get("why", "")
-            who_para  = section_texts.get("who", "")
+            why_para = section_texts.get("why", "")
+            who_para = section_texts.get("who", "")
 
         if what_para:
             flowables.append(_safe_para(what_para, self.styles["STYLE_BODY"]))
@@ -507,28 +518,31 @@ class BaseBriefingTemplate:
                 rendered = self.render_blocks([block])
                 flowables.extend(rendered)
         else:
-            flowables.append(_safe_para(
-                f"This briefing covers {_safe_text(title)}. "
-                f"See numbered documents for full content.",
-                self.styles["STYLE_BODY"],
-            ))
+            flowables.append(
+                _safe_para(
+                    f"This briefing covers {_safe_text(title)}. See numbered documents for full content.",
+                    self.styles["STYLE_BODY"],
+                )
+            )
 
         if who_para:
             flowables.append(Spacer(1, 2 * mm))
-            flowables.append(build_callout_box(
-                f"Target Audience: {who_para}", "insight", brand=self.brand, content_width=self.content_width
-            ))
+            flowables.append(
+                build_callout_box(
+                    f"Target Audience: {who_para}", "insight", brand=self.brand, content_width=self.content_width
+                )
+            )
 
         flowables.append(Spacer(1, 4 * mm))
 
         # Key Takeaways
         subsystems = content.get("subsystems", [])
-        doc_sets   = content.get("doc_sets", [])
-        subjects   = content.get("subjects", [])
+        doc_sets = content.get("doc_sets", [])
+        subjects = content.get("subjects", [])
         takeaway_lines: list[str] = []
 
         if why_para:
-            for s in re.split(r'(?<=[.!?])\s+', why_para):
+            for s in re.split(r"(?<=[.!?])\s+", why_para):
                 s = s.strip()
                 if len(s) > 30:
                     takeaway_lines.append(f"- {s[:200]}")
@@ -536,7 +550,7 @@ class BaseBriefingTemplate:
                         break
 
         if overview and not takeaway_lines:
-            numbered = re.findall(r'^\d+\.\s+(.{30,200})', overview, re.MULTILINE)
+            numbered = re.findall(r"^\d+\.\s+(.{30,200})", overview, re.MULTILINE)
             for s in numbered[:5]:
                 takeaway_lines.append(f"- {s.strip()[:200]}")
 
@@ -544,23 +558,21 @@ class BaseBriefingTemplate:
             for sub in subsystems[:6]:
                 insights = sub.get("insights", [])
                 if insights and len(insights[0]) > 20:
-                    takeaway_lines.append(
-                        f"- <b>{_safe_text(sub['name'])}</b>: {insights[0][:150]}"
-                    )
+                    takeaway_lines.append(f"- <b>{_safe_text(sub['name'])}</b>: {insights[0][:150]}")
                 else:
                     raw = sub.get("content", "")
-                    for s in re.split(r'(?<=[.!?])\s+', raw.replace("\n", " ")):
+                    for s in re.split(r"(?<=[.!?])\s+", raw.replace("\n", " ")):
                         s = s.strip().lstrip("#- *>`|")
-                        if (len(s) > 30
-                                and not s.startswith("```")
-                                and not s.startswith("#")
-                                and not re.match(r'^\d{2}-', s)):
+                        if (
+                            len(s) > 30
+                            and not s.startswith("```")
+                            and not s.startswith("#")
+                            and not re.match(r"^\d{2}-", s)
+                        ):
                             s_words = s.split()
                             if len(s_words) > 100:
                                 s = " ".join(s_words[:100]) + "\u2026"
-                            takeaway_lines.append(
-                                f"- <b>{_safe_text(sub['name'])}</b>: {s[:200]}"
-                            )
+                            takeaway_lines.append(f"- <b>{_safe_text(sub['name'])}</b>: {s[:200]}")
                             break
 
         elif doc_sets and not takeaway_lines:
@@ -572,12 +584,10 @@ class BaseBriefingTemplate:
         elif subjects and not takeaway_lines:
             for subj in subjects[:5]:
                 name = _safe_text(subj.get("name", ""))
-                takeaway_lines.append(
-                    f"- <b>{name}</b>: {subj.get('doc_count', 0)} doc sets."
-                )
+                takeaway_lines.append(f"- <b>{name}</b>: {subj.get('doc_count', 0)} doc sets.")
 
         if not takeaway_lines:
-            for s in re.split(r'(?<=[.!?])\s+', (overview or "").replace("\n", " ")):
+            for s in re.split(r"(?<=[.!?])\s+", (overview or "").replace("\n", " ")):
                 s = s.strip()
                 if len(s) > 30:
                     takeaway_lines.append(f"- {s[:200]}")
@@ -604,14 +614,10 @@ class BaseBriefingTemplate:
                 f"Each section includes technical detail, key data tables, and citations."
             )
         elif doc_sets:
-            ds_names = [
-                ds.get("title") or ds.get("name") or ""
-                for ds in doc_sets[:4]
-            ]
+            ds_names = [ds.get("title") or ds.get("name") or "" for ds in doc_sets[:4]]
             ds_str = ", ".join(n for n in ds_names if n)
-            learn_text = (
-                f"After reading this briefing you will understand the scope of {title}"
-                + (f", covering: {ds_str}." if ds_str else ".")
+            learn_text = f"After reading this briefing you will understand the scope of {title}" + (
+                f", covering: {ds_str}." if ds_str else "."
             )
         else:
             learn_text = (
@@ -635,10 +641,12 @@ class BaseBriefingTemplate:
         flowables = []
         flowables.append(Paragraph("2. At a Glance", self.styles["STYLE_H1"]))
         flowables.append(Spacer(1, 3 * mm))
-        flowables.append(Paragraph(
-            "Key metrics and quantitative overview for this briefing.",
-            self.styles["STYLE_BODY"],
-        ))
+        flowables.append(
+            Paragraph(
+                "Key metrics and quantitative overview for this briefing.",
+                self.styles["STYLE_BODY"],
+            )
+        )
         flowables.append(Spacer(1, 4 * mm))
 
         key_numbers = metrics.get("key_numbers", [])
@@ -647,10 +655,10 @@ class BaseBriefingTemplate:
             for sub in content.get("subsystems", []):
                 all_text += " ".join(sub.get("insights", []))
             number_patterns = re.findall(
-                r'(\d+(?:\.\d+)?(?:x|%|\xd7|X)\s*\w+(?:\s+\w+)?'
-                r'|[\d,]+\s*(?:TFLOPs?/s|GB/s|TB/s|MB|GB|KB|ms|ns|\xb5s)'
-                r'|\d+(?:\.\d+)?[BMK]\s+parameters'
-                r'|O\([^)]+\))',
+                r"(\d+(?:\.\d+)?(?:x|%|\xd7|X)\s*\w+(?:\s+\w+)?"
+                r"|[\d,]+\s*(?:TFLOPs?/s|GB/s|TB/s|MB|GB|KB|ms|ns|\xb5s)"
+                r"|\d+(?:\.\d+)?[BMK]\s+parameters"
+                r"|O\([^)]+\))",
                 all_text,
             )
             for np_str in number_patterns[:4]:
@@ -664,9 +672,9 @@ class BaseBriefingTemplate:
             metric_data = [(str(n), str(lbl)) for n, lbl in key_numbers[:4]]
         else:
             word_count = metrics.get("word_count", 0)
-            chapters   = len(content.get("subsystems", []))
-            pdf_count  = metrics.get("pdf_count", metrics.get("file_count", 0))
-            year       = metrics.get("year", "\u2014")
+            chapters = len(content.get("subsystems", []))
+            pdf_count = metrics.get("pdf_count", metrics.get("file_count", 0))
+            year = metrics.get("year", "\u2014")
             metric_data = []
             if chapters:
                 metric_data.append((str(chapters), "Chapters"))
@@ -685,10 +693,12 @@ class BaseBriefingTemplate:
 
         source_type = metrics.get("source_type", "")
         if source_type:
-            flowables.append(_safe_para(
-                f"<b>Source Classification:</b> {_safe_text(source_type)}",
-                self.styles["STYLE_BODY"],
-            ))
+            flowables.append(
+                _safe_para(
+                    f"<b>Source Classification:</b> {_safe_text(source_type)}",
+                    self.styles["STYLE_BODY"],
+                )
+            )
             flowables.append(Spacer(1, 2 * mm))
 
         return flowables
@@ -711,9 +721,7 @@ class BaseBriefingTemplate:
             return flowables
 
         for idx, sub in enumerate(subsystems, start=1):
-            heading = _safe_para(
-                f"3.{idx} {_safe_text(sub['name'])}", self.styles["STYLE_H2"]
-            )
+            heading = _safe_para(f"3.{idx} {_safe_text(sub['name'])}", self.styles["STYLE_H2"])
 
             blocks = sub.get("blocks") or parse_markdown(sub.get("content", ""))
             rendered_count = 0
@@ -765,11 +773,12 @@ class BaseBriefingTemplate:
         flowables = []
         flowables.append(Paragraph("Cross-Reference Map", self.styles["STYLE_H1"]))
         flowables.append(Spacer(1, 3 * mm))
-        flowables.append(Paragraph(
-            "The following sections are directly related to this content "
-            "and are recommended for further reading.",
-            self.styles["STYLE_BODY"],
-        ))
+        flowables.append(
+            Paragraph(
+                "The following sections are directly related to this content and are recommended for further reading.",
+                self.styles["STYLE_BODY"],
+            )
+        )
         flowables.append(Spacer(1, 3 * mm))
 
         rows = []
@@ -780,21 +789,25 @@ class BaseBriefingTemplate:
                 label = ref_clean.split("/")[-1].replace("-", " ").title()
             rows.append([label, ref_clean, "Related"])
 
-        flowables.extend(build_data_table(
-            ["Topic", "Path", "Relationship"],
-            rows,
-            title="Related Content",
-            brand=self.brand,
-            content_width=self.content_width,
-        ))
+        flowables.extend(
+            build_data_table(
+                ["Topic", "Path", "Relationship"],
+                rows,
+                title="Related Content",
+                brand=self.brand,
+                content_width=self.content_width,
+            )
+        )
         flowables.append(Spacer(1, 4 * mm))
-        flowables.append(build_callout_box(
-            "Follow the paths above to deepen your understanding of the connected topics. "
-            "Start with the most closely related entries.",
-            "insight",
-            brand=self.brand,
-            content_width=self.content_width,
-        ))
+        flowables.append(
+            build_callout_box(
+                "Follow the paths above to deepen your understanding of the connected topics. "
+                "Start with the most closely related entries.",
+                "insight",
+                brand=self.brand,
+                content_width=self.content_width,
+            )
+        )
         return flowables
 
     def build_index(self, terms: dict | list) -> list:
@@ -809,10 +822,12 @@ class BaseBriefingTemplate:
         flowables = []
         flowables.append(Paragraph("Key Terms Index", self.styles["STYLE_H1"]))
         flowables.append(Spacer(1, 3 * mm))
-        flowables.append(Paragraph(
-            "Alphabetical index of key technical terms used in this briefing.",
-            self.styles["STYLE_BODY"],
-        ))
+        flowables.append(
+            Paragraph(
+                "Alphabetical index of key technical terms used in this briefing.",
+                self.styles["STYLE_BODY"],
+            )
+        )
         flowables.append(Spacer(1, 4 * mm))
 
         if isinstance(terms, dict):
@@ -821,7 +836,7 @@ class BaseBriefingTemplate:
             sorted_items = [(t, "") for t in sorted(set(terms), key=str.lower)]
 
         half = (len(sorted_items) + 1) // 2
-        left_items  = sorted_items[:half]
+        left_items = sorted_items[:half]
         right_items = sorted_items[half:]
 
         primary = _hex(self.brand, "primary")
@@ -836,37 +851,45 @@ class BaseBriefingTemplate:
                     col_flowables.append(
                         Paragraph(
                             f"<b>{first}</b>",
-                            _ps(f"IndexLetter_{first}", brand=self.brand,
-                                fontName="Helvetica-Bold", fontSize=9,
-                                textColor=primary, spaceBefore=6, spaceAfter=2),
+                            _ps(
+                                f"IndexLetter_{first}",
+                                brand=self.brand,
+                                fontName="Helvetica-Bold",
+                                fontSize=9,
+                                textColor=primary,
+                                spaceBefore=6,
+                                spaceAfter=2,
+                            ),
                         )
                     )
                 entry = f"<b>{_safe_text(term)}</b>"
                 if defn:
                     entry += f" \u2014 {_safe_text(defn[:80])}"
-                col_flowables.append(
-                    Paragraph(entry, self.styles["STYLE_INDEX_TERM"])
-                )
+                col_flowables.append(Paragraph(entry, self.styles["STYLE_INDEX_TERM"]))
             return col_flowables
 
-        left_col  = _render_col(left_items)
+        left_col = _render_col(left_items)
         right_col = _render_col(right_items)
 
         max_len = max(len(left_col), len(right_col))
-        left_col  += [Spacer(1, 1)] * (max_len - len(left_col))
+        left_col += [Spacer(1, 1)] * (max_len - len(left_col))
         right_col += [Spacer(1, 1)] * (max_len - len(right_col))
 
         col_w = (self.content_width - GUTTER) / 2
         row_data = [[left_col[i], right_col[i]] for i in range(max_len)]
         if row_data:
             index_table = Table(row_data, colWidths=[col_w, col_w])
-            index_table.setStyle(TableStyle([
-                ("VALIGN",        (0, 0), (-1, -1), "TOP"),
-                ("LEFTPADDING",   (0, 0), (-1, -1), 0),
-                ("RIGHTPADDING",  (0, 0), (-1, -1), 4),
-                ("TOPPADDING",    (0, 0), (-1, -1), 0),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-            ]))
+            index_table.setStyle(
+                TableStyle(
+                    [
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+                        ("TOPPADDING", (0, 0), (-1, -1), 0),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                    ]
+                )
+            )
             flowables.append(index_table)
 
         return flowables
@@ -885,11 +908,11 @@ class BaseBriefingTemplate:
             return []
 
         header_map = {
-            "ACADEMIC":      "Source Bibliography \u2014 Research Papers",
-            "GOVERNMENT":    "Source Bibliography \u2014 Government Documents",
-            "PRIMARY-TEXT":  "Source Bibliography \u2014 Primary Texts",
-            "PROPRIETARY":   "Source References (not redistributable \u2014 see .source-type for access)",
-            "MANUFACTURER":  "Source References \u2014 Manufacturer Documentation",
+            "ACADEMIC": "Source Bibliography \u2014 Research Papers",
+            "GOVERNMENT": "Source Bibliography \u2014 Government Documents",
+            "PRIMARY-TEXT": "Source Bibliography \u2014 Primary Texts",
+            "PROPRIETARY": "Source References (not redistributable \u2014 see .source-type for access)",
+            "MANUFACTURER": "Source References \u2014 Manufacturer Documentation",
             "DOCUMENTATION": "Source References \u2014 Official Documentation",
         }
         section_header = header_map.get(source_type.upper(), "Source Bibliography")
@@ -897,22 +920,24 @@ class BaseBriefingTemplate:
         flowables = []
         flowables.append(Paragraph(section_header, self.styles["STYLE_H1"]))
         flowables.append(Spacer(1, 3 * mm))
-        flowables.append(Paragraph(
-            "All primary sources, papers, books, and references cited in or "
-            "supporting this briefing, grouped by type.",
-            self.styles["STYLE_BODY"],
-        ))
+        flowables.append(
+            Paragraph(
+                "All primary sources, papers, books, and references cited in or "
+                "supporting this briefing, grouped by type.",
+                self.styles["STYLE_BODY"],
+            )
+        )
         flowables.append(Spacer(1, 4 * mm))
 
-        type_order  = ["paper", "book", "specification", "case", "data", "web", "other"]
+        type_order = ["paper", "book", "specification", "case", "data", "web", "other"]
         type_labels = {
-            "paper":         "Academic Papers",
-            "book":          "Books and Monographs",
+            "paper": "Academic Papers",
+            "book": "Books and Monographs",
             "specification": "Technical Specifications and Standards",
-            "case":          "Case Law",
-            "data":          "Data Sets and Databases",
-            "web":           "Web and Online Sources",
-            "other":         "Other References",
+            "case": "Case Law",
+            "data": "Data Sets and Databases",
+            "web": "Web and Online Sources",
+            "other": "Other References",
         }
 
         grouped: dict[str, list] = {}
@@ -933,24 +958,29 @@ class BaseBriefingTemplate:
 
             for src in items:
                 authors = src.get("authors", "Unknown Author") or "Unknown Author"
-                year    = src.get("year", "n.d.") or "n.d."
-                title   = src.get("title", "Untitled") or "Untitled"
-                doi     = src.get("doi", "")
+                year = src.get("year", "n.d.") or "n.d."
+                title = src.get("title", "Untitled") or "Untitled"
+                doi = src.get("doi", "")
 
                 citation = f"<b>{_safe_text(authors)}</b> ({year}). <i>{_safe_text(title)}</i>."
                 if doi:
                     citation += f" DOI: {_safe_text(doi)}"
 
-                flowables.append(_safe_para(citation, _ps(
-                    f"BibEntry_{type_key}",
-                    brand=self.brand,
-                    fontSize=9,
-                    textColor=body_c,
-                    leading=13,
-                    leftIndent=12,
-                    firstLineIndent=-12,
-                    spaceAfter=4,
-                )))
+                flowables.append(
+                    _safe_para(
+                        citation,
+                        _ps(
+                            f"BibEntry_{type_key}",
+                            brand=self.brand,
+                            fontSize=9,
+                            textColor=body_c,
+                            leading=13,
+                            leftIndent=12,
+                            firstLineIndent=-12,
+                            spaceAfter=4,
+                        ),
+                    )
+                )
 
             flowables.append(Spacer(1, 3 * mm))
 
@@ -959,6 +989,7 @@ class BaseBriefingTemplate:
     def build_back_cover(self) -> list:
         """Build the back cover page flowables — delegates to elements.back_cover."""
         from briefkit.elements.back_cover import build_back_cover as _build_back_cover
+
         # Pass license notice via a shallow copy — keeps self.brand clean for LRU cache
         back_brand = dict(self.brand)
         if self.license_notice:
@@ -1180,15 +1211,17 @@ class BaseBriefingTemplate:
             keywords = self.doc_id or ""
         lang = meta.get("lang") or project.get("lang") or "en"
 
-        defaults.update({
-            "title":    title,
-            "author":   author,
-            "subject":  subject,
-            "creator":  creator,
-            "producer": producer,
-            "keywords": keywords,
-            "lang":     lang,
-        })
+        defaults.update(
+            {
+                "title": title,
+                "author": author,
+                "subject": subject,
+                "creator": creator,
+                "producer": producer,
+                "keywords": keywords,
+                "lang": lang,
+            }
+        )
 
         # Determinism: rl_config.invariant is set at module import so
         # every briefkit PDF has a stable /ID and stable timestamps
@@ -1207,7 +1240,7 @@ class BaseBriefingTemplate:
         merged = {**defaults, **kwargs}
         # Pull lang/producer out of the kwarg set (reportlab doesn't
         # understand them) and apply them to the doc post-construction.
-        lang_val     = merged.pop("lang", None)
+        lang_val = merged.pop("lang", None)
         producer_val = merged.pop("producer", None)
 
         # Resolve output path.
@@ -1233,6 +1266,7 @@ class BaseBriefingTemplate:
         # final PDF info dict. We intercept afterPage or use a
         # post-process via doc.build's custom canvasmaker.
         _orig_handle_document_begin = doc.handle_documentBegin
+
         def _with_meta_documentBegin():
             _orig_handle_document_begin()
             try:
@@ -1243,6 +1277,7 @@ class BaseBriefingTemplate:
                     canv._doc.info.lang = lang_val
             except Exception:
                 pass
+
         doc.handle_documentBegin = _with_meta_documentBegin
 
         return doc
@@ -1271,39 +1306,48 @@ class BaseBriefingTemplate:
         template-specific sections.
         """
         from briefkit.templates._helpers import should_skip
+
         cfg = self.config
         story = []
 
         # Cover
-        story.extend(build_cover_page(
-            title    = content.get("title", self.target_path.name.replace("-", " ").title()),
-            subtitle = self._derive_subtitle(content),
-            path     = str(self.target_path),
-            level    = self.level,
-            date     = self.date,
-            doc_id   = self.doc_id,
-            brand    = self.brand,
-            content_width = self.content_width,
-        ))
+        story.extend(
+            build_cover_page(
+                title=content.get("title", self.target_path.name.replace("-", " ").title()),
+                subtitle=self._derive_subtitle(content),
+                path=str(self.target_path),
+                level=self.level,
+                date=self.date,
+                doc_id=self.doc_id,
+                brand=self.brand,
+                content_width=self.content_width,
+            )
+        )
 
         # Classification banner
-        story.append(build_classification_banner(
-            self.level, str(self.target_path), brand=self.brand, content_width=self.content_width
-        ))
+        story.append(
+            build_classification_banner(
+                self.level, str(self.target_path), brand=self.brand, content_width=self.content_width
+            )
+        )
         story.append(Spacer(1, 6 * mm))
 
         # Pre-build optional sections to drive dynamic TOC
         source_type = content.get("metrics", {}).get("source_type", "ACADEMIC")
-        ref_labels  = content.get("cross_ref_labels", {})
-        cross_ref_flowables = self.build_cross_references(
-            content.get("cross_refs", []), ref_labels=ref_labels
-        )
+        ref_labels = content.get("cross_ref_labels", {})
+        cross_ref_flowables = self.build_cross_references(content.get("cross_refs", []), ref_labels=ref_labels)
         index_flowables = [] if should_skip(cfg, "index") else self.build_index(content.get("terms", {}))
-        bib_flowables   = [] if should_skip(cfg, "bibliography") else self.build_bibliography(
-            content.get("bibliography", []), source_type=source_type
+        bib_flowables = (
+            []
+            if should_skip(cfg, "bibliography")
+            else self.build_bibliography(content.get("bibliography", []), source_type=source_type)
         )
-        exec_summary_flowables = [] if should_skip(cfg, "executive_summary") else list(self.build_executive_summary(content))
-        dashboard_flowables    = [] if should_skip(cfg, "dashboard") else list(self.build_at_a_glance(content.get("metrics", {})))
+        exec_summary_flowables = (
+            [] if should_skip(cfg, "executive_summary") else list(self.build_executive_summary(content))
+        )
+        dashboard_flowables = (
+            [] if should_skip(cfg, "dashboard") else list(self.build_at_a_glance(content.get("metrics", {})))
+        )
 
         # Table of contents
         if not should_skip(cfg, "toc"):
@@ -1391,7 +1435,10 @@ class BaseBriefingTemplate:
         verbose = self.config.get("_cli", {}).get("verbose", False)
 
         if verbose:
-            print(f"  Extracted: {len(content.get('subsystems', []))} subsystems, {content.get('metrics', {}).get('word_count', 0)} words", file=sys.stderr)
+            print(
+                f"  Extracted: {len(content.get('subsystems', []))} subsystems, {content.get('metrics', {}).get('word_count', 0)} words",
+                file=sys.stderr,
+            )
 
         # Document ID
         doc_ids_cfg = self.config.get("doc_ids", {})
@@ -1416,16 +1463,16 @@ class BaseBriefingTemplate:
         # Note: _hf_state sync removed for thread safety — use closure via make_header_footer()
 
         # Page size
-        layout    = self.config.get("layout", {})
+        layout = self.config.get("layout", {})
         page_size = _PAGE_SIZES.get(layout.get("page_size", "A4"), A4)
-        margins   = layout.get("margins", {})
-        top_m     = margins.get("top",    25) * mm
-        bottom_m  = margins.get("bottom", 22) * mm
-        left_m    = margins.get("left",   20) * mm
-        right_m   = margins.get("right",  20) * mm
+        margins = layout.get("margins", {})
+        top_m = margins.get("top", 25) * mm
+        bottom_m = margins.get("bottom", 22) * mm
+        left_m = margins.get("left", 20) * mm
+        right_m = margins.get("right", 20) * mm
 
-        b       = self.brand
-        org     = b.get("org", "briefkit")
+        b = self.brand
+        org = b.get("org", "briefkit")
 
         doc = self._build_doc(
             pagesize=page_size,

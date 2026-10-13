@@ -190,7 +190,7 @@ All contributors are expected to behave professionally and respectfully. We do n
 | [README.md](README.md) | Project overview and quickstart |
 | [CHANGELOG.md](CHANGELOG.md) | Version history |
 | [LICENSE](LICENSE) | BSD 3-Clause license text (the code) |
-| [LICENSES/](LICENSES/) | CC BY 4.0 (documentation) and CC0 1.0 (examples) texts |
+| [LICENSES/](LICENSES/) | The CC BY 4.0, CC0 1.0, CC BY-NC-SA 4.0 and CC BY-NC-ND 4.0 texts that REUSE.toml maps to paths |
 | [REUSE.toml](REUSE.toml) | Which license applies to which path |
 | [NOTICE.txt](NOTICE.txt) | Copyright line, license map, third-party components |
 | [TRADEMARKS.md](TRADEMARKS.md) | Name policy: what forks may be called |

@@ -1,9 +1,12 @@
 # Legal writing example — crimson preset with legal variant
 # Content sourced from The Codex (law/legal-practice/02-legal-writing/)
-# Licensed under CC BY-NC-SA 4.0 © 2026 OFFTRACKMEDIA Studios
+# Licensed under CC BY-NC-SA 4.0 © 2026 Jay Taylor (https://github.com/otmof-ops/briefkit); see REUSE.toml
 project:
   name: "Legal Writing — Principles and Practice"
   org: "The Codex — Law Division"
+license:
+  preset: "CC-BY-NC-SA-4.0"
+
 brand:
   preset: "crimson"
 template:

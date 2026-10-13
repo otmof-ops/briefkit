@@ -38,7 +38,7 @@ cd examples/gothic-novel
 pip install -r requirements.txt
 ```
 
-`reportlab` is required. `PyMuPDF` is optional but recommended for the audit checks at the end.
+`reportlab` is required. `pypdf` is optional but recommended for the audit checks at the end.
 
 ### 2. Install the three open-source TTF fonts
 
@@ -157,9 +157,11 @@ To customise volume numbers, names, or subtitles, edit the `VOLUMES` list at the
 After regenerating, run a sanity check on the rendered PDF to confirm no markdown leaked:
 
 ```python
-import fitz, re
-doc = fitz.open("/tmp/Complete-Edition.pdf")
-text = "".join(p.get_text("text") + "\n" for p in doc)
+import re
+from pypdf import PdfReader
+
+reader = PdfReader("/tmp/Complete-Edition.pdf")
+text = "".join((page.extract_text() or "") + "\n" for page in reader.pages)
 
 print("## leaks:", len(re.findall(r"##\s+\w+", text)))
 print("** leaks:", len(re.findall(r"\*\*[^*\n]+\*\*", text)))
@@ -213,7 +215,7 @@ If you want to integrate this style into briefkit proper, the two custom flowabl
 examples/gothic-novel/
 ├── README.md                          # this file
 ├── install-fonts.sh                   # font fetcher (Cardo, UnifrakturMaguntia, Cormorant)
-├── requirements.txt                   # reportlab + PyMuPDF
+├── requirements.txt                   # reportlab + pypdf
 ├── fonts/                             # populated by install-fonts.sh
 │   ├── Cardo-Regular.ttf
 │   ├── Cardo-Italic.ttf

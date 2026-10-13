@@ -10,7 +10,7 @@ with established best practices in curriculum design and instructional reform.
 
 ## 3.2 Recommendation 1: Adopt the Backward Design Framework
 
-The National Education Board should mandate the adoption of the Understanding by
+The Example Education Board should mandate the adoption of the Understanding by
 Design (UbD) backward design framework for all new curriculum development and
 major curriculum revisions, effective with the 2027-2028 planning cycle. The
 evidence from this assessment demonstrates a consistent, medium-sized effect

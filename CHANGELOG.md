@@ -29,6 +29,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - **Aggregates are recognized by content.** A directory whose children hold numbered documents is a subject, and one whose grandchildren do is a division, wherever it sits below the project root; before, the depth rule alone decided and a subject at the wrong depth was read as an empty documentation set.
 - `briefkit init --dry-run` prints what would be written. `briefkit assign-ids` reports checked, assigned and existing counts. `briefkit batch --json` reports `total`, `generated`, `skipped`, `failed`, `dry_run`, `results` and `elapsed`.
 - `briefkit --version`.
+- The `CC-BY-NC-ND-4.0` license preset.
 
 ### Changed
 
@@ -46,7 +47,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Cross-reference labels: an authored link label (`[the sibling set](../sibling-set/README.md)`) is kept instead of a title-cased path.
 - Documentation rewritten against the code: README, CLI reference, configuration reference (every key with its default), custom templates and variants (examples that run), document IDs, CI integration, variants, examples, contributing, security and safety pages. Installation is from this repository (`pip install "git+https://github.com/otmof-ops/briefkit.git"`) until the first PyPI release. `tests/test_docs.py` parses every documented command, resolves every relative link, checks every template, preset and variant name and rejects British spellings.
 
-- **License.** The code is licensed under the BSD 3-Clause License from this version; the documentation under CC BY 4.0 and the examples under CC0 1.0, recorded per path in [REUSE.toml](REUSE.toml), with the name policy in [TRADEMARKS.md](TRADEMARKS.md). Version 1.0.0 was published under CC BY-NC-SA 4.0 and that grant stands for copies of 1.0.0.
+- **License.** The code is licensed under the BSD 3-Clause License from this version; the documentation under CC BY 4.0 and the examples under CC0 1.0 (the two Codex legal sets under CC BY-NC-SA 4.0, the two narrative samples under CC BY-NC-ND 4.0), recorded per path in [REUSE.toml](REUSE.toml), with the name policy in [TRADEMARKS.md](TRADEMARKS.md). Version 1.0.0 was published under CC BY-NC-SA 4.0 and that grant stands for copies of 1.0.0.
 
 ### Deprecated
 
@@ -61,6 +62,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
+- The `novel` and `book` templates print the configured license (`license.preset` or `license.notice`) on the copyright page; they used to print the stock all-rights-reserved text whatever the configuration said.
 - The document-ID registry lock retries when Windows reports a lock file that another process is deleting as `PermissionError`; a contended writer used to exit with a traceback instead of waiting its turn.
 - **`--output`, `output.output_dir` and `preview` work.** The CLI printed the requested path, then wrote `<source dir>/executive-briefing.pdf` regardless; `batch` could never skip current output when `output_dir` was set; `preview` reported its own file missing. One resolver (`briefkit.output.resolve_output_path`) serves `generate`, `batch`, `status`, `preview` and every template; `--output` may name a file or a directory, and is the mirror directory for `batch`.
 - **`--title`, `--org`, `project.org`, `project.tagline`, `project.url`, `project.abn` and `project.copyright` reach the PDF.** The cover, running head, back cover and `/Author` read `brand.*`, which was never fed from `project.*`; it is now, with an explicit `brand.*` still winning.

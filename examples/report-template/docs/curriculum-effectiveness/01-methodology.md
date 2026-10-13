@@ -2,7 +2,7 @@
 
 ## 1.1 Study Overview
 
-This assessment was commissioned by the National Education Board to evaluate the
+This assessment was commissioned by the Example Education Board to evaluate the
 effectiveness of structured curriculum design methodologies relative to traditional
 approaches. The study was conducted between September 2024 and June 2025 across
 34 pilot schools representing a cross-section of urban, suburban, and rural

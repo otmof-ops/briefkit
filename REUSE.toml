@@ -21,3 +21,17 @@ path = ["examples/**"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 Jay Taylor (https://github.com/otmof-ops/briefkit)"
 SPDX-License-Identifier = "CC0-1.0"
+
+# Codex content: the two legal sets keep the corpus license.
+[[annotations]]
+path = ["examples/legal-templates/**", "examples/legal-writing/**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Jay Taylor (https://github.com/otmof-ops/briefkit)"
+SPDX-License-Identifier = "CC-BY-NC-SA-4.0"
+
+# Narrative samples: the author's fiction; the configs and tools beside them stay CC0.
+[[annotations]]
+path = ["examples/novel-template/docs/**", "examples/gothic-novel/sample/**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Jay Taylor (https://github.com/otmof-ops/briefkit)"
+SPDX-License-Identifier = "CC-BY-NC-ND-4.0"

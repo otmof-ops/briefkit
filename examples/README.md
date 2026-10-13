@@ -1,6 +1,6 @@
 # BriefKit Examples
 
-Everything under `examples/` is dedicated to the public domain under [CC0 1.0](../LICENSES/CC0-1.0.txt): paste any of it into your own project, no attribution needed.
+Everything under `examples/` is dedicated to the public domain under [CC0 1.0](../LICENSES/CC0-1.0.txt), so you can paste it into your own project with no attribution, with the exceptions recorded in [REUSE.toml](../REUSE.toml): the two legal sets (`legal-templates/`, `legal-writing/`) are Codex content under [CC BY-NC-SA 4.0](../LICENSES/CC-BY-NC-SA-4.0.txt), and the two narrative samples (`novel-template/docs/`, `gothic-novel/sample/`) are under [CC BY-NC-ND 4.0](../LICENSES/CC-BY-NC-ND-4.0.txt).
 
 Complete example projects, one per directory. Each holds a `briefkit.yml` and a documentation set you can generate straight away.
 
@@ -107,7 +107,7 @@ Each example's `briefkit.yml` sets the template and branding:
 # report-template/briefkit.yml
 project:
   name: "Curriculum Effectiveness Assessment"
-  org: "National Education Board"
+  org: "Example Education Board"
 
 brand:
   preset: "charcoal"
@@ -176,7 +176,7 @@ Full branding, document IDs with a custom prefix, the report template.
 # research/briefkit.yml
 project:
   name: "Machine Learning Research"
-  org: "University of Melbourne"
+  org: "Example University"
 
 brand:
   preset: "royal"

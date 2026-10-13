@@ -1,6 +1,6 @@
 # Transformer Architecture: A Survey of Innovations in Self-Attention Neural Networks
 
-**Authors:** Research Group, University of Melbourne
+**Authors:** Research Group, Example University
 **Keywords:** transformer, neural network, self-attention, positional encoding, scaling laws, training, attention mechanism, deep learning, epoch, AI/ML
 
 ## Abstract

@@ -1,6 +1,6 @@
 # Universal Template Controls
 
-Every briefkit template honours the same set of architectural switches
+Every briefkit template honors the same set of architectural switches
 and guard rails, so your `briefkit.yml` config behaves identically
 regardless of which template you choose. This is the reference for
 those universal controls.
@@ -24,11 +24,13 @@ a skipped section used to live.
 All skip flags default to `false` (= render the section). Flags that
 name a section the current template does not build are silently
 ignored — this means a single `briefkit.yml` can carry a full skip
-manifest and work across every template without error.
+manifest and work across every template without error. A flag that
+names no section at all (`skip_prefece`) is a configuration error with
+the closest valid name suggested.
 
 ### Front matter
 
-| Flag | Suppresses | Templates that honour it |
+| Flag | Suppresses | Templates that honor it |
 |---|---|---|
 | `skip_half_title` | Half-title page | book, novel |
 | `skip_title_page` | Full title page | book, novel, academic, whitepaper |
@@ -100,10 +102,10 @@ report, and academic output.
 
 Controls how briefkit transitions between major sections.
 
-| Value | Behaviour |
+| Value | Behavior |
 |---|---|
 | `auto` *(default)* | `CondPageBreak` — only forces a new page when less than `min_section_space_mm` of vertical space remains. Small sections flow onto the same page; large ones start fresh. |
-| `hard` | Always `PageBreak`. Classic recto-start behaviour. Produces more pages but every section begins on a fresh one. |
+| `hard` | Always `PageBreak`. Classic recto-start behavior. Produces more pages but every section begins on a fresh one. |
 | `flow` | No automatic break. Sections flow continuously; insert your own visual separators upstream if needed. |
 
 ```yaml
@@ -150,7 +152,7 @@ and runs on every template, including custom templates you author.
 
 If you genuinely want the raw unprotected story (e.g. for debugging
 a layout bug, or because your template expects specific orphaning
-behaviour):
+behavior):
 
 ```yaml
 project:
@@ -226,7 +228,7 @@ project:
 
 ## See also
 
-- [Directory Structure Guide](directory-structure.md) — how to organise source files
+- [Directory Structure Guide](directory-structure.md) — how to organize source files
 - [Templates Guide](templates-guide.md) — which template produces which sections
 - [Configuration](configuration.md) — full `briefkit.yml` reference
 - [Custom Templates](custom-templates.md) — authoring your own template (inherits guard rails automatically)

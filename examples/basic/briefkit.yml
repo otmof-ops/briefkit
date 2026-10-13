@@ -2,3 +2,6 @@
 project:
   name: "BriefKit Getting Started"
   org: "BriefKit"
+
+doc_ids:
+  enabled: false

@@ -194,7 +194,7 @@ class TestZeroConfigLevel:
         (docs / "01-only.md").write_text("# Only\n\nText.\n", encoding="utf-8")
         assert detect_level(docs, docs, copy.deepcopy(DEFAULTS)) == 3
 
-    def test_depth_rule_still_applies_to_structured_projects(self, tmp_path):
+    def test_depth_rule_decides_only_when_the_tree_says_nothing(self, tmp_path):
         from briefkit.generator import detect_level
 
         root = tmp_path / "project"
@@ -203,9 +203,18 @@ class TestZeroConfigLevel:
         docset.mkdir(parents=True)
         (docset / "01-a.md").write_text("# A\n", encoding="utf-8")
         cfg = copy.deepcopy(DEFAULTS)
-        assert detect_level(root / "division", root, cfg) == 2
-        assert detect_level(subject, root, cfg) == 3  # depth 2 -> level 3 per the default map
+        # The tree is read first: children holding numbered docs make a subject,
+        # grandchildren make a division, whatever the depth map says. (Under the
+        # depth map alone `subject` was a level-3 doc set with nothing to extract.)
+        assert detect_level(root / "division", root, cfg) == 1
+        assert detect_level(subject, root, cfg) == 2
         assert detect_level(docset, root, cfg) == 3
+        # With nothing below them, depth decides per the default map.
+        for parts, expected in ((("empty",), 2), (("empty", "deeper"), 3), (("a", "b", "c"), 3)):
+            directory = root.joinpath(*parts)
+            directory.mkdir(parents=True, exist_ok=True)
+            assert detect_level(directory, root, cfg) == expected
+        assert detect_level(root, root, cfg) == 1
 
     def test_subject_and_division_are_inferred_without_a_root(self, tmp_path):
         from briefkit.generator import detect_level

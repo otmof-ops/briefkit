@@ -58,11 +58,18 @@ Runtime Dependencies:
     PDF generation engine. https://www.reportlab.com/
   - PyYAML — MIT license, Copyright Kirill Simonov.
     YAML configuration parser. https://pyyaml.org/
+  - Pillow — MIT-CMU license, Copyright Jeffrey A. Clark and contributors.
+    Image handling for logos. https://python-pillow.org/
+
+Optional Dependencies:
+  - pypdf — BSD-3-Clause license, Copyright Mathieu Fenniak and contributors.
+    Reads generated PDFs back for `briefkit quality` and `briefkit selftest`.
 
 Development Dependencies:
   - pytest — MIT license, Copyright Holger Krekel and contributors.
   - pytest-cov — MIT license, Copyright Marc Schlaich.
-  - pypdf — BSD-3-Clause license, Copyright Mathieu Fenniak and contributors.
+  - ruff — MIT license, Copyright Astral Software Inc.
+  - pip-audit — Apache-2.0 license, Copyright Trail of Bits.
 
 ================================================================================
 TRADEMARKS

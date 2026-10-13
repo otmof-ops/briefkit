@@ -18,3 +18,5 @@ Remove the module-level `_hf_state` entirely. Use only the closure-based pattern
 - **Positive:** Thread-safe by construction; no shared mutable state; unblocks ProcessPoolExecutor for parallel batch processing (4-8x throughput); single code path instead of dual-write
 - **Negative:** Any external code that imported `_hf_state` from `briefkit.generator` will break — verified that no such consumer exists
 - **Enables:** Future parallel batch processing (batch.py ProcessPoolExecutor)
+
+**Update (1.1.0):** completed. The module-level `_hf_state` and the bare `header_footer()` callback are gone; every template keeps its page state in `self.hf_ctx` and binds it with `functools.partial` through `make_header_footer()`. Parallel batch processing remains future work. See [ADR-006](006-template-hooks-over-generate-overrides.md).

@@ -296,44 +296,20 @@ briefkit generate docs/my-topic/ --template minimal   --output minimal.pdf
 
 ## Custom Templates
 
-Create your own template by subclassing `BaseBriefingTemplate`:
-
-```python
-# .briefkit/templates/my_template.py
-from briefkit.generator import BaseBriefingTemplate
-
-class MyTemplate(BaseBriefingTemplate):
-    name = "my_template"
-
-    def build_story(self, content):
-        return [
-            *self.build_cover(content),
-            *self.build_toc(content),
-            *self.build_executive_summary(content),
-            *self.build_body(content),
-            *self.build_bibliography(content),
-        ]
-```
-
-Each `build_*` method returns a list of ReportLab flowables. Override any of them to customize output.
+A template is a Python class: subclass `BaseBriefingTemplate`, implement `build_story`, declare traits such as the design page size, and register it with `briefkit.templates.register_template`. Templates do not override `generate()`. A complete example that runs, the trait and hook tables, and how to register from the command line: [custom-templates.md](custom-templates.md).
 
 ---
 
-## Section Toggles
+## Suppressing Sections
 
-Disable individual sections in `briefkit.yml`:
+Optional sections are switched off with `project.skip_<section>` flags in `briefkit.yml`, which every template honors:
 
 ```yaml
-template:
-  preset: briefing
-  sections:
-    cover: true
-    toc: true
-    executive_summary: true
-    at_a_glance: false          # disable the metrics dashboard
-    body: true
-    cross_references: false     # disable cross-refs section
-    key_terms: true
-    bibliography: true
-    back_cover: false           # disable back cover
+project:
+  skip_executive_summary: true
+  skip_at_a_glance: true        # the metrics dashboard
+  skip_cross_references: true
+  skip_back_cover: true
 ```
+
+The table of contents and the page breaks adjust; a flag that names a section the current template does not build is ignored, and a misspelled flag is a configuration error with a suggestion. All 30 flags: [universal-controls.md](universal-controls.md).

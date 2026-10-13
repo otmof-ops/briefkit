@@ -44,21 +44,14 @@ from briefkit.elements.callout import build_callout_box, build_pull_quote
 from briefkit.elements.charts import build_bar_chart, build_timeline
 from briefkit.elements.cover import build_cover_page
 from briefkit.elements.dashboard import build_metric_dashboard
-from briefkit.elements.header_footer import (
-    _hf_state,
-    build_classification_banner,
-    header_footer,
-    make_header_footer,
-)
+from briefkit.elements.header_footer import build_classification_banner, make_header_footer
 from briefkit.elements.tables import build_comparison_table, build_data_table
 from briefkit.elements.toc import build_toc
 
 __all__ = [
     "build_cover_page",
-    "header_footer",
     "make_header_footer",
     "build_classification_banner",
-    "_hf_state",
     "build_toc",
     "build_callout_box",
     "build_pull_quote",

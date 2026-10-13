@@ -14,5 +14,5 @@ Implement a four-level hierarchy model: root (level 4), division (level 1), subj
 ## Consequences
 
 - **Positive:** Maps naturally to real documentation structures (organization > department > project > document); enables recursive batch processing at any level
-- **Negative:** Baked into extractor.py (4 aggregation functions), config.py (hierarchy settings), doc_ids.py (level-based ID formatting), and all 6 templates; cannot easily change to 3 or 5 levels without touching 6+ files
+- **Negative:** Baked into extractor.py (4 aggregation functions), config.py (hierarchy settings), doc_ids.py (level-based ID formatting), and all 29 templates; cannot easily change to 3 or 5 levels without touching 6+ files
 - **Constraint:** New levels require new aggregation functions and template support

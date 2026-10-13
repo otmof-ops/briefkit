@@ -6,7 +6,7 @@ Presets control the visual appearance of generated PDFs -- colors, fonts, and ov
 
 ## Available Presets
 
-BriefKit ships with 15 built-in color presets:
+BriefKit ships with 20 built-in color presets:
 
 | Preset | Style | Primary Color | Font Family |
 |--------|-------|--------------|-------------|
@@ -15,7 +15,7 @@ BriefKit ships with 15 built-in color presets:
 | `ocean` | Blue-teal -- tech, startups | `#0A2463` | Helvetica |
 | `forest` | Green-earth -- environment, sustainability | `#1B4332` | Helvetica |
 | `crimson` | Red-dark -- law, government | `#590D22` | Helvetica |
-| `slate` | Cool grey -- minimal, engineering | `#37474F` | Helvetica |
+| `slate` | Cool gray -- minimal, engineering | `#37474F` | Helvetica |
 | `royal` | Purple-gold -- academic, research | `#2D1B69` | Times-Roman |
 | `sunset` | Warm orange -- creative, media | `#3D1C02` | Helvetica |
 | `mono` | Pure black and white -- print-first | `#000000` | Courier |
@@ -25,6 +25,11 @@ BriefKit ships with 15 built-in color presets:
 | `arctic` | Ice blue -- cool, technical | `#0a3d62` | Helvetica |
 | `terracotta` | Pink-plum -- distinctive, warm | `#6F1E51` | Helvetica |
 | `ink` | Muted with orange accent -- editorial | `#222f3e` | Times-Roman |
+| `gothic` | Near-black on warm off-white -- literary, horror | `#1A1A1A` | Times-Roman |
+| `cyber` | Near-black with electric blue and teal -- security, infrastructure | `#0C1116` | Helvetica |
+| `deep-research` | Near-black with teal accent -- research reports | `#0F1318` | Helvetica |
+| `neon` | Dark page, cyan and violet -- screens only | `#0A0E16` (on `#0A0E16` background) | Helvetica |
+| `neon-print` | The neon palette rebalanced for white paper | `#1A1F2B` | Helvetica |
 
 ---
 
@@ -196,7 +201,7 @@ brand:
   font_caption: "Helvetica-Oblique"
 ```
 
-All color values must be 6-digit hex codes (e.g., `#1B2A4A`). The config validator will reject invalid colors.
+All color values must be 6-digit hex codes (e.g., `#1B2A4A`), quoted, because an unquoted `#` starts a YAML comment. The config validator rejects invalid colors and says to quote an unquoted one. [color-presets.md](color-presets.md) lists every preset's values.
 
 ---
 
@@ -208,7 +213,7 @@ brand:
   logo: "path/to/logo.png"
 ```
 
-The logo appears on the cover page. Supports PNG and JPEG formats.
+The logo is drawn on the cover's top bar, scaled to fit. PNG, JPEG and GIF are accepted (SVG is not: the PDF engine cannot rasterize it); a relative path is relative to `briefkit.yml`. `--logo PATH` sets it for one run.
 
 ---
 

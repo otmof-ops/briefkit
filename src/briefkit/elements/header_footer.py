@@ -4,9 +4,9 @@ briefkit.elements.header_footer — Page template canvas callbacks.
 Extracted and generalized from generate-briefing-v2.py header_footer()
 (original lines 1911-1985) and build_classification_banner() (lines 1348-1405).
 
-The header_footer canvas callback uses a module-level _hf_state dict that
-callers must populate before building the PDF. The make_header_footer()
-factory returns a configured callback bound to a specific brand and state.
+The make_header_footer() factory returns a canvas callback bound to a
+brand and to the state dict the template keeps in ``self.hf_ctx``; there is
+no module-level state (ADR-005).
 """
 
 from pathlib import Path
@@ -24,30 +24,6 @@ from briefkit.styles import (
     esc,
     truncate_to_width,
 )
-
-# =============================================================================
-# MODULE-LEVEL STATE (mirrors the original _hf_state pattern)
-# =============================================================================
-
-_hf_state = {
-    "section": "",
-    "date": "",
-    "total_pages": None,
-    "doc_id": "",
-}
-
-
-def header_footer(canvas, doc):
-    """
-    Canvas callback: draws the header and footer on every page.
-
-    Uses the module-level _hf_state dict and DEFAULT_BRAND colors.
-    For custom branding, use make_header_footer() to obtain a bound callback.
-
-    Header: primary-color rule, org name left, section name right.
-    Footer: date left, "Page N of M" centre, doc_id / copyright right.
-    """
-    _draw_header_footer(canvas, doc, _hf_state, brand=None)
 
 
 def make_header_footer(state, brand=None):

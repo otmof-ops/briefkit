@@ -8,7 +8,7 @@
 BriefKit needs to generate professional, multi-page PDFs with covers, tables of contents, tables, charts, and branded typography. Options considered:
 
 - **ReportLab** (BSD-3): Mature Python-native library with Platypus layout engine, flowable model, and direct canvas access
-- **WeasyPrint** (GPL): HTML/CSS-to-PDF; requires an HTML rendering intermediate layer and has a heavier dependency tree
+- **WeasyPrint** (BSD-3-Clause): HTML/CSS-to-PDF; requires an HTML rendering intermediate layer and has a heavier dependency tree
 - **fpdf2** (LGPL): Lightweight but lacks the Platypus-equivalent layout engine for complex multi-page documents
 - **wkhtmltopdf**: Unmaintained, requires external binary, browser engine dependency
 

@@ -1,58 +1,63 @@
 # Document IDs
 
-BriefKit assigns unique, persistent document IDs to every generated briefing. IDs are stored in a registry and embedded in PDF metadata and on the cover page.
+BriefKit assigns a persistent document ID to every generated briefing. The ID is recorded in a registry, printed on the cover, and stored in the PDF's `/Keywords`.
 
-## Default Format
+## Format
 
 ```
-DOC-BRF-30001/26
+DOC-BRF-GET-30001/26
 ```
 
-- `DOC` — prefix (configurable)
-- `BRF` — document type (configurable)
-- `3` — hierarchy level (1=top, 2=mid, 3=leaf, 4=special)
-- `0001` — sequence number (per group per level)
-- `26` — year of first assignment
-
-## Configuration
+| Part | Meaning | Setting |
+|---|---|---|
+| `DOC` | prefix | `doc_ids.prefix` |
+| `BRF` | document type | `doc_ids.type` |
+| `GET` | group code | `doc_ids.group_codes`, else the first three letters of the directory's own name, upper-cased |
+| `3` | briefing level | from the hierarchy (see below) |
+| `0001` | sequence, per group and level | `doc_ids.sequence_digits` |
+| `26` | year of first assignment | `doc_ids.year_format` (`short` or `full`) |
 
 ```yaml
-# Minimal (default)
 doc_ids:
   enabled: true
-# Produces: DOC-BRF-30001/26
-
-# Corporate style
-doc_ids:
-  prefix: "ACME-ENG"
+  format: "{prefix}-{type}-{group}-{level}{seq}/{year}"   # only these six placeholders are allowed
+  prefix: "DOC"
+  type: "BRF"
+  year_format: "short"
+  sequence_digits: 4
+  registry_path: ".briefkit/registry.json"
   group_codes:
     api: "API"
     backend: "BE"
-    frontend: "FE"
-# Produces: ACME-ENG-BRF-API-30001/26
-
-# Disabled
-doc_ids:
-  enabled: false
 ```
+
+A corporate example: `prefix: ACME-ENG` with `group_codes: {api: API}` gives `ACME-ENG-BRF-API-30001/26` for a documentation set under `api/`.
+
+## Level
+
+The level comes from the project hierarchy: `hierarchy.depth_to_level` maps the directory's depth below the project root (`{0: 1, 1: 2, 2: 3}` by default), and a directory that holds numbered documents is a documentation set (level 3) whatever its depth. Without a project root the tree itself decides (children that are documentation sets make a subject, grandchildren a division; otherwise `root_level`, 4).
+
+## Group codes
+
+`group_codes` keys are matched against every component of the directory's path, from the root down; the first match wins. Without a match the code is the first three characters of the directory's own name, upper-cased, with `-` replaced by `X`.
 
 ## Rules
 
-1. IDs are permanent — a briefing keeps its ID across regenerations
-2. Sequences are per-group, per-level, never reused
-3. Year is year of first assignment, not regeneration
-4. Group codes are auto-generated from top-level directory names unless overridden
+1. IDs are permanent: a briefing keeps its ID across regenerations (the registry key is the directory's resolved path plus the output file name).
+2. Sequences count per group and per level and are never reused.
+3. The year is the year of first assignment, not of regeneration. With `SOURCE_DATE_EPOCH` set, that date is the one used.
+4. The registry is written under a lock, so concurrent `batch` runs never issue the same ID twice.
+5. An unreadable or corrupt registry is an error, never a silent reset (a reset would renumber every document).
 
 ## Registry
 
-The registry is stored at `.briefkit/registry.json` (configurable). It tracks all assigned IDs, paths, and metadata.
+`.briefkit/registry.json` is anchored at the project root that owns the directory being generated (the `briefkit.yml`, `briefkit.yaml` or `.briefkit/` found walking upward from it), or at the current directory when there is none. A relative path stays inside the root by construction; an absolute path, or one with `..`, must resolve inside the root or the configuration is rejected. Commit the registry: it is the record of every ID issued.
 
-## CLI
+## Commands
 
 ```bash
-# Assign IDs without regenerating
-briefkit assign-ids docs/
-
-# Generate with IDs disabled
-briefkit generate docs/ --no-ids
+briefkit generate docs/my-topic/          # assigns (or reuses) the ID
+briefkit generate docs/my-topic/ --no-ids # no ID
+briefkit assign-ids docs/                 # registers IDs for directories whose PDF already exists; Markdown is never modified
+briefkit assign-ids docs/ --dry-run       # what would be assigned
 ```

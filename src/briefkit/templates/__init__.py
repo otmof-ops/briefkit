@@ -142,11 +142,8 @@ def get_template(name: str) -> type:
     Parameters
     ----------
     name : str
-        Template name, case-insensitive.  One of:
-        briefing, report, book, novel, manual, academic, minimal, letter,
-        contract, proposal, policy, register, minutes, evaluation, newsletter,
-        invoice, quote, certificate, resume, sop, memo, whitepaper, datasheet,
-        playbook, deck, guide, deep-research, magazine.
+        Template name, case-insensitive: any name in ``list_templates()``
+        (the built-ins plus anything added with ``register_template``).
 
     Returns
     -------
@@ -168,6 +165,21 @@ def get_template(name: str) -> type:
 def list_templates() -> list[str]:
     """Return a sorted list of all registered template names."""
     return sorted(_REGISTRY.keys())
+
+
+def register_template(name: str, template_cls: type) -> None:
+    """
+    Make *template_cls* available as ``name`` to ``get_template``, the
+    ``--template`` flag and ``template.preset``.
+
+    This is how a project adds a template without editing briefkit: import
+    the module that calls ``register_template`` before running (for the CLI,
+    a ``sitecustomize`` or a small wrapper script does it).
+    """
+    key = name.lower().strip()
+    if not key:
+        raise ValueError("template name must not be empty")
+    _REGISTRY[key] = template_cls
 
 
 def template_descriptions() -> dict[str, str]:
@@ -212,4 +224,6 @@ __all__ = [
     "WitnessTemplate",
     "get_template",
     "list_templates",
+    "register_template",
+    "template_descriptions",
 ]

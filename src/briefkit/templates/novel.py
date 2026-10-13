@@ -459,9 +459,6 @@ class NovelTemplate(BookTemplate):
         # --- Chapters (continuous flow, no forced page breaks) ---
         prev_title = None
         for idx, (chapter_title, chapter_flowables) in enumerate(chapters):
-            if hasattr(self, "_hf_state"):
-                self._hf_state["section"] = chapter_title
-
             # First chapter: no separator needed (starts after preface)
             # Subsequent chapters: conditional page break — only if less
             # than 80mm remains on the page. Otherwise, visual separator.
@@ -488,10 +485,6 @@ class NovelTemplate(BookTemplate):
             else:
                 story.append(title_para)
                 story.append(Spacer(1, 2 * mm))
-
-        # Reset running header
-        if hasattr(self, "_hf_state"):
-            self._hf_state["section"] = content.get("title", "")
 
         # --- Glossary ---
         if glossary_flowables:

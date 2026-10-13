@@ -2,7 +2,7 @@
 
 BriefKit ships with 29 built-in templates. Select one via config or CLI flag.
 
-> This page documents the six original templates in detail. For the full catalogue of 29 — including novel, magazine, whitepaper, deep-research, policy, proposal, guide, playbook, sop, datasheet, evaluation, newsletter, deck, letter, memo, minutes, contract, witness, resume, invoice, quote, certificate, and register — see **[templates-guide.md](templates-guide.md)** or run `briefkit templates` at the CLI.
+> This page documents the six original templates in detail. For the full catalog of 29 — including novel, magazine, whitepaper, deep-research, policy, proposal, guide, playbook, sop, datasheet, evaluation, newsletter, deck, letter, memo, minutes, contract, witness, resume, invoice, quote, certificate, and register — see **[templates-guide.md](templates-guide.md)** or run `briefkit templates` at the CLI.
 
 ## briefing (default)
 

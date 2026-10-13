@@ -187,6 +187,41 @@ def _derive_group_code(path: Path, config: dict) -> str:
     return "GEN"
 
 
+def _is_within(child: Path, parent: Path) -> bool:
+    """Path containment that survives Windows short names and case differences."""
+    child_s = os.path.normcase(os.path.realpath(str(child)))
+    parent_s = os.path.normcase(os.path.realpath(str(parent)))
+    try:
+        return os.path.commonpath([child_s, parent_s]) == parent_s
+    except ValueError:  # different drives
+        return False
+
+
+def registry_location(target: Path, config: dict) -> Path:
+    """
+    Where the registry for *target* lives.
+
+    A relative ``doc_ids.registry_path`` is anchored at the project root
+    that owns *target* (the caller's project, or the current directory, when
+    the target has none) and, having no ``..`` component, is contained by
+    construction. An absolute path, or one that walks upwards, must resolve
+    inside that root, so a briefkit.yml cannot point the registry at an
+    arbitrary file.
+    """
+    from briefkit.config import find_project_root
+
+    doc_ids_cfg = config.get("doc_ids", {})
+    registry_rel = doc_ids_cfg.get("registry_path", ".briefkit/registry.json")
+    root = (find_project_root(target) or find_project_root() or Path.cwd()).resolve()
+    registry_path = Path(str(registry_rel))
+    if not registry_path.is_absolute() and ".." not in registry_path.parts:
+        return root / registry_path
+    candidate = registry_path if registry_path.is_absolute() else root / registry_path
+    if not _is_within(candidate, root):
+        raise ValueError(f"doc_ids.registry_path must be inside the project root {root}, got: {registry_rel}")
+    return Path(os.path.realpath(str(candidate)))
+
+
 # ---------------------------------------------------------------------------
 # get_or_assign_doc_id
 # ---------------------------------------------------------------------------
@@ -213,23 +248,8 @@ def get_or_assign_doc_id(
     if not doc_ids_cfg.get("enabled", True):
         return ""
 
-    registry_rel = doc_ids_cfg.get("registry_path", ".briefkit/registry.json")
     target = Path(target_path).resolve()
-
-    # The registry belongs to the project that owns *target*: a relative
-    # path is anchored at that project's root (the caller's project, or the
-    # current directory, when the target has none), and an absolute path
-    # must still resolve inside that root, so a briefkit.yml cannot point
-    # the registry at an arbitrary file.
-    from briefkit.config import find_project_root
-
-    root = (find_project_root(target) or find_project_root() or Path.cwd()).resolve()
-    registry_path = Path(registry_rel)
-    if not registry_path.is_absolute():
-        registry_path = root / registry_path
-    registry_path = registry_path.resolve()
-    if not registry_path.is_relative_to(root):
-        raise ValueError(f"doc_ids.registry_path must be inside the project root {root}, got: {registry_rel}")
+    registry_path = registry_location(target, config)
 
     # Build a stable key from the output path
     out_filename = config.get("output", {}).get("filename", "executive-briefing.pdf")
@@ -321,16 +341,9 @@ def assign_report(root: str | Path, config: dict, dry_run: bool = False) -> dict
 
 def _has_doc_id(target: Path, config: dict) -> bool:
     """True when the registry already holds an ID for *target* (no write)."""
-    from briefkit.config import find_project_root
-
-    doc_ids_cfg = config.get("doc_ids", {})
-    registry_rel = doc_ids_cfg.get("registry_path", ".briefkit/registry.json")
-    root = (find_project_root(target) or find_project_root() or Path.cwd()).resolve()
-    registry_path = Path(registry_rel)
-    if not registry_path.is_absolute():
-        registry_path = root / registry_path
+    registry_path = registry_location(target.resolve(), config)
     if not registry_path.exists():
         return False
     out_filename = config.get("output", {}).get("filename", "executive-briefing.pdf")
     key = str(target.resolve() / out_filename)
-    return key in load_registry(registry_path.resolve()).get("_index", {})
+    return key in load_registry(registry_path).get("_index", {})

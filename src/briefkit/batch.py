@@ -65,21 +65,11 @@ def find_targets(root: str | Path, config: dict[str, Any]) -> list[Path]:
 
 
 def _output_path(directory: Path, config: dict[str, Any]) -> Path:
-    """Resolve the expected PDF output path for *directory*."""
-    output_cfg = config.get("output", {})
-    filename: str = output_cfg.get("filename", "executive-briefing.pdf")
-    output_dir: str = output_cfg.get("output_dir", "")
+    """Resolve the expected PDF output path for *directory* (the same rule the generator uses)."""
+    from briefkit.config import find_project_root  # noqa: PLC0415
+    from briefkit.output import resolve_output_path  # noqa: PLC0415
 
-    if output_dir:
-        base = Path(output_dir).resolve()
-        # Mirror directory structure relative to project root when output_dir is set
-        try:
-            rel = directory.relative_to(Path.cwd())
-            return base / rel / filename
-        except ValueError:
-            return base / filename
-
-    return directory / filename
+    return resolve_output_path(directory, config, project_root=find_project_root(directory))
 
 
 def _is_current(directory: Path, output_pdf: Path, config: dict[str, Any]) -> bool:
@@ -109,7 +99,12 @@ def _is_current(directory: Path, output_pdf: Path, config: dict[str, Any]) -> bo
 # ---------------------------------------------------------------------------
 
 
-def _generate_one(directory: Path, config: dict[str, Any], dry_run: bool = False) -> dict[str, Any]:
+def _generate_one(
+    directory: Path,
+    config: dict[str, Any],
+    dry_run: bool = False,
+    output_path: str | Path | None = None,
+) -> dict[str, Any]:
     """
     Generate the briefing PDF for a single *directory*.
 
@@ -129,7 +124,7 @@ def _generate_one(directory: Path, config: dict[str, Any], dry_run: bool = False
         }
     """
     t0 = time.monotonic()
-    output_pdf = _output_path(directory, config)
+    output_pdf = Path(output_path) if output_path else _output_path(directory, config)
     result: dict[str, Any] = {
         "path": str(directory),
         "output": str(output_pdf),
@@ -149,7 +144,7 @@ def _generate_one(directory: Path, config: dict[str, Any], dry_run: bool = False
 
         template_name = config.get("template", {}).get("preset", "briefing")
         TemplateClass = get_template(template_name)
-        tmpl = TemplateClass(directory, config=config)
+        tmpl = TemplateClass(directory, config=config, output_path=output_pdf)
         tmpl.generate()
         result["status"] = "generated"
         result["message"] = str(output_pdf)

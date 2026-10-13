@@ -32,11 +32,18 @@ def load_registry(registry_path: Path) -> dict:
     if registry_path.exists():
         try:
             data = json.loads(registry_path.read_text(encoding="utf-8"))
-            # Build path index for O(1) lookups
-            data["_index"] = {e["path"]: e["doc_id"] for e in data.get("entries", [])}
-            return data
-        except (json.JSONDecodeError, OSError):
-            pass
+        except (json.JSONDecodeError, OSError) as exc:
+            # Starting over would renumber every document already issued,
+            # so an unreadable registry is an error to fix, not a reset.
+            raise ValueError(
+                f"Document ID registry {registry_path} is unreadable or not valid JSON ({exc}). "
+                f"Repair or move it; briefkit will not overwrite a registry it cannot read."
+            ) from exc
+        if not isinstance(data, dict):
+            raise ValueError(f"Document ID registry {registry_path} must contain a JSON object.")
+        # Build path index for O(1) lookups
+        data["_index"] = {e["path"]: e["doc_id"] for e in data.get("entries", [])}
+        return data
     return {"schema_version": 1, "counters": {}, "entries": [], "_index": {}}
 
 
@@ -63,7 +70,7 @@ def save_registry(registry: dict, registry_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 _ALLOWED_FORMAT_FIELDS = frozenset({"prefix", "type", "group", "level", "seq", "year"})
-_FORMAT_FIELD_RE = _re.compile(r"\{(\w+)\}")
+_FORMAT_FIELD_RE = _re.compile(r"\{([^{}]*)\}")
 
 
 def _validate_format_string(fmt: str, allowed: frozenset[str]) -> None:
@@ -168,20 +175,22 @@ def get_or_assign_doc_id(
         return ""
 
     registry_rel = doc_ids_cfg.get("registry_path", ".briefkit/registry.json")
-    registry_path = Path(registry_rel)
-    root = None
-    if not registry_path.is_absolute():
-        # Resolve relative to project root or CWD
-        from briefkit.config import find_project_root
-
-        root = find_project_root() or Path.cwd()
-        registry_path = root / registry_rel
-
-    resolved = registry_path.resolve()
-    if root and not resolved.is_relative_to(root.resolve()):
-        raise ValueError(f"registry_path must be within project root, got: {registry_path}")
-
     target = Path(target_path).resolve()
+
+    # The registry belongs to the project that owns *target*: a relative
+    # path is anchored at that project's root (the caller's project, or the
+    # current directory, when the target has none), and an absolute path
+    # must still resolve inside that root, so a briefkit.yml cannot point
+    # the registry at an arbitrary file.
+    from briefkit.config import find_project_root
+
+    root = (find_project_root(target) or find_project_root() or Path.cwd()).resolve()
+    registry_path = Path(registry_rel)
+    if not registry_path.is_absolute():
+        registry_path = root / registry_path
+    registry_path = registry_path.resolve()
+    if not registry_path.is_relative_to(root):
+        raise ValueError(f"doc_ids.registry_path must be inside the project root {root}, got: {registry_rel}")
 
     # Build a stable key from the output path
     out_filename = config.get("output", {}).get("filename", "executive-briefing.pdf")

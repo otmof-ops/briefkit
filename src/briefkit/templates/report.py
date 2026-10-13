@@ -22,7 +22,7 @@ import re
 from reportlab.lib.units import mm
 from reportlab.platypus import PageBreak, Paragraph, Spacer
 
-from briefkit.extractor import markdown_to_plain, parse_markdown, truncate_words
+from briefkit.extractor import markdown_to_plain, parse_markdown, read_source_file, truncate_words
 from briefkit.generator import (
     BaseBriefingTemplate,
     build_callout_box,
@@ -276,7 +276,7 @@ class ReportTemplate(BaseBriefingTemplate):
         flowables.append(Spacer(1, 2 * mm))
 
         if method_path and method_path.exists():
-            raw = method_path.read_text(encoding="utf-8", errors="replace")
+            raw = read_source_file(method_path)
             for block in parse_markdown(raw)[:40]:
                 flowables.extend(self.render_blocks([block]))
         else:
@@ -542,7 +542,7 @@ class ReportTemplate(BaseBriefingTemplate):
 
         if appendix_files:
             for i, fp in enumerate(appendix_files, 1):
-                raw = fp.read_text(encoding="utf-8", errors="replace")
+                raw = read_source_file(fp)
                 label = fp.stem.replace("-", " ").title()
                 flowables.append(Paragraph(f"Appendix {chr(64 + i)}: {label}", self.styles["STYLE_H2"]))
                 flowables.append(Spacer(1, 1.5 * mm))

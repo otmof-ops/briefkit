@@ -59,14 +59,11 @@ def _load_config(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def _output_path(args: argparse.Namespace, cfg: dict[str, Any], path: Path) -> Path:
-    """Resolve the output PDF path from flags and config."""
-    if getattr(args, "output", None):
-        return Path(args.output).resolve()
-    filename: str = cfg["output"]["filename"]
-    output_dir: str = cfg["output"]["output_dir"]
-    if output_dir:
-        return Path(output_dir).resolve() / filename
-    return path.resolve() / filename
+    """Resolve the output PDF path from flags and config: one rule for every command."""
+    from briefkit.config import find_project_root  # noqa: PLC0415
+    from briefkit.output import resolve_output_path  # noqa: PLC0415
+
+    return resolve_output_path(path, cfg, override=getattr(args, "output", None), project_root=find_project_root(path))
 
 
 def _open_file(path: Path) -> None:
@@ -114,63 +111,73 @@ def cmd_generate(args: argparse.Namespace) -> int:
         return 1
 
     cfg = _load_config(args)
+    quiet = getattr(args, "quiet", False)
+    as_json = getattr(args, "json", False)
 
     if getattr(args, "no_ids", False):
         cfg["doc_ids"]["enabled"] = False
 
-    cfg.setdefault("_cli", {})["verbose"] = getattr(args, "verbose", False)
-
+    cli_cfg = cfg.setdefault("_cli", {})
+    cli_cfg["verbose"] = getattr(args, "verbose", False)
     if getattr(args, "variant", None):
         # Inject variant override into config so renderer picks it up
-        cfg.setdefault("_cli", {})["variant"] = args.variant
-
+        cli_cfg["variant"] = args.variant
     if getattr(args, "title", None):
         cfg["project"]["name"] = args.title
+        cli_cfg["title"] = args.title
 
-    output = _output_path(args, cfg, path)
+    try:
+        output = _output_path(args, cfg, path)
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
 
-    if not getattr(args, "quiet", False):
+    if not quiet and not as_json:
         print(f"Generating briefing for: {path}")
         print(f"Output: {output}")
 
     # License warning
     license_preset = cfg.get("license", {}).get("preset", "")
-    if not license_preset or license_preset == "unlicensed":
-        if not getattr(args, "quiet", False):
-            print(
-                "WARNING: No license configured. Output defaults to 'All Rights Reserved'.\n"
-                "         Set license.preset in briefkit.yml or run 'briefkit licenses' for options.",
-                file=sys.stderr,
-            )
+    if (not license_preset or license_preset == "unlicensed") and not quiet:
+        print(
+            "WARNING: No license configured. Output defaults to 'All Rights Reserved'.\n"
+            "         Set license.preset in briefkit.yml or run 'briefkit licenses' for options.",
+            file=sys.stderr,
+        )
 
     if getattr(args, "dry_run", False):
-        # Real dry-run: actually extract content and report a structured
-        # summary of what WOULD be generated. No PDF is written.
-        return _dry_run_report(path, cfg)
+        return _dry_run_report(path, cfg, quiet=quiet, as_json=as_json)
 
-    # Fail-loud pre-check: do a content extraction before handing off to
-    # _generate_one so that a misconfigured directory (no 01-*.md, no
-    # README) produces a helpful error instead of a 6-page empty PDF.
+    # Fail-loud pre-check at the level the template will use: a directory
+    # with no numbered docs and no README produces a helpful error instead
+    # of a six-page empty PDF.
     try:
-        from briefkit.extractor import extract_content
+        from briefkit.config import find_project_root  # noqa: PLC0415
+        from briefkit.extractor import extract_content  # noqa: PLC0415
+        from briefkit.generator import detect_level  # noqa: PLC0415
 
-        pre = extract_content(path, level=3, config=cfg)
+        level = detect_level(path, find_project_root(path), cfg)
+        pre = extract_content(path, level=level, config=cfg)
     except Exception:
         pre = None
     if pre is not None and _extraction_is_empty(pre):
         _print_empty_extraction_error(path, cfg)
         return 2
 
-    if pre is not None:
+    if pre is not None and not quiet:
         _warn_on_truncation(pre, cfg)
 
-    result = _generate_one(path, cfg, dry_run=False)
+    result = _generate_one(path, cfg, dry_run=False, output_path=output)
+
+    if as_json:
+        print(json.dumps(result, indent=2, default=str))
 
     if result["status"] == "error":
-        print(f"Error: {result['message']}", file=sys.stderr)
+        if not as_json:
+            print(f"Error: {result['message']}", file=sys.stderr)
         return 1
 
-    if not getattr(args, "quiet", False):
+    if not quiet and not as_json:
         print(f"Done in {result['elapsed']:.1f}s")
 
     return 0
@@ -250,60 +257,69 @@ def _print_empty_extraction_error(path: Path, cfg: dict) -> None:
     )
 
 
-def _dry_run_report(path: Path, cfg: dict) -> int:
+def _dry_run_report(path: Path, cfg: dict, *, quiet: bool = False, as_json: bool = False) -> int:
     """
-    Real --dry-run: extract content, pretend to build the story, and
-    print a structured summary of what would be generated. No PDF is
-    written.
-    """
-    try:
-        from briefkit.extractor import extract_content
-    except Exception as exc:
-        print(f"dry-run failed to import briefkit internals: {exc}", file=sys.stderr)
-        return 1
+    Real --dry-run: extract content and report what would be generated.
 
-    tpl_name = cfg.get("template", {}).get("preset", "briefing")
-    print("\n--- briefkit dry-run ---")
-    print(f"Source:   {path}")
-    print(f"Template: {tpl_name}")
+    No PDF is written. Returns 2 when nothing could be extracted, so a
+    misconfigured directory fails the same way a real run would.
+    """
+    from briefkit.extractor import extract_content  # noqa: PLC0415
+
     layout = cfg.get("layout", {})
-    print(f"Page:     {layout.get('page_size', 'A4')} {layout.get('orientation', 'portrait')}")
+    report: dict[str, Any] = {
+        "source": str(path),
+        "template": cfg.get("template", {}).get("preset", "briefing"),
+        "page_size": layout.get("page_size", "A4"),
+        "orientation": layout.get("orientation", "portrait"),
+    }
 
     try:
         content = extract_content(path, level=3, config=cfg)
     except Exception as exc:
-        print(f"\nExtraction failed: {exc}", file=sys.stderr)
+        print(f"Extraction failed: {exc}", file=sys.stderr)
         return 1
 
     subsystems = content.get("subsystems", []) or []
-    bibliography = content.get("bibliography", []) or []
-    terms = content.get("terms", {}) or {}
     metrics = content.get("metrics", {}) or {}
-
-    print("\nExtracted:")
-    print(f"  Subsystems:    {len(subsystems)}")
-    print(f"  Words total:   {metrics.get('word_count', 'n/a')}")
-    print(f"  Bibliography:  {len(bibliography)}")
-    print(f"  Terms (index): {len(terms)}")
-    if content.get("orientation"):
-        print("  Orientation:   present")
-    if content.get("overview"):
-        print("  Overview:      present")
-
-    if _extraction_is_empty(content):
-        print()
-        _print_empty_extraction_error(path, cfg)
-        return 2
-
-    # Report skip-flag manifest
     proj = cfg.get("project", {}) or {}
-    active_skips = [k for k in proj if k.startswith("skip_") and proj[k]]
-    if active_skips:
-        print(f"\nActive skip flags: {', '.join(active_skips)}")
-    else:
-        print("\nActive skip flags: (none)")
+    report["extracted"] = {
+        "subsystems": len(subsystems),
+        "words": metrics.get("word_count", 0),
+        "bibliography": len(content.get("bibliography", []) or []),
+        "terms": len(content.get("terms", {}) or {}),
+        "orientation_doc": bool(content.get("orientation")),
+        "overview": bool(content.get("overview")),
+        "truncated_sections": metrics.get("truncated_sections", []),
+    }
+    report["active_skip_flags"] = sorted(k for k in proj if k.startswith("skip_") and proj[k])
+    report["empty"] = _extraction_is_empty(content)
 
-    print("\n(dry-run — no PDF written)\n")
+    if as_json:
+        print(json.dumps(report, indent=2, default=str))
+    elif not quiet:
+        ex = report["extracted"]
+        print("\n--- briefkit dry-run ---")
+        print(f"Source:   {report['source']}")
+        print(f"Template: {report['template']}")
+        print(f"Page:     {report['page_size']} {report['orientation']}")
+        print("\nExtracted:")
+        print(f"  Subsystems:    {ex['subsystems']}")
+        print(f"  Words total:   {ex['words']}")
+        print(f"  Bibliography:  {ex['bibliography']}")
+        print(f"  Terms (index): {ex['terms']}")
+        if ex["orientation_doc"]:
+            print("  Orientation:   present")
+        if ex["overview"]:
+            print("  Overview:      present")
+        flags = report["active_skip_flags"]
+        print(f"\nActive skip flags: {', '.join(flags) if flags else '(none)'}")
+        print("\n(dry-run: no PDF written)\n")
+
+    if report["empty"]:
+        if not as_json:
+            _print_empty_extraction_error(path, cfg)
+        return 2
     return 0
 
 
@@ -409,13 +425,13 @@ def cmd_init(args: argparse.Namespace) -> int:
 
 def cmd_preview(args: argparse.Namespace) -> int:
     """Generate and open the briefing PDF with the system viewer."""
-    cfg = _load_config(args)
-    path = Path(args.path).resolve()
-    output = _output_path(args, cfg, path)
-
     rc = cmd_generate(args)
     if rc != 0:
         return rc
+
+    cfg = _load_config(args)
+    path = Path(args.path).resolve()
+    output = _output_path(args, cfg, path)
 
     if output.exists():
         _open_file(output)
@@ -541,47 +557,31 @@ def cmd_quality(args: argparse.Namespace) -> int:
 
 
 def cmd_selftest(args: argparse.Namespace) -> int:
-    """Generate a briefing from the built-in test fixture and verify output."""
-    import importlib.resources  # noqa: PLC0415
+    """
+    Generate a briefing from a built-in fixture in a temporary directory
+    and verify the result.
+
+    Nothing is written outside the temporary directory and no document ID
+    is assigned, so a selftest leaves no trace in the project it runs in.
+    The run fails (exit 1) unless the PDF exists, has at least one page and
+    carries the fixture text.
+    """
+    import tempfile  # noqa: PLC0415
+
+    from briefkit.batch import _generate_one  # noqa: PLC0415
 
     quiet = getattr(args, "quiet", False)
     as_json = getattr(args, "json", False)
 
-    # Locate the bundled fixture
-    try:
-        # Python 3.9+ traversable API
-        pkg_files = importlib.resources.files("briefkit")
-        fixture_dir = pkg_files / "fixtures" / "selftest"
-    except (AttributeError, TypeError):
-        fixture_dir = Path(__file__).parent / "fixtures" / "selftest"
+    readme_md = textwrap.dedent("""\
+        # Selftest Briefing
 
-    # Fall back to the tests/fixtures/basic directory in the repo
-    repo_fixture = Path(__file__).parent.parent.parent.parent / "tests" / "fixtures" / "basic"
-
-    if hasattr(fixture_dir, "is_dir") and not fixture_dir.is_dir():  # type: ignore[union-attr]
-        if repo_fixture.is_dir():
-            fixture_dir = repo_fixture
-        else:
-            if not quiet:
-                print(
-                    "Selftest fixture not found — creating a minimal in-memory fixture.",
-                    file=sys.stderr,
-                )
-            return _selftest_inline(args, quiet=quiet, as_json=as_json)
-
-    if not quiet:
-        print(f"Running selftest from fixture: {fixture_dir}")
-
-    args.path = str(fixture_dir)
-    return cmd_generate(args)
-
-
-def _selftest_inline(args: argparse.Namespace, quiet: bool = False, as_json: bool = False) -> int:
-    """Run a selftest using a temporary in-memory fixture."""
-    import tempfile  # noqa: PLC0415
-
+        A minimal document set used by `briefkit selftest` to verify that the
+        installed pipeline works end to end, from Markdown extraction to PDF
+        rendering, on this machine.
+    """)
     fixture_md = textwrap.dedent("""\
-        # 01 Introduction
+        # Introduction
 
         This is the selftest briefing generated by `briefkit selftest`.
         It verifies that the core generation pipeline is operational.
@@ -592,24 +592,66 @@ def _selftest_inline(args: argparse.Namespace, quiet: bool = False, as_json: boo
 
         ## Scope
 
-        This document covers the minimum viable selftest scenario.
+        | Check | Expectation |
+        |-------|-------------|
+        | Extraction | One subsystem, one table |
+        | Rendering | At least one page |
+
+        > The selftest covers the minimum viable scenario.
     """)
 
+    cfg = _load_config(args)
+    cfg["doc_ids"]["enabled"] = False
+    cfg.setdefault("_cli", {})["verbose"] = getattr(args, "verbose", False)
+    if getattr(args, "variant", None):
+        cfg["_cli"]["variant"] = args.variant
+
+    checks: list[tuple[str, bool, str]] = []
     with tempfile.TemporaryDirectory(prefix="briefkit-selftest-") as tmpdir:
-        doc = Path(tmpdir) / "01-introduction.md"
-        doc.write_text(fixture_md, encoding="utf-8")
+        root = Path(tmpdir)
+        (root / "briefkit.yml").write_text("doc_ids:\n  enabled: false\n", encoding="utf-8")
+        docs = root / "docs" / "selftest"
+        docs.mkdir(parents=True)
+        (docs / "README.md").write_text(readme_md, encoding="utf-8")
+        (docs / "01-introduction.md").write_text(fixture_md, encoding="utf-8")
+        out = root / "selftest.pdf"
 
-        if not quiet:
-            print(f"Selftest fixture: {tmpdir}")
+        result = _generate_one(docs, cfg, output_path=out)
+        generated = result["status"] == "generated"
+        checks.append(("generate", generated, result["message"] if generated else f"error: {result['message']}"))
 
-        original_path = getattr(args, "path", None)
-        args.path = tmpdir
+        if generated:
+            size = out.stat().st_size if out.exists() else 0
+            checks.append(("pdf written", size > 1000, f"{size:,} bytes"))
+            try:
+                from pypdf import PdfReader  # noqa: PLC0415
+            except ImportError:
+                checks.append(("pypdf", True, "not installed; page and text checks skipped"))
+            else:
+                try:
+                    reader = PdfReader(str(out))
+                    pages = len(reader.pages)
+                    text = "\n".join((page.extract_text() or "") for page in reader.pages)
+                    checks.append(("pages", pages >= 1, f"{pages} page(s)"))
+                    found = "selftest" in text.lower()
+                    checks.append(("content", found, "fixture text found" if found else "fixture text missing"))
+                except Exception as exc:  # noqa: BLE001
+                    checks.append(("pypdf read", False, str(exc)))
 
-        rc = cmd_generate(args)
-
-        args.path = original_path
-
-    return rc
+    passed = all(ok for _, ok, _ in checks)
+    report = {
+        "passed": passed,
+        "template": cfg.get("template", {}).get("preset", "briefing"),
+        "checks": [{"name": name, "passed": ok, "detail": detail} for name, ok, detail in checks],
+    }
+    if as_json:
+        print(json.dumps(report, indent=2))
+    elif not quiet:
+        print(f"briefkit selftest (template: {report['template']})")
+        for name, ok, detail in checks:
+            print(f"  {'PASS' if ok else 'FAIL'}  {name:<12} {detail}")
+        print("selftest passed" if passed else "selftest FAILED")
+    return 0 if passed else 1
 
 
 def cmd_config(args: argparse.Namespace) -> int:

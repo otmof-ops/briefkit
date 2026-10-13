@@ -6,6 +6,23 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Security
+
+- **Link targets are allowlisted.** Markdown links became PDF link actions whatever their scheme, so `[x](javascript:…)`, `[x](file:///…)`, `[x](smb://…)` and custom handlers such as `ms-msdt:` were live in the output. Only `http`, `https` and `mailto` are kept; everything else renders as its label text. The sanitiser in `styles._safe_text` re-validates every `<link>` on both escaping paths.
+- **Titles and brand strings no longer reach the markup parser raw.** A README heading such as `# <img src="http://…"/> Quarterly` made ReportLab fetch the URL during the build (an outbound request from a tool documented as offline), `# Release <b>notes` aborted the build, and `Vec<T>` lost its type parameter. The cover, classification banner, table captions and the base section builders now escape every data string, and ReportLab is configured to trust no remote host as a backstop.
+- **`output.filename` is validated.** It is joined onto the source directory, so `../../victim.txt` or an absolute path overwrote arbitrary files the user could write. It must now be a bare `.pdf` name; `output.output_dir` may not walk upwards; the resolved path is checked to stay inside the output directory.
+- **The doc-ID registry path is contained.** An absolute `doc_ids.registry_path` bypassed the project-root check and could replace any JSON-looking file. Relative and absolute paths must both resolve inside the project root, and an unreadable registry is an error rather than a silent reset that would renumber every document.
+- **PDFs are written atomically.** ReportLab opens the output for writing before it renders, so a build that failed part-way (an unresolved `#anchor` link was enough) left a 0-byte file where a good PDF had been. Output now goes to a sibling `.part` file that is moved into place only after a successful build.
+
+### Fixed
+
+- **`--output`, `output.output_dir` and `preview` work.** The CLI printed the requested path, then wrote `<source dir>/executive-briefing.pdf` regardless, `batch` could never skip current output when `output_dir` was set, and `preview` reported its own file missing. One resolver (`briefkit.output.resolve_output_path`) now serves `generate`, `batch`, `status`, `preview` and every template; `--output` may name a directory.
+- **`python -m briefkit` returns the CLI's exit code** instead of 0 on failure.
+- **`selftest` leaves no trace and can fail.** It assigned real document IDs in whichever registry sat above the current directory and returned 0 without looking at the result. It now builds in a temporary project with IDs disabled and verifies the PDF (exists, has pages, carries the fixture text); `--json` reports the checks.
+- **Long inline code and long URLs no longer break their own markup.** The zero-width-space breaker for 60+ character runs could split inside `</font>` or an `href`, corrupting the tag; it now only touches text between tags.
+- **Link URLs may contain balanced parentheses** (`https://en.wikipedia.org/wiki/Foo_(bar)`), per CommonMark.
+- Double-escaped ampersands in the executive summary, body headings, bibliography entries and source classification line (`R&amp;D`).
+
 ### Added
 
 - 23 new templates brought the registry from 6 to 29 total: novel, letter, contract, proposal, policy, whitepaper, sop, resume, magazine, memo, invoice, quote, certificate, minutes, datasheet, evaluation, newsletter, deck, playbook, guide, deep-research, register, witness.

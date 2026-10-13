@@ -129,9 +129,9 @@ class TestVariantOptOut:
         return tmp_path
 
     def _pdf_text(self, path):
-        import subprocess
+        from pypdf import PdfReader
 
-        return subprocess.run(["pdftotext", str(path), "-"], capture_output=True, text=True).stdout
+        return "\n".join((page.extract_text() or "") for page in PdfReader(str(path)).pages)
 
     def _build(self, src, variant, out_name):
         import copy

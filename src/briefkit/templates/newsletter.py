@@ -37,6 +37,7 @@ from reportlab.platypus import (
     TableStyle,
 )
 
+from briefkit._dates import today
 from briefkit.extractor import parse_markdown
 from briefkit.generator import (
     BaseBriefingTemplate,
@@ -512,9 +513,7 @@ class NewsletterTemplate(BaseBriefingTemplate):
         # Copyright
         copyright_text = self.brand.get("copyright", "")
         if copyright_text:
-            import datetime
-
-            year = datetime.date.today().year
+            year = today().year
             cr_text = copyright_text.replace("{year}", str(year))
             cr_style = _ps(
                 "NLCopyright",

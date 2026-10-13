@@ -302,23 +302,16 @@ def _safe_text(text, already_escaped: bool = False):
         text = text.replace("\x00/L\x00", "</link>")
 
     # Close any unclosed tags (from content truncation mid-tag)
-    open_tags = re.findall(r"<(b|i|u|font|strike)[^>]*>", text)
+    open_tags = re.findall(r"<(b|i|u|font|strike)(?=[\s>])[^>]*>", text)  # <br/> is not an open <b>
     close_tags = re.findall(r"</(b|i|u|font|strike)>", text)
     for tag in reversed(open_tags[len(close_tags) :]):
         text += f"</{tag}>"
 
-    # Insert zero-width spaces in very long words to prevent Paragraph
-    # overflow. Only text between tags is touched: a break inside
-    # ``<link href="...">`` or ``</font>`` would corrupt the markup itself.
-    def _break_long_word(m):
-        word = m.group(0)
-        return "&#8203;".join(word[i : i + 60] for i in range(0, len(word), 60))
-
-    segments = re.split(r"(<[^>]+>)", text)
-    for i, seg in enumerate(segments):
-        if seg and not seg.startswith("<"):
-            segments[i] = re.sub(r"\S{61,}", _break_long_word, seg)
-    return "".join(segments)
+    # Very long words (URLs, hashes) are wrapped by ReportLab itself: every
+    # briefkit style keeps splitLongWords on. Zero-width spaces were once
+    # inserted here, but U+200B lies outside the base-14 fonts' encoding and
+    # rendered as a black square.
+    return text
 
 
 def _safe_para(text, style, already_escaped: bool = False):
@@ -330,8 +323,11 @@ def _safe_para(text, style, already_escaped: bool = False):
     try:
         return Paragraph(_safe_text(text, already_escaped), style)
     except Exception:
+        # Degrade to tag-free text. Text that was already escaped keeps its
+        # entities; escaping it again would print &amp;amp;.
         clean = re.sub(r"<[^>]+>", "", text)
-        clean = clean.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        if not already_escaped:
+            clean = clean.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         try:
             return Paragraph(clean, style)
         except Exception:

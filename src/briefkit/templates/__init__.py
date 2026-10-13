@@ -170,6 +170,16 @@ def list_templates() -> list[str]:
     return sorted(_REGISTRY.keys())
 
 
+def template_descriptions() -> dict[str, str]:
+    """Return ``{name: one-line description}`` taken from each template class docstring."""
+    out: dict[str, str] = {}
+    for name in list_templates():
+        doc = (_REGISTRY[name].__doc__ or "").strip()
+        first = next((line.strip() for line in doc.splitlines() if line.strip()), "")
+        out[name] = first.rstrip(".")
+    return out
+
+
 __all__ = [
     "BriefingTemplate",
     "ReportTemplate",

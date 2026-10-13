@@ -10,7 +10,6 @@ from __future__ import annotations
 import copy
 import functools
 import re
-from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +18,7 @@ try:
 except ImportError as exc:  # pragma: no cover
     raise ImportError("PyYAML is required: pip install pyyaml") from exc
 
+from briefkit._dates import today
 from briefkit.output import validate_output_dir, validate_output_filename
 from briefkit.styles import DEFAULT_BRAND as _DEFAULT_BRAND
 
@@ -131,6 +131,13 @@ DEFAULTS: dict[str, Any] = {
         "skip_current": True,
         "report_format": "markdown",
     },
+    # Thresholds for `briefkit quality`. None means the level default.
+    "quality": {
+        "strict": False,
+        "min_pages": None,
+        "hard_min_bytes": None,
+        "soft_min_bytes": None,
+    },
     "constraints": [],
 }
 
@@ -163,6 +170,57 @@ _COLOR_KEYS = frozenset(
 
 _FONT_KEYS = frozenset({"font_body", "font_heading", "font_mono", "font_caption"})
 
+#: Brand text that may also be given once under ``project:``; ``brand.*`` wins
+#: when both are set.
+_BRAND_TEXT_KEYS = ("org", "tagline", "url", "abn", "copyright")
+
+#: Raster formats ReportLab can place on the cover.
+LOGO_EXTENSIONS = frozenset({".png", ".jpg", ".jpeg", ".gif"})
+
+#: Top-level sections templates read beyond DEFAULTS (per-template settings).
+_EXTRA_TOP_LEVEL_KEYS = frozenset({"metadata", "quality", "magazine", "guide", "deep_research"})
+
+#: ``project.*`` keys read by the templates and guard rails but absent from DEFAULTS.
+_PROJECT_EXTRA_KEYS = frozenset(
+    {"lang", "section_break_mode", "min_section_space_mm", "max_spacer_mm", "disable_orphan_protection"}
+    | {"disable_empty_page_collapse", "disable_determinism"}
+)
+
+
+def _unknown_key_warnings(user_data: dict[str, Any]) -> list[str]:
+    """
+    Name the keys in the user's file that nothing reads, with a suggestion.
+
+    A typo such as ``tempalte:`` used to create a sibling key silently while
+    the real section kept its defaults. Unknown keys are reported, not
+    rejected: a shared briefkit.yml must not abort a whole batch over one
+    stray line.
+    """
+    from difflib import get_close_matches
+
+    warnings: list[str] = []
+    known_top = set(DEFAULTS) | _EXTRA_TOP_LEVEL_KEYS
+    for key, value in user_data.items():
+        if key not in known_top:
+            guess = get_close_matches(str(key), sorted(known_top), n=1, cutoff=0.6)
+            hint = f" (did you mean {guess[0]!r}?)" if guess else ""
+            warnings.append(f"unknown setting {key!r} in briefkit.yml{hint}")
+            continue
+        defaults = DEFAULTS.get(key)
+        if not isinstance(defaults, dict) or not isinstance(value, dict):
+            continue
+        for sub in value:
+            if sub in defaults:
+                continue
+            if key == "project" and (str(sub).startswith("skip_") or sub in _PROJECT_EXTRA_KEYS):
+                continue
+            if key == "brand" and (sub in _COLOR_KEYS or sub in _FONT_KEYS or sub in _BRAND_TEXT_KEYS):
+                continue
+            guess = get_close_matches(str(sub), sorted(defaults), n=1, cutoff=0.6)
+            hint = f" (did you mean {guess[0]!r}?)" if guess else ""
+            warnings.append(f"unknown setting {key}.{sub} in briefkit.yml{hint}")
+    return warnings
+
 
 def _validate_config(cfg: dict[str, Any]) -> list[str]:
     """Return a list of validation error messages (empty means valid)."""
@@ -185,8 +243,9 @@ def _validate_config(cfg: dict[str, Any]) -> list[str]:
     brand = cfg.get("brand", {})
     for color_key in _COLOR_KEYS:
         val = brand.get(color_key, "")
-        if val and not _HEX_COLOR_RE.match(val):
-            errors.append(f"brand.{color_key} must be a 6-digit hex color (e.g. #1B2A4A), got: {val!r}")
+        if val and (not isinstance(val, str) or not _HEX_COLOR_RE.match(val)):
+            hint = ' (quote it in YAML: "#1B2A4A")' if not isinstance(val, str) else ""
+            errors.append(f"brand.{color_key} must be a 6-digit hex color (e.g. #1B2A4A), got: {val!r}{hint}")
 
     output = cfg.get("output", {})
     if output.get("report_format") not in _VALID_REPORT_FORMATS:
@@ -214,22 +273,17 @@ def _validate_config(cfg: dict[str, Any]) -> list[str]:
         if val is not None and (not isinstance(val, int) or val < 0):
             errors.append(f"content.{int_key} must be a non-negative integer, got: {val!r}")
 
-    # Validate brand.logo path if set
+    # Validate brand.logo: a raster image that exists and is not a symlink.
+    # SVG is not accepted because ReportLab cannot rasterise it.
     logo = brand.get("logo", "")
     if logo:
-        logo_path = Path(logo)
-        _ALLOWED_LOGO_EXTS = {".png", ".jpg", ".jpeg", ".svg", ".gif"}
-        if logo_path.suffix.lower() not in _ALLOWED_LOGO_EXTS:
-            errors.append(
-                f"brand.logo must have one of {sorted(_ALLOWED_LOGO_EXTS)} extension, got: {logo_path.suffix!r}"
-            )
-        # Resolve relative paths before symlink check — prevents bypass
-        try:
-            resolved_logo = logo_path.resolve() if logo_path.is_absolute() else (Path.cwd() / logo_path)
-            if resolved_logo.is_symlink():
-                errors.append("brand.logo must not be a symlink")
-        except (OSError, ValueError):
-            pass
+        logo_path = Path(str(logo))
+        if logo_path.suffix.lower() not in LOGO_EXTENSIONS:
+            errors.append(f"brand.logo must be one of {sorted(LOGO_EXTENSIONS)}, got: {logo_path.suffix!r}")
+        elif logo_path.is_symlink():
+            errors.append("brand.logo must not be a symlink")
+        elif not logo_path.is_file():
+            errors.append(f"brand.logo not found: {logo_path}")
 
     # output.filename is joined onto the source directory, so it must be a
     # bare .pdf name; output.output_dir may not walk upwards.
@@ -297,6 +351,9 @@ def _deep_merge(base: dict, override: dict) -> dict:
     """
     result = copy.deepcopy(base)
     for key, value in override.items():
+        if value is None and isinstance(result.get(key), dict):
+            # "brand:" with nothing under it means "defaults", not "no brand".
+            continue
         if key in result and isinstance(result[key], dict) and isinstance(value, dict):
             result[key] = _deep_merge(result[key], value)
         else:
@@ -440,11 +497,11 @@ def _apply_dynamic_defaults(cfg: dict[str, Any], root: Path | None) -> dict[str,
             project["name"] = Path.cwd().name
 
     # Expand copyright template
-    year = date.today().year
+    year = today().year
     org = project.get("org", "")
     copyright_tpl = project.get("copyright", "© {year} {org}")
     # Safe substitution — only {year} and {org} are allowed
-    project["copyright"] = copyright_tpl.replace("{year}", str(year)).replace("{org}", org)
+    project["copyright"] = copyright_tpl.replace("{year}", str(year)).replace("{org}", org).strip()
 
     return cfg
 
@@ -474,6 +531,9 @@ def load_config(config_path: str | Path | None = None) -> dict[str, Any]:
     cfg = copy.deepcopy(DEFAULTS)
     root: Path | None = None
     user_brand_overrides: dict[str, str] = {}
+    user_brand_text: set[str] = set()
+    warnings: list[str] = []
+    user_data: dict[str, Any] | None = None
 
     config_file = _locate_config_file(config_path)
 
@@ -487,9 +547,17 @@ def load_config(config_path: str | Path | None = None) -> dict[str, Any]:
                     f"briefkit.yml must be a YAML mapping at the top level, got: {type(user_data).__name__}"
                 )
             # Capture explicit color overrides before merging with defaults
-            raw_brand = user_data.get("brand", {})
+            raw_brand = user_data.get("brand") or {}
+            if not isinstance(raw_brand, dict):
+                raise ValueError("brand must be a YAML mapping")
             user_brand_overrides = {k: v for k, v in raw_brand.items() if k in _COLOR_KEYS or k in _FONT_KEYS}
+            user_brand_text = {k for k in raw_brand if k in _BRAND_TEXT_KEYS}
+            warnings = _unknown_key_warnings(user_data)
             cfg = _deep_merge(cfg, user_data)
+            # A relative logo path is relative to the config file, not the CWD.
+            logo = (cfg.get("brand") or {}).get("logo")
+            if logo and not Path(str(logo)).is_absolute():
+                cfg["brand"]["logo"] = str(config_file.parent / str(logo))
     else:
         root = find_project_root()
 
@@ -501,13 +569,37 @@ def load_config(config_path: str | Path | None = None) -> dict[str, Any]:
 
     cfg = _apply_dynamic_defaults(cfg, root)
     cfg = resolve_brand(cfg, user_brand_overrides=user_brand_overrides)
+    cfg = _brand_from_project(cfg, user_brand_text)
     cfg = _resolve_license(cfg)
+    cfg["_user"] = copy.deepcopy(user_data) if isinstance(user_data, dict) else {}
+    cfg["_warnings"] = warnings
 
     errors = _validate_config(cfg)
     if errors:
         bullet_list = "\n  - ".join(errors)
         raise ValueError(f"Configuration errors:\n  - {bullet_list}")
 
+    return cfg
+
+
+def _brand_from_project(config: dict[str, Any], user_brand_text: set[str]) -> dict[str, Any]:
+    """
+    Let ``project.org`` (and tagline, url, abn, copyright) reach the PDF.
+
+    The cover, running head, back cover and /Author read ``brand.*``; the
+    documented place to write the organisation is ``project.org``. The two
+    were never connected, so ``--org`` and ``project.org`` had no effect.
+    ``brand.*`` still wins when the user set it explicitly.
+    """
+    cfg = copy.deepcopy(config)
+    project = cfg.get("project", {}) or {}
+    brand = cfg.setdefault("brand", {})
+    for key in _BRAND_TEXT_KEYS:
+        if key in user_brand_text:
+            continue
+        value = project.get(key)
+        if value:
+            brand[key] = str(value)
     return cfg
 
 

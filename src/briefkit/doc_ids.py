@@ -17,14 +17,53 @@ Public API
 
 from __future__ import annotations
 
-import datetime
+import contextlib
 import json
+import os
 import re as _re
+import time
 from pathlib import Path
+
+from briefkit._dates import today
 
 # ---------------------------------------------------------------------------
 # Registry I/O
 # ---------------------------------------------------------------------------
+
+
+@contextlib.contextmanager
+def _registry_lock(registry_path: Path, timeout: float = 10.0):
+    """
+    Serialise read-modify-write of the registry across processes.
+
+    Eight concurrent ``briefkit batch`` runs issued 156 duplicate IDs across
+    200 documents without this. The lock is an ``O_EXCL`` file beside the
+    registry, which works on every platform; a lock older than *timeout*
+    seconds is treated as left behind by a crashed writer.
+    """
+    lock = registry_path.with_name(registry_path.name + ".lock")
+    registry_path.parent.mkdir(parents=True, exist_ok=True)
+    deadline = time.monotonic() + timeout
+    while True:
+        try:
+            fd = os.open(str(lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            break
+        except FileExistsError:
+            try:
+                if time.time() - lock.stat().st_mtime > timeout:
+                    lock.unlink()
+                    continue
+            except OSError:
+                pass
+            if time.monotonic() > deadline:
+                raise TimeoutError(f"document ID registry is locked by another process: {lock}") from None
+            time.sleep(0.02)
+    try:
+        os.close(fd)
+        yield
+    finally:
+        with contextlib.suppress(OSError):
+            lock.unlink()
 
 
 def load_registry(registry_path: Path) -> dict:
@@ -105,11 +144,11 @@ def _format_doc_id(
     digits = doc_ids_cfg.get("sequence_digits", 4)
     yr_fmt = doc_ids_cfg.get("year_format", "short")
 
-    today = datetime.date.today()
+    build_date = today()
     if yr_fmt == "full":
-        year = today.strftime("%Y")
+        year = build_date.strftime("%Y")
     else:
-        year = today.strftime("%y")
+        year = build_date.strftime("%y")
 
     seq_str = str(seq).zfill(digits)
 
@@ -196,6 +235,12 @@ def get_or_assign_doc_id(
     out_filename = config.get("output", {}).get("filename", "executive-briefing.pdf")
     key = str(target / out_filename)
 
+    with _registry_lock(registry_path):
+        return _lookup_or_assign(registry_path, key, target, level, title, config)
+
+
+def _lookup_or_assign(registry_path: Path, key: str, target: Path, level: int, title: str, config: dict) -> str:
+    """Read-modify-write of the registry; callers hold the registry lock."""
     registry = load_registry(registry_path)
 
     # Return existing ID if found (O(1) lookup via index)
@@ -221,7 +266,7 @@ def get_or_assign_doc_id(
             "group": group,
             "level": level,
             "title": title,
-            "assigned": datetime.date.today().isoformat(),
+            "assigned": today().isoformat(),
         }
     )
     registry.setdefault("_index", {})[key] = doc_id
@@ -246,19 +291,46 @@ def assign(
 
     Returns the count of IDs assigned (or that would be assigned in dry-run).
     """
+    return assign_report(root, config, dry_run=dry_run)["checked"]
+
+
+def assign_report(root: str | Path, config: dict, dry_run: bool = False) -> dict[str, int]:
+    """
+    Like :func:`assign`, but says what happened: ``checked`` PDFs found,
+    ``assigned`` new IDs issued (or that would be, in a dry run) and
+    ``existing`` directories that already had one.
+    """
     root = Path(root).resolve()
     out_filename = config.get("output", {}).get("filename", "executive-briefing.pdf")
-    count = 0
+    report = {"checked": 0, "assigned": 0, "existing": 0}
 
     for pdf in sorted(root.rglob(out_filename)):
         if pdf.is_symlink():
             continue
         target = pdf.parent
-        if dry_run:
-            count += 1
+        report["checked"] += 1
+        if _has_doc_id(target, config):
+            report["existing"] += 1
             continue
-        existing = get_or_assign_doc_id(target, level=3, title=target.name, config=config)
-        if existing:
-            count += 1
+        report["assigned"] += 1
+        if not dry_run:
+            get_or_assign_doc_id(target, level=3, title=target.name, config=config)
 
-    return count
+    return report
+
+
+def _has_doc_id(target: Path, config: dict) -> bool:
+    """True when the registry already holds an ID for *target* (no write)."""
+    from briefkit.config import find_project_root
+
+    doc_ids_cfg = config.get("doc_ids", {})
+    registry_rel = doc_ids_cfg.get("registry_path", ".briefkit/registry.json")
+    root = (find_project_root(target) or find_project_root() or Path.cwd()).resolve()
+    registry_path = Path(registry_rel)
+    if not registry_path.is_absolute():
+        registry_path = root / registry_path
+    if not registry_path.exists():
+        return False
+    out_filename = config.get("output", {}).get("filename", "executive-briefing.pdf")
+    key = str(target.resolve() / out_filename)
+    return key in load_registry(registry_path.resolve()).get("_index", {})

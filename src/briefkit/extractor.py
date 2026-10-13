@@ -23,6 +23,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
+from briefkit._dates import today
 from briefkit.bibliography import _parse_kebab_bibliography, extract_bibliography
 from briefkit.cross_refs import extract_cross_refs
 from briefkit.styles import safe_href
@@ -534,7 +535,7 @@ def _extract_doc_set_content(path: Path, config: dict) -> dict:
             "doc_count": 0,
             "word_count": 0,
             "file_count": 0,
-            "year": str(datetime.date.today().year),
+            "year": str(today().year),
             "pdf_count": 0,
             "source_type": "ACADEMIC",
             "avg_chapter_size": 0,
@@ -995,13 +996,13 @@ def extract_content(
     """
     config = config or {}
     p = Path(path).resolve()
-    today = datetime.date.today()
+    build_date = today()
 
     if level == 3:
         return _extract_doc_set_content(p, config)
     elif level == 2:
-        return _aggregate_subject_content(p, config, today)
+        return _aggregate_subject_content(p, config, build_date)
     elif level == 1:
-        return _aggregate_division_content(p, config, today)
+        return _aggregate_division_content(p, config, build_date)
     else:
-        return _aggregate_root_content(p, config, today)
+        return _aggregate_root_content(p, config, build_date)

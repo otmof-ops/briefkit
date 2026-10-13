@@ -143,10 +143,22 @@ _VALID_REPORT_FORMATS = {"markdown", "json", "text"}
 _VALID_YEAR_FORMATS = {"short", "full"}
 _HEX_COLOR_RE = re.compile(r"^#[0-9A-Fa-f]{6}$")
 
-_COLOR_KEYS = frozenset({
-    "primary", "secondary", "accent", "body_text", "caption", "background", "rule",
-    "success", "warning", "danger", "code_bg", "table_alt",
-})
+_COLOR_KEYS = frozenset(
+    {
+        "primary",
+        "secondary",
+        "accent",
+        "body_text",
+        "caption",
+        "background",
+        "rule",
+        "success",
+        "warning",
+        "danger",
+        "code_bg",
+        "table_alt",
+    }
+)
 
 _FONT_KEYS = frozenset({"font_body", "font_heading", "font_mono", "font_caption"})
 
@@ -157,15 +169,9 @@ def _validate_config(cfg: dict[str, Any]) -> list[str]:
 
     layout = cfg.get("layout", {})
     if layout.get("page_size") not in _VALID_PAGE_SIZES:
-        errors.append(
-            f"layout.page_size must be one of {sorted(_VALID_PAGE_SIZES)}, "
-            f"got: {layout.get('page_size')!r}"
-        )
+        errors.append(f"layout.page_size must be one of {sorted(_VALID_PAGE_SIZES)}, got: {layout.get('page_size')!r}")
     if layout.get("orientation") not in _VALID_ORIENTATIONS:
-        errors.append(
-            f"layout.orientation must be 'portrait' or 'landscape', "
-            f"got: {layout.get('orientation')!r}"
-        )
+        errors.append(f"layout.orientation must be 'portrait' or 'landscape', got: {layout.get('orientation')!r}")
 
     margins = layout.get("margins", {})
     for side in ("top", "bottom", "left", "right"):
@@ -179,16 +185,12 @@ def _validate_config(cfg: dict[str, Any]) -> list[str]:
     for color_key in _COLOR_KEYS:
         val = brand.get(color_key, "")
         if val and not _HEX_COLOR_RE.match(val):
-            errors.append(
-                f"brand.{color_key} must be a 6-digit hex color (e.g. #1B2A4A), "
-                f"got: {val!r}"
-            )
+            errors.append(f"brand.{color_key} must be a 6-digit hex color (e.g. #1B2A4A), got: {val!r}")
 
     output = cfg.get("output", {})
     if output.get("report_format") not in _VALID_REPORT_FORMATS:
         errors.append(
-            f"output.report_format must be one of {sorted(_VALID_REPORT_FORMATS)}, "
-            f"got: {output.get('report_format')!r}"
+            f"output.report_format must be one of {sorted(_VALID_REPORT_FORMATS)}, got: {output.get('report_format')!r}"
         )
 
     doc_ids = cfg.get("doc_ids", {})
@@ -197,10 +199,7 @@ def _validate_config(cfg: dict[str, Any]) -> list[str]:
         errors.append(f"doc_ids.sequence_digits must be an integer 1–8, got: {digits!r}")
 
     if doc_ids.get("year_format") not in _VALID_YEAR_FORMATS:
-        errors.append(
-            f"doc_ids.year_format must be 'short' or 'full', "
-            f"got: {doc_ids.get('year_format')!r}"
-        )
+        errors.append(f"doc_ids.year_format must be 'short' or 'full', got: {doc_ids.get('year_format')!r}")
 
     content = cfg.get("content", {})
     for int_key in (
@@ -212,9 +211,7 @@ def _validate_config(cfg: dict[str, Any]) -> list[str]:
     ):
         val = content.get(int_key)
         if val is not None and (not isinstance(val, int) or val < 0):
-            errors.append(
-                f"content.{int_key} must be a non-negative integer, got: {val!r}"
-            )
+            errors.append(f"content.{int_key} must be a non-negative integer, got: {val!r}")
 
     # Validate brand.logo path if set
     logo = brand.get("logo", "")
@@ -223,8 +220,7 @@ def _validate_config(cfg: dict[str, Any]) -> list[str]:
         _ALLOWED_LOGO_EXTS = {".png", ".jpg", ".jpeg", ".svg", ".gif"}
         if logo_path.suffix.lower() not in _ALLOWED_LOGO_EXTS:
             errors.append(
-                f"brand.logo must have one of {sorted(_ALLOWED_LOGO_EXTS)} extension, "
-                f"got: {logo_path.suffix!r}"
+                f"brand.logo must have one of {sorted(_ALLOWED_LOGO_EXTS)} extension, got: {logo_path.suffix!r}"
             )
         # Resolve relative paths before symlink check — prevents bypass
         try:
@@ -246,13 +242,11 @@ def _validate_config(cfg: dict[str, Any]) -> list[str]:
             errors.append(f"content.{pat_key} must not contain '..' or start with '/', got: {pat!r}")
 
     # Validate doc_ids prefix and type are alphanumeric
-    _SAFE_ID_RE = re.compile(r'^[A-Za-z0-9\-]*$')
+    _SAFE_ID_RE = re.compile(r"^[A-Za-z0-9\-]*$")
     for id_key in ("prefix", "type"):
         val = doc_ids.get(id_key, "")
         if val and not _SAFE_ID_RE.match(val):
-            errors.append(
-                f"doc_ids.{id_key} must be alphanumeric/hyphens only, got: {val!r}"
-            )
+            errors.append(f"doc_ids.{id_key} must be alphanumeric/hyphens only, got: {val!r}")
 
     # Skip-flag typo detection
     # ------------------------
@@ -267,18 +261,16 @@ def _validate_config(cfg: dict[str, Any]) -> list[str]:
         except Exception:
             SKIPPABLE_SECTIONS = ()  # type: ignore
         from difflib import get_close_matches
+
         for key in list(project_cfg.keys()):
             if not key.startswith("skip_"):
                 continue
-            section = key[len("skip_"):]
+            section = key[len("skip_") :]
             if section in SKIPPABLE_SECTIONS:
                 continue
             suggestions = get_close_matches(section, SKIPPABLE_SECTIONS, n=1, cutoff=0.6)
             if suggestions:
-                errors.append(
-                    f"project.{key}: unknown section {section!r}. "
-                    f"Did you mean 'skip_{suggestions[0]}'?"
-                )
+                errors.append(f"project.{key}: unknown section {section!r}. Did you mean 'skip_{suggestions[0]}'?")
             else:
                 errors.append(
                     f"project.{key}: unknown section {section!r}. "
@@ -300,11 +292,7 @@ def _deep_merge(base: dict, override: dict) -> dict:
     """
     result = copy.deepcopy(base)
     for key, value in override.items():
-        if (
-            key in result
-            and isinstance(result[key], dict)
-            and isinstance(value, dict)
-        ):
+        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
             result[key] = _deep_merge(result[key], value)
         else:
             result[key] = copy.deepcopy(value)
@@ -417,10 +405,7 @@ def resolve_brand(
         preset_colors = PRESETS.get(preset_name)
         if preset_colors is None:
             available = ", ".join(sorted(PRESETS))
-            raise ValueError(
-                f"Unknown color preset: {preset_name!r}. "
-                f"Available presets: {available}"
-            )
+            raise ValueError(f"Unknown color preset: {preset_name!r}. Available presets: {available}")
         brand.update(preset_colors)
 
     # Re-apply explicit user overrides so they win over the preset
@@ -494,14 +479,11 @@ def load_config(config_path: str | Path | None = None) -> dict[str, Any]:
         if user_data is not None:
             if not isinstance(user_data, dict):
                 raise ValueError(
-                    f"briefkit.yml must be a YAML mapping at the top level, "
-                    f"got: {type(user_data).__name__}"
+                    f"briefkit.yml must be a YAML mapping at the top level, got: {type(user_data).__name__}"
                 )
             # Capture explicit color overrides before merging with defaults
             raw_brand = user_data.get("brand", {})
-            user_brand_overrides = {
-                k: v for k, v in raw_brand.items() if k in _COLOR_KEYS or k in _FONT_KEYS
-            }
+            user_brand_overrides = {k: v for k, v in raw_brand.items() if k in _COLOR_KEYS or k in _FONT_KEYS}
             cfg = _deep_merge(cfg, user_data)
     else:
         root = find_project_root()
@@ -538,10 +520,7 @@ def _resolve_license(config: dict[str, Any]) -> dict[str, Any]:
     preset = LICENSE_PRESETS.get(preset_name)
     if preset is None:
         available = ", ".join(sorted(LICENSE_PRESETS))
-        raise ValueError(
-            f"Unknown license preset: {preset_name!r}. "
-            f"Available presets: {available}"
-        )
+        raise ValueError(f"Unknown license preset: {preset_name!r}. Available presets: {available}")
 
     # Fill in unset fields from preset
     for key in ("name", "spdx", "url", "notice"):

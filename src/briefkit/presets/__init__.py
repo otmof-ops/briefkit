@@ -20,10 +20,7 @@ def get_preset(name: str) -> dict[str, str]:
         return dict(PRESETS[name])
     except KeyError:
         available = ", ".join(sorted(PRESETS))
-        raise KeyError(
-            f"Color preset {name!r} not found. "
-            f"Available presets: {available}"
-        ) from None
+        raise KeyError(f"Color preset {name!r} not found. Available presets: {available}") from None
 
 
 def list_presets() -> list[str]:

@@ -69,6 +69,7 @@ Available templates
                                    accents, sidebar spine text, dark/light adaptive,
                                    section labels, alternating-row TOC)
 """
+
 from __future__ import annotations
 
 from briefkit.templates.academic import AcademicTemplate
@@ -102,35 +103,35 @@ from briefkit.templates.whitepaper import WhitepaperTemplate
 from briefkit.templates.witness import WitnessTemplate
 
 _REGISTRY: dict[str, type] = {
-    "briefing":  BriefingTemplate,
-    "report":    ReportTemplate,
-    "book":      BookTemplate,
-    "manual":    ManualTemplate,
-    "academic":  AcademicTemplate,
-    "minimal":   MinimalTemplate,
-    "letter":    LetterTemplate,
-    "contract":  ContractTemplate,
-    "register":  RegisterTemplate,
-    "minutes":   MinutesTemplate,
-    "novel":     NovelTemplate,
-    "proposal":  ProposalTemplate,
-    "policy":    PolicyTemplate,
+    "briefing": BriefingTemplate,
+    "report": ReportTemplate,
+    "book": BookTemplate,
+    "manual": ManualTemplate,
+    "academic": AcademicTemplate,
+    "minimal": MinimalTemplate,
+    "letter": LetterTemplate,
+    "contract": ContractTemplate,
+    "register": RegisterTemplate,
+    "minutes": MinutesTemplate,
+    "novel": NovelTemplate,
+    "proposal": ProposalTemplate,
+    "policy": PolicyTemplate,
     "evaluation": EvaluationTemplate,
     "newsletter": NewsletterTemplate,
-    "invoice":      InvoiceTemplate,
-    "quote":        QuoteTemplate,
-    "certificate":  CertificateTemplate,
-    "resume":       ResumeTemplate,
-    "sop":          SOPTemplate,
-    "memo":         MemoTemplate,
-    "whitepaper":   WhitepaperTemplate,
-    "datasheet":    DatasheetTemplate,
-    "playbook":     PlaybookTemplate,
-    "deck":         DeckTemplate,
-    "guide":        GuideTemplate,
+    "invoice": InvoiceTemplate,
+    "quote": QuoteTemplate,
+    "certificate": CertificateTemplate,
+    "resume": ResumeTemplate,
+    "sop": SOPTemplate,
+    "memo": MemoTemplate,
+    "whitepaper": WhitepaperTemplate,
+    "datasheet": DatasheetTemplate,
+    "playbook": PlaybookTemplate,
+    "deck": DeckTemplate,
+    "guide": GuideTemplate,
     "deep-research": DeepResearchTemplate,
-    "magazine":     MagazineTemplate,
-    "witness":      WitnessTemplate,
+    "magazine": MagazineTemplate,
+    "witness": WitnessTemplate,
 }
 
 
@@ -160,9 +161,7 @@ def get_template(name: str) -> type:
     key = name.lower().strip()
     if key not in _REGISTRY:
         available = ", ".join(sorted(_REGISTRY.keys()))
-        raise ValueError(
-            f"Unknown template: {name!r}.  Available templates: {available}"
-        )
+        raise ValueError(f"Unknown template: {name!r}.  Available templates: {available}")
     return _REGISTRY[key]
 
 

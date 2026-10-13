@@ -18,6 +18,7 @@ from typing import Any
 # Target discovery
 # ---------------------------------------------------------------------------
 
+
 def _has_numbered_docs(directory: Path, pattern: str) -> bool:
     """Return True if *directory* directly contains files matching *pattern*."""
     try:
@@ -41,9 +42,7 @@ def find_targets(root: str | Path, config: dict[str, Any]) -> list[Path]:
     Returns a sorted list of absolute Path objects.
     """
     root = Path(root).resolve()
-    pattern: str = (
-        config.get("content", {}).get("numbered_doc_pattern", "[0-9][0-9]-*.md")
-    )
+    pattern: str = config.get("content", {}).get("numbered_doc_pattern", "[0-9][0-9]-*.md")
     skip_dirs = {".briefkit", ".git", "__pycache__", "node_modules", ".venv", "venv"}
 
     targets: list[Path] = []
@@ -52,10 +51,7 @@ def find_targets(root: str | Path, config: dict[str, Any]) -> list[Path]:
         current = Path(dirpath)
 
         # Prune traversal in-place
-        dirnames[:] = [
-            d for d in sorted(dirnames)
-            if d not in skip_dirs and not d.startswith(".")
-        ]
+        dirnames[:] = [d for d in sorted(dirnames) if d not in skip_dirs and not d.startswith(".")]
 
         if _has_numbered_docs(current, pattern):
             targets.append(current)
@@ -66,6 +62,7 @@ def find_targets(root: str | Path, config: dict[str, Any]) -> list[Path]:
 # ---------------------------------------------------------------------------
 # Staleness detection
 # ---------------------------------------------------------------------------
+
 
 def _output_path(directory: Path, config: dict[str, Any]) -> Path:
     """Resolve the expected PDF output path for *directory*."""
@@ -95,9 +92,7 @@ def _is_current(directory: Path, output_pdf: Path, config: dict[str, Any]) -> bo
 
     pdf_mtime = output_pdf.stat().st_mtime
     pattern: str = config.get("content", {}).get("numbered_doc_pattern", "[0-9][0-9]-*.md")
-    orientation_pattern: str = config.get("content", {}).get(
-        "orientation_doc_pattern", "00-what-is-*.md"
-    )
+    orientation_pattern: str = config.get("content", {}).get("orientation_doc_pattern", "00-what-is-*.md")
 
     for entry in directory.iterdir():
         if not entry.is_file():
@@ -112,6 +107,7 @@ def _is_current(directory: Path, output_pdf: Path, config: dict[str, Any]) -> bo
 # ---------------------------------------------------------------------------
 # Generation stub
 # ---------------------------------------------------------------------------
+
 
 def _generate_one(directory: Path, config: dict[str, Any], dry_run: bool = False) -> dict[str, Any]:
     """
@@ -150,6 +146,7 @@ def _generate_one(directory: Path, config: dict[str, Any], dry_run: bool = False
 
     try:
         from briefkit.templates import get_template  # noqa: PLC0415
+
         template_name = config.get("template", {}).get("preset", "briefing")
         TemplateClass = get_template(template_name)
         tmpl = TemplateClass(directory, config=config)
@@ -167,6 +164,7 @@ def _generate_one(directory: Path, config: dict[str, Any], dry_run: bool = False
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def batch_generate(
     root: str | Path,
@@ -294,8 +292,7 @@ def _print_summary(stats: dict[str, Any]) -> None:
 
     print()
     print(f"  Batch complete in {elapsed:.1f}s")
-    print(f"  {total} target(s) found — "
-          f"{generated} generated, {skipped} skipped, {failed} failed")
+    print(f"  {total} target(s) found — {generated} generated, {skipped} skipped, {failed} failed")
 
     if failed:
         print("\n  Failed directories:")

@@ -31,8 +31,8 @@ def build_metric_dashboard(metrics, brand=None, content_width=None):
     Drawing or Spacer
         A ReportLab Drawing flowable, or a 1pt Spacer if metrics is empty.
     """
-    b       = _get_brand(brand)
-    cw      = content_width or CONTENT_WIDTH
+    b = _get_brand(brand)
+    cw = content_width or CONTENT_WIDTH
     primary = _hex(b, "primary")
 
     metrics = metrics[:5]
@@ -40,9 +40,9 @@ def build_metric_dashboard(metrics, brand=None, content_width=None):
     if n == 0:
         return Spacer(1, 1)
 
-    panel_width  = float(cw)
+    panel_width = float(cw)
     panel_height = 60 * mm
-    cell_w       = panel_width / n
+    cell_w = panel_width / n
 
     d = Drawing(panel_width, panel_height)
 
@@ -56,8 +56,10 @@ def build_metric_dashboard(metrics, brand=None, content_width=None):
         # Vertical divider between cells
         if idx > 0:
             div = Line(
-                cell_w * idx, panel_height * 0.15,
-                cell_w * idx, panel_height * 0.85,
+                cell_w * idx,
+                panel_height * 0.15,
+                cell_w * idx,
+                panel_height * 0.85,
                 strokeColor=HexColor("#3d4556"),
                 strokeWidth=0.5,
             )

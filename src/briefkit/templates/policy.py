@@ -32,7 +32,6 @@ from reportlab.lib.units import mm
 from reportlab.platypus import (
     PageBreak,
     Paragraph,
-    SimpleDocTemplate,
     Spacer,
     Table,
     TableStyle,
@@ -63,11 +62,11 @@ _PAGE_SIZES = {
 # ---------------------------------------------------------------------------
 
 _BOLD_TERM_PATTERN = re.compile(
-    r'\*\*([A-Z][A-Za-z\s]{2,40}?)\*\*',
+    r"\*\*([A-Z][A-Za-z\s]{2,40}?)\*\*",
 )
 
 _DEFINITION_LIST_PATTERN = re.compile(
-    r'^[-*]\s+\*\*(.+?)\*\*\s*[:–—-]\s*(.+)',
+    r"^[-*]\s+\*\*(.+?)\*\*\s*[:–—-]\s*(.+)",
     re.MULTILINE,
 )
 
@@ -106,8 +105,8 @@ def _extract_definitions(content: dict) -> list[tuple[str, str]]:
         start = max(0, match.start() - 10)
         end = min(len(all_text), match.end() + 120)
         context = all_text[start:end].strip()
-        context = re.sub(r'\*\*', '', context)
-        context = re.sub(r'\n+', ' ', context)
+        context = re.sub(r"\*\*", "", context)
+        context = re.sub(r"\n+", " ", context)
         context = context[:150]
 
         definitions.append((term, context))
@@ -219,6 +218,7 @@ class PolicyTemplate(BaseBriefingTemplate):
                 toc_entries.append((1, "Version History"))
 
             from briefkit.generator import build_toc
+
             story.extend(build_toc(toc_entries, brand=b, content_width=self.content_width))
             story.append(PageBreak())
 
@@ -268,41 +268,63 @@ class PolicyTemplate(BaseBriefingTemplate):
         # Org name
         if org:
             org_style = _ps(
-                "PolicyCoverOrg", brand=b, fontSize=14, textColor=primary,
-                fontName="Helvetica-Bold", alignment=1, spaceAfter=6,
+                "PolicyCoverOrg",
+                brand=b,
+                fontSize=14,
+                textColor=primary,
+                fontName="Helvetica-Bold",
+                alignment=1,
+                spaceAfter=6,
             )
             flowables.append(Paragraph(org, org_style))
             flowables.append(Spacer(1, 8 * mm))
 
         # POLICY DOCUMENT subtitle
         sub_style = _ps(
-            "PolicyCoverSub", brand=b, fontSize=12, textColor=caption_c,
-            fontName="Helvetica", alignment=1, spaceAfter=6,
+            "PolicyCoverSub",
+            brand=b,
+            fontSize=12,
+            textColor=caption_c,
+            fontName="Helvetica",
+            alignment=1,
+            spaceAfter=6,
         )
         flowables.append(Paragraph("POLICY DOCUMENT", sub_style))
 
         # Divider
         flowables.append(Spacer(1, 4 * mm))
         divider = Table([[""]], colWidths=[self.content_width * 0.5], rowHeights=[2])
-        divider.setStyle(TableStyle([
-            ("LINEABOVE", (0, 0), (-1, -1), 2, HexColor(b.get("primary", "#1B2A4A"))),
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-        ]))
+        divider.setStyle(
+            TableStyle(
+                [
+                    ("LINEABOVE", (0, 0), (-1, -1), 2, HexColor(b.get("primary", "#1B2A4A"))),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ]
+            )
+        )
         divider.hAlign = "CENTER"
         flowables.append(divider)
         flowables.append(Spacer(1, 8 * mm))
 
         # Policy title
         title_style = _ps(
-            "PolicyCoverTitle", brand=b, fontSize=24, textColor=primary,
-            fontName="Helvetica-Bold", alignment=1, spaceAfter=8,
+            "PolicyCoverTitle",
+            brand=b,
+            fontSize=24,
+            textColor=primary,
+            fontName="Helvetica-Bold",
+            alignment=1,
+            spaceAfter=8,
         )
         flowables.append(Paragraph(title, title_style))
 
         # Effective date
         flowables.append(Spacer(1, 15 * mm))
         date_style = _ps(
-            "PolicyCoverDate", brand=b, fontSize=10, textColor=body_c,
+            "PolicyCoverDate",
+            brand=b,
+            fontSize=10,
+            textColor=body_c,
             alignment=1,
         )
         flowables.append(Paragraph(f"Effective Date: {self.date_str}", date_style))
@@ -339,19 +361,23 @@ class PolicyTemplate(BaseBriefingTemplate):
 
         data = [[f[0], f[1]] for f in fields]
         tbl = Table(data, colWidths=[45 * mm, self.content_width - 45 * mm])
-        tbl.setStyle(TableStyle([
-            ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
-            ("FONTNAME", (1, 0), (1, -1), "Helvetica"),
-            ("FONTSIZE", (0, 0), (-1, -1), 9),
-            ("TEXTCOLOR", (0, 0), (0, -1), HexColor(b.get("primary", "#1B2A4A"))),
-            ("TEXTCOLOR", (1, 0), (1, -1), HexColor(b.get("body_text", "#333333"))),
-            ("GRID", (0, 0), (-1, -1), 0.5, rule_c),
-            ("TOPPADDING", (0, 0), (-1, -1), 4),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-            ("LEFTPADDING", (0, 0), (-1, -1), 6),
-            ("BACKGROUND", (0, 0), (0, -1), HexColor(b.get("bg_alt", "#F5F5F5"))),
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ]))
+        tbl.setStyle(
+            TableStyle(
+                [
+                    ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+                    ("FONTNAME", (1, 0), (1, -1), "Helvetica"),
+                    ("FONTSIZE", (0, 0), (-1, -1), 9),
+                    ("TEXTCOLOR", (0, 0), (0, -1), HexColor(b.get("primary", "#1B2A4A"))),
+                    ("TEXTCOLOR", (1, 0), (1, -1), HexColor(b.get("body_text", "#333333"))),
+                    ("GRID", (0, 0), (-1, -1), 0.5, rule_c),
+                    ("TOPPADDING", (0, 0), (-1, -1), 4),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                    ("BACKGROUND", (0, 0), (0, -1), HexColor(b.get("bg_alt", "#F5F5F5"))),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ]
+            )
+        )
         flowables.append(tbl)
 
         return flowables
@@ -399,25 +425,36 @@ class PolicyTemplate(BaseBriefingTemplate):
         flowables.append(Spacer(1, 2 * mm))
 
         intro_style = _ps(
-            "PolicyDefsIntro", brand=b, fontSize=10,
-            textColor=_hex(b, "body_text"), spaceAfter=6,
+            "PolicyDefsIntro",
+            brand=b,
+            fontSize=10,
+            textColor=_hex(b, "body_text"),
+            spaceAfter=6,
         )
-        flowables.append(Paragraph(
-            "For the purposes of this policy, the following terms apply:",
-            intro_style,
-        ))
+        flowables.append(
+            Paragraph(
+                "For the purposes of this policy, the following terms apply:",
+                intro_style,
+            )
+        )
 
         term_style = _ps(
-            "PolicyDefTerm", brand=b, fontSize=10,
-            textColor=_hex(b, "body_text"), leading=14,
-            leftIndent=12, spaceAfter=4,
+            "PolicyDefTerm",
+            brand=b,
+            fontSize=10,
+            textColor=_hex(b, "body_text"),
+            leading=14,
+            leftIndent=12,
+            spaceAfter=4,
         )
 
         for term, defn in defs:
-            flowables.append(_safe_para(
-                f"<b>{term}</b> \u2014 {defn}",
-                term_style,
-            ))
+            flowables.append(
+                _safe_para(
+                    f"<b>{term}</b> \u2014 {defn}",
+                    term_style,
+                )
+            )
 
         return flowables
 
@@ -537,22 +574,32 @@ class PolicyTemplate(BaseBriefingTemplate):
         flowables.append(Spacer(1, 2 * mm))
 
         intro_style = _ps(
-            "PolicyApprovalIntro", brand=b, fontSize=10,
-            textColor=_hex(b, "body_text"), spaceAfter=8,
+            "PolicyApprovalIntro",
+            brand=b,
+            fontSize=10,
+            textColor=_hex(b, "body_text"),
+            spaceAfter=8,
         )
-        flowables.append(Paragraph(
-            "By signing below, the undersigned confirm that this policy has "
-            "been reviewed and approved for implementation.",
-            intro_style,
-        ))
+        flowables.append(
+            Paragraph(
+                "By signing below, the undersigned confirm that this policy has "
+                "been reviewed and approved for implementation.",
+                intro_style,
+            )
+        )
         flowables.append(Spacer(1, 4 * mm))
 
         def _sig_block(role_label: str) -> list:
             """Generate a single approval signature block."""
             block: list = []
             role_h = _ps(
-                "PolicyRoleH", brand=b, fontSize=11, textColor=primary,
-                fontName="Helvetica-Bold", spaceBefore=6, spaceAfter=4,
+                "PolicyRoleH",
+                brand=b,
+                fontSize=11,
+                textColor=primary,
+                fontName="Helvetica-Bold",
+                spaceBefore=6,
+                spaceAfter=4,
             )
             block.append(Paragraph(role_label, role_h))
             block.append(Spacer(1, 3 * mm))
@@ -560,15 +607,19 @@ class PolicyTemplate(BaseBriefingTemplate):
             for field in ["Name:", "Title:", "Signature:", "Date:"]:
                 data = [[field, ""]]
                 tbl = Table(data, colWidths=[22 * mm, 80 * mm])
-                tbl.setStyle(TableStyle([
-                    ("FONTNAME", (0, 0), (0, 0), "Helvetica"),
-                    ("FONTSIZE", (0, 0), (-1, -1), 9),
-                    ("TEXTCOLOR", (0, 0), (0, 0), HexColor(b.get("caption", "#666666"))),
-                    ("LINEBELOW", (1, 0), (1, 0), 0.5, rule_c),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-                    ("TOPPADDING", (0, 0), (-1, -1), 4),
-                    ("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
-                ]))
+                tbl.setStyle(
+                    TableStyle(
+                        [
+                            ("FONTNAME", (0, 0), (0, 0), "Helvetica"),
+                            ("FONTSIZE", (0, 0), (-1, -1), 9),
+                            ("TEXTCOLOR", (0, 0), (0, 0), HexColor(b.get("caption", "#666666"))),
+                            ("LINEBELOW", (1, 0), (1, 0), 0.5, rule_c),
+                            ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                            ("TOPPADDING", (0, 0), (-1, -1), 4),
+                            ("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
+                        ]
+                    )
+                )
                 block.append(tbl)
 
             block.append(Spacer(1, 6 * mm))
@@ -593,17 +644,19 @@ class PolicyTemplate(BaseBriefingTemplate):
                     rows = tbl.get("rows", [])
                     if rows:
                         flowables: list = []
-                        flowables.append(
-                            Paragraph("Version History", self.styles["STYLE_H1"])
-                        )
+                        flowables.append(Paragraph("Version History", self.styles["STYLE_H1"]))
                         flowables.append(Spacer(1, 2 * mm))
 
                         from briefkit.elements.tables import build_data_table
-                        flowables.extend(build_data_table(
-                            tbl["headers"], rows,
-                            brand=self.brand,
-                            content_width=self.content_width,
-                        ))
+
+                        flowables.extend(
+                            build_data_table(
+                                tbl["headers"],
+                                rows,
+                                brand=self.brand,
+                                content_width=self.content_width,
+                            )
+                        )
                         return flowables
 
         return []
@@ -623,9 +676,12 @@ class PolicyTemplate(BaseBriefingTemplate):
         doc_ids_cfg = self.config.get("doc_ids", {})
         if doc_ids_cfg.get("enabled", True):
             from briefkit.doc_ids import get_or_assign_doc_id
+
             self.doc_id = get_or_assign_doc_id(
-                self.target_path, self.level,
-                title, config=self.config,
+                self.target_path,
+                self.level,
+                title,
+                config=self.config,
             )
 
         # Header/footer state
@@ -669,12 +725,14 @@ class PolicyTemplate(BaseBriefingTemplate):
             canvas.setFont("Helvetica", 8)
             canvas.setFillColor(HexColor(brand.get("caption", "#666666")))
             canvas.drawString(
-                left_m, page_h - 15 * mm,
+                left_m,
+                page_h - 15 * mm,
                 policy_title,
             )
             if doc_id:
                 canvas.drawRightString(
-                    page_w - right_m, page_h - 15 * mm,
+                    page_w - right_m,
+                    page_h - 15 * mm,
                     doc_id,
                 )
 
@@ -682,7 +740,8 @@ class PolicyTemplate(BaseBriefingTemplate):
             canvas.setFont("Helvetica", 7)
             canvas.setFillColor(HexColor(brand.get("caption", "#666666")))
             canvas.drawCentredString(
-                page_w / 2, 10 * mm,
+                page_w / 2,
+                10 * mm,
                 f"Page {doc_inner.page}",
             )
             canvas.restoreState()

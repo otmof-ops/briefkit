@@ -26,7 +26,6 @@ from reportlab.lib.colors import HexColor, black
 from reportlab.lib.pagesizes import A3, A4, legal, letter
 from reportlab.lib.units import mm
 from reportlab.platypus import (
-    SimpleDocTemplate,
     Spacer,
     Table,
     TableStyle,
@@ -68,14 +67,22 @@ class ResumeTemplate(BaseBriefingTemplate):
         items: list = []
         items.append(Spacer(1, 5 * mm))
         h_style = _ps(
-            "ResumeSection", brand=self.brand, fontSize=12, textColor=_BLACK,
-            fontName="Helvetica-Bold", spaceAfter=1,
+            "ResumeSection",
+            brand=self.brand,
+            fontSize=12,
+            textColor=_BLACK,
+            fontName="Helvetica-Bold",
+            spaceAfter=1,
         )
         items.append(_safe_para(title.upper(), h_style))
         line = Table([[""]], colWidths=[self.content_width], rowHeights=[0.6])
-        line.setStyle(TableStyle([
-            ("LINEBELOW", (0, 0), (-1, -1), 0.8, _BLACK),
-        ]))
+        line.setStyle(
+            TableStyle(
+                [
+                    ("LINEBELOW", (0, 0), (-1, -1), 0.8, _BLACK),
+                ]
+            )
+        )
         items.append(line)
         items.append(Spacer(1, 3 * mm))
         return items
@@ -97,8 +104,11 @@ class ResumeTemplate(BaseBriefingTemplate):
             btype = block.get("type", "")
             if btype == "heading":
                 continue
-            if ("@" in text or re.search(r"\+?\d[\d\s\-().]{6,}", text)
-                    or re.search(r"(?i)(email|phone|location|address|linkedin)", text)):
+            if (
+                "@" in text
+                or re.search(r"\+?\d[\d\s\-().]{6,}", text)
+                or re.search(r"(?i)(email|phone|location|address|linkedin)", text)
+            ):
                 contact.append(text)
             elif len(text) < 60 and "|" in text:
                 contact.append(text)
@@ -108,7 +118,8 @@ class ResumeTemplate(BaseBriefingTemplate):
         return contact, body
 
     def _classify_subsystems(
-        self, subsystems: list[dict],
+        self,
+        subsystems: list[dict],
     ) -> tuple[list[dict], list[dict]]:
         """
         Split subsystems into (education_subs, experience_subs) by scanning
@@ -143,8 +154,13 @@ class ResumeTemplate(BaseBriefingTemplate):
 
         # --- Header: Name (centered, 16pt bold black) ---
         name_style = _ps(
-            "ResumeName", brand=b, fontSize=16, textColor=_BLACK,
-            fontName="Helvetica-Bold", alignment=1, spaceAfter=2,
+            "ResumeName",
+            brand=b,
+            fontSize=16,
+            textColor=_BLACK,
+            fontName="Helvetica-Bold",
+            alignment=1,
+            spaceAfter=2,
         )
         if title:
             story.append(_safe_para(_safe_text(title), name_style))
@@ -154,22 +170,28 @@ class ResumeTemplate(BaseBriefingTemplate):
         if contact_lines:
             # Join all contact fragments into a single pipe-separated line
             all_contact = " | ".join(
-                c.strip() for line in contact_lines
-                for c in (line.split("|") if "|" in line else [line])
-                if c.strip()
+                c.strip() for line in contact_lines for c in (line.split("|") if "|" in line else [line]) if c.strip()
             )
             contact_style = _ps(
-                "ResumeContact", brand=b, fontSize=9, textColor=_DARK_GREY,
-                alignment=1, spaceAfter=1,
+                "ResumeContact",
+                brand=b,
+                fontSize=9,
+                textColor=_DARK_GREY,
+                alignment=1,
+                spaceAfter=1,
             )
             story.append(_safe_para(all_contact, contact_style))
 
         # --- 1pt black horizontal rule spanning full content width ---
         story.append(Spacer(1, 2 * mm))
         divider = Table([[""]], colWidths=[self.content_width], rowHeights=[1])
-        divider.setStyle(TableStyle([
-            ("LINEBELOW", (0, 0), (-1, -1), 1, _BLACK),
-        ]))
+        divider.setStyle(
+            TableStyle(
+                [
+                    ("LINEBELOW", (0, 0), (-1, -1), 1, _BLACK),
+                ]
+            )
+        )
         story.append(divider)
         story.append(Spacer(1, 4 * mm))
 
@@ -184,7 +206,10 @@ class ResumeTemplate(BaseBriefingTemplate):
                 self._render_education_entry(story, sub)
             if guide:
                 guide_style = _ps(
-                    "ResumeGuide", brand=b, fontSize=10, textColor=_BLACK,
+                    "ResumeGuide",
+                    brand=b,
+                    fontSize=10,
+                    textColor=_BLACK,
                     leading=14,
                 )
                 blocks = parse_markdown(guide)[:10]
@@ -212,8 +237,12 @@ class ResumeTemplate(BaseBriefingTemplate):
         if additional_parts:
             story.extend(self._section_heading("Additional Information"))
             info_style = _ps(
-                "ResumeAdditional", brand=b, fontSize=10, textColor=_BLACK,
-                leading=14, spaceAfter=2,
+                "ResumeAdditional",
+                brand=b,
+                fontSize=10,
+                textColor=_BLACK,
+                leading=14,
+                spaceAfter=2,
             )
             for part in additional_parts:
                 story.append(_safe_para(part, info_style))
@@ -271,36 +300,56 @@ class ResumeTemplate(BaseBriefingTemplate):
 
         # Two-column header table: [date_range | company_location]
         date_style = _ps(
-            "ResumeExpDate", brand=self.brand, fontSize=10, textColor=_BLACK,
-            fontName="Helvetica-Bold", spaceAfter=0,
+            "ResumeExpDate",
+            brand=self.brand,
+            fontSize=10,
+            textColor=_BLACK,
+            fontName="Helvetica-Bold",
+            spaceAfter=0,
         )
         company_style = _ps(
-            "ResumeExpCompany", brand=self.brand, fontSize=10, textColor=_BLACK,
-            fontName="Helvetica-Bold", alignment=2, spaceAfter=0,
+            "ResumeExpCompany",
+            brand=self.brand,
+            fontSize=10,
+            textColor=_BLACK,
+            fontName="Helvetica-Bold",
+            alignment=2,
+            spaceAfter=0,
         )
 
         left_cell = _safe_para(_safe_text(date_range), date_style) if date_range else _safe_para("", date_style)
-        right_cell = _safe_para(_safe_text(company_location), company_style) if company_location else _safe_para("", company_style)
+        right_cell = (
+            _safe_para(_safe_text(company_location), company_style)
+            if company_location
+            else _safe_para("", company_style)
+        )
 
         col_w = self.content_width
         header_table = Table(
             [[left_cell, right_cell]],
             colWidths=[col_w * 0.35, col_w * 0.65],
         )
-        header_table.setStyle(TableStyle([
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 0),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-            ("TOPPADDING", (0, 0), (-1, -1), 0),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-        ]))
+        header_table.setStyle(
+            TableStyle(
+                [
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                    ("TOPPADDING", (0, 0), (-1, -1), 0),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                ]
+            )
+        )
         story.append(header_table)
 
         # Job title in italic
         if job_title:
             title_style = _ps(
-                "ResumeExpTitle", brand=self.brand, fontSize=10,
-                textColor=_DARK_GREY, fontName="Helvetica-Oblique",
+                "ResumeExpTitle",
+                brand=self.brand,
+                fontSize=10,
+                textColor=_DARK_GREY,
+                fontName="Helvetica-Oblique",
                 spaceAfter=2,
             )
             story.append(_safe_para(_safe_text(job_title), title_style))
@@ -308,14 +357,21 @@ class ResumeTemplate(BaseBriefingTemplate):
         # Bullet points
         if bullet_items:
             bullet_style = _ps(
-                "ResumeBullet", brand=self.brand, fontSize=10,
-                textColor=_BLACK, leftIndent=10, bulletIndent=0,
+                "ResumeBullet",
+                brand=self.brand,
+                fontSize=10,
+                textColor=_BLACK,
+                leftIndent=10,
+                bulletIndent=0,
                 leading=13,
             )
             for item_text in bullet_items[:8]:
-                story.append(_safe_para(
-                    f"\u2022  {_safe_text(item_text)}", bullet_style,
-                ))
+                story.append(
+                    _safe_para(
+                        f"\u2022  {_safe_text(item_text)}",
+                        bullet_style,
+                    )
+                )
 
         # Any remaining blocks
         rendered = 0
@@ -374,16 +430,28 @@ class ResumeTemplate(BaseBriefingTemplate):
 
         # Three-column education table
         date_style = _ps(
-            "ResumeEduDate", brand=self.brand, fontSize=10, textColor=_BLACK,
-            fontName="Helvetica-Bold", spaceAfter=0,
+            "ResumeEduDate",
+            brand=self.brand,
+            fontSize=10,
+            textColor=_BLACK,
+            fontName="Helvetica-Bold",
+            spaceAfter=0,
         )
         inst_style = _ps(
-            "ResumeEduInst", brand=self.brand, fontSize=10, textColor=_BLACK,
-            fontName="Helvetica-Bold", spaceAfter=0,
+            "ResumeEduInst",
+            brand=self.brand,
+            fontSize=10,
+            textColor=_BLACK,
+            fontName="Helvetica-Bold",
+            spaceAfter=0,
         )
         degree_style = _ps(
-            "ResumeEduDegree", brand=self.brand, fontSize=10, textColor=_BLACK,
-            alignment=2, spaceAfter=0,
+            "ResumeEduDegree",
+            brand=self.brand,
+            fontSize=10,
+            textColor=_BLACK,
+            alignment=2,
+            spaceAfter=0,
         )
 
         date_cell = _safe_para(_safe_text(date_range), date_style)
@@ -398,26 +466,37 @@ class ResumeTemplate(BaseBriefingTemplate):
             [[date_cell, inst_cell, degree_cell]],
             colWidths=[col_w * 0.22, col_w * 0.43, col_w * 0.35],
         )
-        edu_table.setStyle(TableStyle([
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 0),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-            ("TOPPADDING", (0, 0), (-1, -1), 0),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
-        ]))
+        edu_table.setStyle(
+            TableStyle(
+                [
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                    ("TOPPADDING", (0, 0), (-1, -1), 0),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+                ]
+            )
+        )
         story.append(edu_table)
 
         # Extra items as bullets below
         if extra_items:
             bullet_style = _ps(
-                "ResumeEduBullet", brand=self.brand, fontSize=10,
-                textColor=_BLACK, leftIndent=10, bulletIndent=0,
+                "ResumeEduBullet",
+                brand=self.brand,
+                fontSize=10,
+                textColor=_BLACK,
+                leftIndent=10,
+                bulletIndent=0,
                 leading=13,
             )
             for item_text in extra_items[:4]:
-                story.append(_safe_para(
-                    f"\u2022  {_safe_text(item_text)}", bullet_style,
-                ))
+                story.append(
+                    _safe_para(
+                        f"\u2022  {_safe_text(item_text)}",
+                        bullet_style,
+                    )
+                )
 
         story.append(Spacer(1, 2 * mm))
 
@@ -435,9 +514,12 @@ class ResumeTemplate(BaseBriefingTemplate):
         doc_ids_cfg = self.config.get("doc_ids", {})
         if doc_ids_cfg.get("enabled", True):
             from briefkit.doc_ids import get_or_assign_doc_id
+
             self.doc_id = get_or_assign_doc_id(
-                self.target_path, self.level,
-                content.get("title", ""), config=self.config,
+                self.target_path,
+                self.level,
+                content.get("title", ""),
+                config=self.config,
             )
 
         # Header/footer state -- minimal for resume
@@ -469,7 +551,8 @@ class ResumeTemplate(BaseBriefingTemplate):
             canvas.setFont("Helvetica", 7)
             canvas.setFillColor(_DARK_GREY)
             canvas.drawCentredString(
-                doc_inner.pagesize[0] / 2, 10 * mm,
+                doc_inner.pagesize[0] / 2,
+                10 * mm,
                 f"Page {doc_inner.page}",
             )
             canvas.restoreState()

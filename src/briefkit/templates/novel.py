@@ -25,11 +25,10 @@ import re
 from reportlab.lib.units import mm
 from reportlab.platypus import CondPageBreak, KeepTogether, PageBreak, Paragraph, Spacer
 
-from briefkit.templates._helpers import should_skip
-
 from briefkit.extractor import parse_markdown
 from briefkit.generator import build_toc
 from briefkit.styles import CONTENT_WIDTH, _hex, _ps, _safe_para
+from briefkit.templates._helpers import should_skip
 from briefkit.templates.book import BookTemplate
 
 # Pattern categories
@@ -42,15 +41,15 @@ _CAT_ITALIC_VOICE = "italic_voice"
 _CAT_ERASURE = "erasure"
 
 # Regex for detecting all-caps system commands (after HTML tag stripping)
-_RE_ALL_CAPS = re.compile(r'^[A-Z][A-Z\s:.\-!,]+$')
+_RE_ALL_CAPS = re.compile(r"^[A-Z][A-Z\s:.\-!,]+$")
 # Regex for all-caps with apostrophes/digits (mixed-case system commands)
 _RE_MOSTLY_CAPS = re.compile(r"^[A-Z][A-Z\s:.,!'\-0-9]+$")
 # Regex for detecting full-italic paragraphs (after inline formatting)
-_RE_FULL_ITALIC = re.compile(r'^<i>.+</i>$', re.DOTALL)
+_RE_FULL_ITALIC = re.compile(r"^<i>.+</i>$", re.DOTALL)
 # Regex for stripping HTML tags (for pattern matching on plain text)
-_RE_STRIP_TAGS = re.compile(r'<[^>]+>')
+_RE_STRIP_TAGS = re.compile(r"<[^>]+>")
 # Regex for italic content that is all-caps (erasure commands)
-_RE_ITALIC_ALL_CAPS = re.compile(r'^[A-Z][A-Z\s\d\u2014:.\-!]+$')
+_RE_ITALIC_ALL_CAPS = re.compile(r"^[A-Z][A-Z\s\d\u2014:.\-!]+$")
 # Erasure phrases that should be rendered as devastating structural blows
 _ERASURE_PHRASES = [
     "was never here",
@@ -83,7 +82,7 @@ class NovelTemplate(BookTemplate):
 
     def _build_novel_styles(self):
         """Create and cache the custom narrative styles."""
-        if hasattr(self, '_novel_styles'):
+        if hasattr(self, "_novel_styles"):
             return self._novel_styles
 
         b = self.brand
@@ -95,7 +94,8 @@ class NovelTemplate(BookTemplate):
 
         styles = {
             _CAT_ERASURE: _ps(
-                "NovelErasure", brand=b,
+                "NovelErasure",
+                brand=b,
                 fontName="Courier-Bold",
                 fontSize=12,
                 textColor=primary,
@@ -105,7 +105,8 @@ class NovelTemplate(BookTemplate):
                 leading=16,
             ),
             _CAT_SYSTEM_COMMAND: _ps(
-                "NovelSystemCmd", brand=b,
+                "NovelSystemCmd",
+                brand=b,
                 fontName="Courier-Bold",
                 fontSize=11,
                 textColor=accent,
@@ -115,7 +116,8 @@ class NovelTemplate(BookTemplate):
                 leading=15,
             ),
             _CAT_SYSTEM_TAG: _ps(
-                "NovelSystemTag", brand=b,
+                "NovelSystemTag",
+                brand=b,
                 fontName="Courier",
                 fontSize=9,
                 textColor=caption,
@@ -127,7 +129,8 @@ class NovelTemplate(BookTemplate):
                 leading=13,
             ),
             _CAT_SYSTEM_LOG: _ps(
-                "NovelSystemLog", brand=b,
+                "NovelSystemLog",
+                brand=b,
                 fontName="Courier",
                 fontSize=9,
                 textColor=caption,
@@ -140,7 +143,8 @@ class NovelTemplate(BookTemplate):
                 leading=13,
             ),
             _CAT_CORRUPTED: _ps(
-                "NovelCorrupted", brand=b,
+                "NovelCorrupted",
+                brand=b,
                 fontName="Courier-Oblique",
                 fontSize=9,
                 textColor=caption,
@@ -150,7 +154,8 @@ class NovelTemplate(BookTemplate):
                 leading=13,
             ),
             _CAT_ITALIC_VOICE: _ps(
-                "NovelItalicVoice", brand=b,
+                "NovelItalicVoice",
+                brand=b,
                 fontName=b.get("font_caption", "Times-Italic"),
                 fontSize=9.5,
                 textColor=body_text,
@@ -187,7 +192,7 @@ class NovelTemplate(BookTemplate):
             return None
 
         # Strip HTML tags for plain-text pattern matching
-        plain = _RE_STRIP_TAGS.sub('', text).strip()
+        plain = _RE_STRIP_TAGS.sub("", text).strip()
 
         if not plain:
             return None
@@ -197,7 +202,7 @@ class NovelTemplate(BookTemplate):
         # 1. ERASURE: Full italic text that is either all-caps or contains
         #    erasure phrases — the narrative destroying its own characters
         if _RE_FULL_ITALIC.match(stripped):
-            italic_content = _RE_STRIP_TAGS.sub('', stripped).strip()
+            italic_content = _RE_STRIP_TAGS.sub("", stripped).strip()
 
             # All-caps inside italic = chapter markers, structural commands
             if _RE_ITALIC_ALL_CAPS.match(italic_content):
@@ -213,15 +218,15 @@ class NovelTemplate(BookTemplate):
             return _CAT_ITALIC_VOICE
 
         # 2. System tags: starts with [ and contains ]
-        if plain.startswith('[') and ']' in plain:
+        if plain.startswith("[") and "]" in plain:
             return _CAT_SYSTEM_TAG
 
         # 3. Corrupted text: contains block character
-        if '\u2591' in plain or '\u2591' in text or '░' in text:
+        if "\u2591" in plain or "\u2591" in text or "░" in text:
             return _CAT_CORRUPTED
 
         # 4. Arrow sequences: contains ->
-        if '->' in plain:
+        if "->" in plain:
             return _CAT_ARROW_SEQ
 
         # 5. System commands: entirely uppercase (min 3 chars)
@@ -341,14 +346,17 @@ class NovelTemplate(BookTemplate):
         from reportlab.pdfbase.pdfmetrics import stringWidth
 
         # --- Half-title page ---
-        cw = getattr(self, 'content_width', CONTENT_WIDTH)
+        cw = getattr(self, "content_width", CONTENT_WIDTH)
         ht_size = 24
         while stringWidth(title, "Helvetica-Bold", ht_size) > cw * 0.85 and ht_size > 16:
             ht_size -= 1
         half_title_style = _ps(
-            "HalfTitle", brand=b,
-            fontSize=ht_size, textColor=primary,
-            fontName="Helvetica-Bold", alignment=1,
+            "HalfTitle",
+            brand=b,
+            fontSize=ht_size,
+            textColor=primary,
+            fontName="Helvetica-Bold",
+            alignment=1,
         )
         story.append(Spacer(1, 80 * mm))
         story.append(Paragraph(title, half_title_style))
@@ -359,21 +367,30 @@ class NovelTemplate(BookTemplate):
         while stringWidth(title, "Helvetica-Bold", ft_size) > cw * 0.80 and ft_size > 18:
             ft_size -= 1
         title_style = _ps(
-            "BookTitle", brand=b,
-            fontSize=ft_size, textColor=primary,
-            fontName="Helvetica-Bold", alignment=1,
+            "BookTitle",
+            brand=b,
+            fontSize=ft_size,
+            textColor=primary,
+            fontName="Helvetica-Bold",
+            alignment=1,
             leading=ft_size + 8,
             spaceAfter=6 * mm,
         )
         subtitle_text = self.config.get("project", {}).get("tagline", "")
         sub_style = _ps(
-            "BookSubtitle", brand=b,
-            fontSize=16, textColor=secondary,
-            fontName="Helvetica-Oblique", alignment=1,
+            "BookSubtitle",
+            brand=b,
+            fontSize=16,
+            textColor=secondary,
+            fontName="Helvetica-Oblique",
+            alignment=1,
         )
         author_style = _ps(
-            "BookAuthor", brand=b,
-            fontSize=14, textColor=caption_c, alignment=1,
+            "BookAuthor",
+            brand=b,
+            fontSize=14,
+            textColor=caption_c,
+            alignment=1,
         )
         story.append(Spacer(1, 50 * mm))
         story.append(Paragraph(title, title_style))
@@ -388,27 +405,32 @@ class NovelTemplate(BookTemplate):
 
         # --- Copyright page ---
         cp_style = _ps(
-            "CopyrightPage", brand=b,
-            fontSize=9, textColor=caption_c, leading=14,
+            "CopyrightPage",
+            brand=b,
+            fontSize=9,
+            textColor=caption_c,
+            leading=14,
         )
         story.append(Spacer(1, 100 * mm))
         story.append(Paragraph(f"First published {year}", cp_style))
         story.append(Spacer(1, 4 * mm))
         story.append(Paragraph(copyright_str, cp_style))
         story.append(Spacer(1, 4 * mm))
-        story.append(Paragraph(
-            "All rights reserved. No part of this publication may be reproduced, "
-            "stored in a retrieval system, or transmitted in any form or by any means, "
-            "electronic, mechanical, photocopying, recording, or otherwise, without "
-            "the prior written permission of the publisher.",
-            cp_style,
-        ))
+        story.append(
+            Paragraph(
+                "All rights reserved. No part of this publication may be reproduced, "
+                "stored in a retrieval system, or transmitted in any form or by any means, "
+                "electronic, mechanical, photocopying, recording, or otherwise, without "
+                "the prior written permission of the publisher.",
+                cp_style,
+            )
+        )
         story.append(PageBreak())
 
         # Pre-build sections — every optional one honours project.skip_<section>
         cfg = self.config
-        preface_flowables  = [] if should_skip(cfg, "preface")  else self._build_preface(content)
-        chapters           = self._build_chapters(content)
+        preface_flowables = [] if should_skip(cfg, "preface") else self._build_preface(content)
+        chapters = self._build_chapters(content)
         glossary_flowables = [] if should_skip(cfg, "glossary") else self._build_glossary(content)
 
         # --- TOC ---
@@ -433,7 +455,7 @@ class NovelTemplate(BookTemplate):
         # --- Chapters (continuous flow, no forced page breaks) ---
         prev_title = None
         for idx, (chapter_title, chapter_flowables) in enumerate(chapters):
-            if hasattr(self, '_hf_state'):
+            if hasattr(self, "_hf_state"):
                 self._hf_state["section"] = chapter_title
 
             # First chapter: no separator needed (starts after preface)
@@ -457,16 +479,14 @@ class NovelTemplate(BookTemplate):
                 first = chapter_flowables[0]
                 if hasattr(first, "keepWithNext"):
                     first.keepWithNext = False
-                story.append(KeepTogether(
-                    [title_para, Spacer(1, 2 * mm), first]
-                ))
+                story.append(KeepTogether([title_para, Spacer(1, 2 * mm), first]))
                 story.extend(chapter_flowables[1:])
             else:
                 story.append(title_para)
                 story.append(Spacer(1, 2 * mm))
 
         # Reset running header
-        if hasattr(self, '_hf_state'):
+        if hasattr(self, "_hf_state"):
             self._hf_state["section"] = content.get("title", "")
 
         # --- Glossary ---
@@ -491,20 +511,28 @@ class NovelTemplate(BookTemplate):
         accent = _hex(b, "accent")
 
         title_style = _ps(
-            "ColophonTitle", brand=b,
-            fontSize=14, textColor=primary,
+            "ColophonTitle",
+            brand=b,
+            fontSize=14,
+            textColor=primary,
             fontName=b.get("font_heading", "Times-Bold"),
-            leading=18, alignment=1,
+            leading=18,
+            alignment=1,
         )
         body_style = _ps(
-            "ColophonBody", brand=b,
-            fontSize=9, textColor=caption,
+            "ColophonBody",
+            brand=b,
+            fontSize=9,
+            textColor=caption,
             fontName=b.get("font_body", "Times-Roman"),
-            leading=14, alignment=1,
+            leading=14,
+            alignment=1,
         )
         rule_style = _ps(
-            "ColophonRule", brand=b,
-            fontSize=6, textColor=accent,
+            "ColophonRule",
+            brand=b,
+            fontSize=6,
+            textColor=accent,
             alignment=1,
         )
 
@@ -515,15 +543,19 @@ class NovelTemplate(BookTemplate):
         if org:
             flowables.append(Paragraph(org, body_style))
             flowables.append(Spacer(1, 4 * mm))
-        flowables.append(Paragraph(
-            "\u2014 \u2014 \u2014",
-            rule_style,
-        ))
+        flowables.append(
+            Paragraph(
+                "\u2014 \u2014 \u2014",
+                rule_style,
+            )
+        )
         flowables.append(Spacer(1, 4 * mm))
         flowables.append(Paragraph(copyright_str, body_style))
         flowables.append(Spacer(1, 8 * mm))
-        flowables.append(Paragraph(
-            f"First edition {year}",
-            body_style,
-        ))
+        flowables.append(
+            Paragraph(
+                f"First edition {year}",
+                body_style,
+            )
+        )
         return flowables

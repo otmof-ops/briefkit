@@ -12,6 +12,7 @@ Two layers caused it:
 Both are now configurable, default to emitting everything, and record what
 they drop.
 """
+
 import pytest
 
 from briefkit.config import DEFAULTS
@@ -78,6 +79,7 @@ class TestBodyBlockLimit:
 
     def _template(self, tmp_path, config=None):
         from briefkit.generator import BaseBriefingTemplate
+
         return BaseBriefingTemplate(tmp_path, level=3, config=config or {})
 
     def test_limit_defaults_to_unlimited(self, tmp_path):
@@ -127,14 +129,16 @@ class TestVariantOptOut:
         return tmp_path
 
     def _pdf_text(self, path):
-        import subprocess
-        return subprocess.run(["pdftotext", str(path), "-"],
-                              capture_output=True, text=True).stdout
+        from pypdf import PdfReader
+
+        return "\n".join((page.extract_text() or "") for page in PdfReader(str(path)).pages)
 
     def _build(self, src, variant, out_name):
+        import copy
+
         from briefkit.config import DEFAULTS
         from briefkit.templates.report import ReportTemplate
-        import copy
+
         cfg = copy.deepcopy(DEFAULTS)
         cfg["_cli"] = {"variant": variant}
         out = src / out_name
@@ -144,9 +148,7 @@ class TestVariantOptOut:
     def test_autodetect_adds_a_variant_section(self, finance_ish):
         out = self._build(finance_ish, None, "auto.pdf")
         assert out.exists()
-        assert "Variant Sections" in self._pdf_text(out), (
-            "expected auto-detection to inject a variant section"
-        )
+        assert "Variant Sections" in self._pdf_text(out), "expected auto-detection to inject a variant section"
 
     def test_none_suppresses_all_variant_sections(self, finance_ish):
         out = self._build(finance_ish, "none", "none.pdf")

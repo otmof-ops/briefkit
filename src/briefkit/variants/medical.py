@@ -24,15 +24,15 @@ _MEDICAL_DISCLAIMER = (
 )
 
 _EVIDENCE_KEYWORDS = [
-    (r'\brandomized?\s+controlled\s+trial\b|RCT\b',    "Randomized Controlled Trial (RCT)", "High"),
-    (r'\bmeta-analysis\b',                              "Meta-Analysis",                     "Very High"),
-    (r'\bsystematic\s+review\b',                        "Systematic Review",                 "Very High"),
-    (r'\bcohort\s+study\b',                             "Cohort Study",                      "Moderate-High"),
-    (r'\bcase.control\b',                               "Case-Control Study",                "Moderate"),
-    (r'\bcase\s+series\b',                              "Case Series",                       "Low-Moderate"),
-    (r'\bcase\s+report\b',                              "Case Report",                       "Low"),
-    (r'\b(?:NICE|WHO|FDA|TGA|EMA)\s+guideline',         "Clinical Guideline",                "High"),
-    (r'\blevel\s+of\s+evidence\b',                      "Level of Evidence referenced",      "Variable"),
+    (r"\brandomized?\s+controlled\s+trial\b|RCT\b", "Randomized Controlled Trial (RCT)", "High"),
+    (r"\bmeta-analysis\b", "Meta-Analysis", "Very High"),
+    (r"\bsystematic\s+review\b", "Systematic Review", "Very High"),
+    (r"\bcohort\s+study\b", "Cohort Study", "Moderate-High"),
+    (r"\bcase.control\b", "Case-Control Study", "Moderate"),
+    (r"\bcase\s+series\b", "Case Series", "Low-Moderate"),
+    (r"\bcase\s+report\b", "Case Report", "Low"),
+    (r"\b(?:NICE|WHO|FDA|TGA|EMA)\s+guideline", "Clinical Guideline", "High"),
+    (r"\blevel\s+of\s+evidence\b", "Level of Evidence referenced", "Variable"),
 ]
 
 
@@ -42,13 +42,18 @@ class MedicalVariant(DocSetVariant):
 
     name = "medical"
     auto_detect_keywords = [
-        "patient", "dosage", "clinical", "diagnosis",
-        "treatment", "contraindication", "pharmacology",
+        "patient",
+        "dosage",
+        "clinical",
+        "diagnosis",
+        "treatment",
+        "contraindication",
+        "pharmacology",
     ]
 
     def build_variant_sections(self, content, flowables, styles, brand):
-        s_h1   = styles["STYLE_H1"]
-        s_h2   = styles["STYLE_H2"]
+        s_h1 = styles["STYLE_H1"]
+        s_h2 = styles["STYLE_H2"]
         s_body = styles["STYLE_BODY"]
 
         # Prepend medical disclaimer at the very top
@@ -66,17 +71,21 @@ class MedicalVariant(DocSetVariant):
 
         dosage_rows = self._extract_dosage_table(content, all_content)
         if dosage_rows:
-            flowables.extend(build_data_table(
-                ["Drug / Substance", "Dosage", "Route", "Notes"],
-                dosage_rows[:12],
-                title="Dosage Quick Reference",
-                brand=brand,
-            ))
+            flowables.extend(
+                build_data_table(
+                    ["Drug / Substance", "Dosage", "Route", "Notes"],
+                    dosage_rows[:12],
+                    title="Dosage Quick Reference",
+                    brand=brand,
+                )
+            )
         else:
-            flowables.append(_safe_para(
-                "Dosage information not found in structured form — see numbered documents.",
-                s_body,
-            ))
+            flowables.append(
+                _safe_para(
+                    "Dosage information not found in structured form — see numbered documents.",
+                    s_body,
+                )
+            )
 
         # --- Drug interactions ---
         flowables.append(Spacer(1, 4 * mm))
@@ -85,17 +94,21 @@ class MedicalVariant(DocSetVariant):
 
         interaction_rows = self._extract_interactions(content, all_content)
         if interaction_rows:
-            flowables.extend(build_data_table(
-                ["Drug A", "Drug B", "Interaction", "Severity"],
-                interaction_rows[:12],
-                title="Drug Interaction Reference",
-                brand=brand,
-            ))
+            flowables.extend(
+                build_data_table(
+                    ["Drug A", "Drug B", "Interaction", "Severity"],
+                    interaction_rows[:12],
+                    title="Drug Interaction Reference",
+                    brand=brand,
+                )
+            )
         else:
-            flowables.append(_safe_para(
-                "Drug interaction data not found in structured form — see numbered documents.",
-                s_body,
-            ))
+            flowables.append(
+                _safe_para(
+                    "Drug interaction data not found in structured form — see numbered documents.",
+                    s_body,
+                )
+            )
 
         # --- Contraindications warning ---
         flowables.append(Spacer(1, 4 * mm))
@@ -107,10 +120,12 @@ class MedicalVariant(DocSetVariant):
             warn_text = "\n".join(f"- {c[:150]}" for c in contra_items[:10])
             flowables.append(build_callout_box(warn_text, "warning", brand))
         else:
-            flowables.append(_safe_para(
-                "No structured contraindication data found — see source documents.",
-                s_body,
-            ))
+            flowables.append(
+                _safe_para(
+                    "No structured contraindication data found — see source documents.",
+                    s_body,
+                )
+            )
 
         # --- Evidence quality ---
         flowables.append(Spacer(1, 4 * mm))
@@ -118,12 +133,14 @@ class MedicalVariant(DocSetVariant):
         flowables.append(Spacer(1, 2 * mm))
 
         evidence_rows = self._extract_evidence(all_content)
-        flowables.extend(build_data_table(
-            ["Evidence Type", "Quality Level", "Notes"],
-            evidence_rows,
-            title="Evidence Quality Indicator",
-            brand=brand,
-        ))
+        flowables.extend(
+            build_data_table(
+                ["Evidence Type", "Quality Level", "Notes"],
+                evidence_rows,
+                title="Evidence Quality Indicator",
+                brand=brand,
+            )
+        )
 
         return flowables
 
@@ -143,7 +160,7 @@ class MedicalVariant(DocSetVariant):
         if not rows:
             # Scan for inline dosage patterns: "10 mg", "500 mcg", "1–2 tablets"
             dose_pat = re.compile(
-                r'([A-Za-z][a-zA-Z\s]{2,30})\s+(?:at\s+)?(\d+(?:\.\d+)?\s*(?:mg|mcg|g|mL|units?|IU))',
+                r"([A-Za-z][a-zA-Z\s]{2,30})\s+(?:at\s+)?(\d+(?:\.\d+)?\s*(?:mg|mcg|g|mL|units?|IU))",
                 re.IGNORECASE,
             )
             seen = set()
@@ -167,8 +184,8 @@ class MedicalVariant(DocSetVariant):
                         rows.append(padded)
         if not rows:
             inter_pat = re.compile(
-                r'([A-Za-z][a-zA-Z]{2,20})\s+(?:and|with|plus|\+)\s+([A-Za-z][a-zA-Z]{2,20})'
-                r'(?:[^\.\n]{0,60}(?:interact|contraindicated|avoid|incompatible))?',
+                r"([A-Za-z][a-zA-Z]{2,20})\s+(?:and|with|plus|\+)\s+([A-Za-z][a-zA-Z]{2,20})"
+                r"(?:[^\.\n]{0,60}(?:interact|contraindicated|avoid|incompatible))?",
                 re.IGNORECASE,
             )
             seen = set()
@@ -185,8 +202,8 @@ class MedicalVariant(DocSetVariant):
         seen = set()
         # Explicit pattern blocks
         contra_pat = re.compile(
-            r'(?:^|\n)\s*(?:CONTRAINDICATION[S]?|contraindicated\s+in|do\s+not\s+use)'
-            r'[:\s]+([^\n]{10,200})',
+            r"(?:^|\n)\s*(?:CONTRAINDICATION[S]?|contraindicated\s+in|do\s+not\s+use)"
+            r"[:\s]+([^\n]{10,200})",
             re.IGNORECASE | re.MULTILINE,
         )
         for m in contra_pat.finditer(all_content):
@@ -197,7 +214,7 @@ class MedicalVariant(DocSetVariant):
                 seen.add(key)
         # WARNING / CAUTION patterns as fallback
         warn_pat = re.compile(
-            r'(?:^|\n)\s*(?:WARNING|CAUTION)[:\s]+([^\n]{10,200})',
+            r"(?:^|\n)\s*(?:WARNING|CAUTION)[:\s]+([^\n]{10,200})",
             re.IGNORECASE | re.MULTILINE,
         )
         for m in warn_pat.finditer(all_content):
@@ -214,12 +231,12 @@ class MedicalVariant(DocSetVariant):
             m = re.search(pat, all_content, re.IGNORECASE)
             if m:
                 start = max(0, m.start() - 40)
-                context = all_content[start:m.start() + 60].replace("\n", " ").strip()[:60]
+                context = all_content[start : m.start() + 60].replace("\n", " ").strip()[:60]
                 found_evidence.append([label, quality, context or "Referenced in source"])
         if not found_evidence:
             found_evidence = [
-                ["Primary research",  "Variable", "See source papers"],
-                ["Review articles",   "—",        "Check numbered docs"],
-                ["Clinical guidelines", "—",      "Check numbered docs"],
+                ["Primary research", "Variable", "See source papers"],
+                ["Review articles", "—", "Check numbered docs"],
+                ["Clinical guidelines", "—", "Check numbered docs"],
             ]
         return found_evidence

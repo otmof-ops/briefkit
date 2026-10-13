@@ -11,13 +11,13 @@ instrumentation.
 from __future__ import annotations
 
 from reportlab.lib.styles import ParagraphStyle
-from reportlab.platypus import CondPageBreak, KeepTogether, PageBreak, Paragraph, Spacer
 from reportlab.lib.units import mm
-
+from reportlab.platypus import CondPageBreak, KeepTogether, PageBreak, Paragraph, Spacer
 
 # ---------------------------------------------------------------------------
 # Minimal stub template exposing just enough surface for the two methods
 # ---------------------------------------------------------------------------
+
 
 class _StubTemplate:
     """Only carries the pieces the two post-process methods need."""
@@ -43,9 +43,15 @@ class _StubTemplate:
 
 
 def _h1(text: str) -> Paragraph:
-    return Paragraph(text, ParagraphStyle(
-        "STYLE_H1", fontSize=18, leading=22, keepWithNext=True,
-    ))
+    return Paragraph(
+        text,
+        ParagraphStyle(
+            "STYLE_H1",
+            fontSize=18,
+            leading=22,
+            keepWithNext=True,
+        ),
+    )
 
 
 def _body(text: str) -> Paragraph:
@@ -55,6 +61,7 @@ def _body(text: str) -> Paragraph:
 # ---------------------------------------------------------------------------
 # Orphan-title protection
 # ---------------------------------------------------------------------------
+
 
 class TestOrphanProtection:
     def test_wraps_bare_h1_with_next_flowable(self):
@@ -144,6 +151,7 @@ class TestOrphanProtection:
 # ---------------------------------------------------------------------------
 # Empty-page collapse
 # ---------------------------------------------------------------------------
+
 
 class TestEmptyPageCollapse:
     def test_collapses_adjacent_page_breaks(self):

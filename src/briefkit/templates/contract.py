@@ -30,7 +30,6 @@ from reportlab.lib.units import mm
 from reportlab.platypus import (
     PageBreak,
     Paragraph,
-    SimpleDocTemplate,
     Spacer,
     Table,
     TableStyle,
@@ -60,7 +59,7 @@ _PAGE_SIZES = {
 # ---------------------------------------------------------------------------
 
 _BOLD_TERM_PATTERN = re.compile(
-    r'\*\*([A-Z][A-Za-z\s]{2,40}?)\*\*',
+    r"\*\*([A-Z][A-Za-z\s]{2,40}?)\*\*",
 )
 
 
@@ -88,8 +87,8 @@ def _extract_definitions(content: dict) -> list[tuple[str, str]]:
         end = min(len(all_text), match.end() + 120)
         context = all_text[start:end].strip()
         # Clean up markdown
-        context = re.sub(r'\*\*', '', context)
-        context = re.sub(r'\n+', ' ', context)
+        context = re.sub(r"\*\*", "", context)
+        context = re.sub(r"\n+", " ", context)
         context = context[:150]
 
         definitions.append((term, context))
@@ -181,48 +180,70 @@ class ContractTemplate(BaseBriefingTemplate):
 
         # Agreement name
         title_style = _ps(
-            "ContractTitle", brand=b, fontSize=22, textColor=primary,
-            fontName="Helvetica-Bold", alignment=1, spaceAfter=8,
+            "ContractTitle",
+            brand=b,
+            fontSize=22,
+            textColor=primary,
+            fontName="Helvetica-Bold",
+            alignment=1,
+            spaceAfter=8,
         )
         flowables.append(Paragraph(title.upper(), title_style))
 
         # Divider
         flowables.append(Spacer(1, 4 * mm))
         divider = Table([[""]], colWidths=[self.content_width * 0.5], rowHeights=[2])
-        divider.setStyle(TableStyle([
-            ("LINEABOVE", (0, 0), (-1, -1), 2, HexColor(b.get("primary", "#1B2A4A"))),
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-        ]))
+        divider.setStyle(
+            TableStyle(
+                [
+                    ("LINEABOVE", (0, 0), (-1, -1), 2, HexColor(b.get("primary", "#1B2A4A"))),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ]
+            )
+        )
         divider.hAlign = "CENTER"
         flowables.append(divider)
         flowables.append(Spacer(1, 8 * mm))
 
         # Subtitle
         sub_style = _ps(
-            "ContractSub", brand=b, fontSize=12, textColor=body_c,
-            alignment=1, spaceAfter=4,
+            "ContractSub",
+            brand=b,
+            fontSize=12,
+            textColor=body_c,
+            alignment=1,
+            spaceAfter=4,
         )
         flowables.append(Paragraph("Agreement", sub_style))
 
         # Parties
         flowables.append(Spacer(1, 15 * mm))
         party_style = _ps(
-            "ContractParty", brand=b, fontSize=11, textColor=body_c,
-            alignment=1, spaceAfter=3,
+            "ContractParty",
+            brand=b,
+            fontSize=11,
+            textColor=body_c,
+            alignment=1,
+            spaceAfter=3,
         )
         between_style = _ps(
-            "ContractBetween", brand=b, fontSize=10, textColor=caption_c,
-            alignment=1, fontName="Helvetica-Oblique", spaceAfter=6,
+            "ContractBetween",
+            brand=b,
+            fontSize=10,
+            textColor=caption_c,
+            alignment=1,
+            fontName="Helvetica-Oblique",
+            spaceAfter=6,
         )
 
         if org:
             flowables.append(Paragraph(org, party_style))
-            flowables.append(Paragraph("(\"First Party\")", between_style))
+            flowables.append(Paragraph('("First Party")', between_style))
             flowables.append(Spacer(1, 4 * mm))
             flowables.append(Paragraph("and", between_style))
             flowables.append(Spacer(1, 4 * mm))
             flowables.append(Paragraph("[Counterparty Name]", party_style))
-            flowables.append(Paragraph("(\"Second Party\")", between_style))
+            flowables.append(Paragraph('("Second Party")', between_style))
         else:
             flowables.append(Paragraph("[Party A]", party_style))
             flowables.append(Paragraph("and", between_style))
@@ -231,7 +252,10 @@ class ContractTemplate(BaseBriefingTemplate):
         # Date
         flowables.append(Spacer(1, 20 * mm))
         date_style = _ps(
-            "ContractDate", brand=b, fontSize=10, textColor=caption_c,
+            "ContractDate",
+            brand=b,
+            fontSize=10,
+            textColor=caption_c,
             alignment=1,
         )
         flowables.append(Paragraph(f"Dated: {self.date_str}", date_style))
@@ -239,8 +263,12 @@ class ContractTemplate(BaseBriefingTemplate):
         # Confidential notice
         flowables.append(Spacer(1, 10 * mm))
         conf_style = _ps(
-            "ContractConf", brand=b, fontSize=8, textColor=caption_c,
-            alignment=1, fontName="Helvetica-Bold",
+            "ContractConf",
+            brand=b,
+            fontSize=8,
+            textColor=caption_c,
+            alignment=1,
+            fontName="Helvetica-Bold",
         )
         flowables.append(Paragraph("CONFIDENTIAL", conf_style))
 
@@ -261,15 +289,23 @@ class ContractTemplate(BaseBriefingTemplate):
         primary = _hex(b, "primary")
 
         h_style = _ps(
-            "ContractRecitalsH", brand=b, fontSize=13, textColor=primary,
-            fontName="Helvetica-Bold", spaceBefore=6, spaceAfter=6,
+            "ContractRecitalsH",
+            brand=b,
+            fontSize=13,
+            textColor=primary,
+            fontName="Helvetica-Bold",
+            spaceBefore=6,
+            spaceAfter=6,
         )
         flowables.append(Paragraph("RECITALS", h_style))
 
         recital_style = _ps(
-            "ContractRecital", brand=b, fontSize=10,
+            "ContractRecital",
+            brand=b,
+            fontSize=10,
             textColor=_hex(b, "body_text"),
-            leading=15, spaceAfter=4,
+            leading=15,
+            spaceAfter=4,
         )
 
         # Parse overview into paragraphs and prefix with lettering
@@ -281,9 +317,12 @@ class ContractTemplate(BaseBriefingTemplate):
                 text = block.get("text", "")
                 if text and len(text) > 10:
                     prefix = letters[letter_idx] if letter_idx < 26 else str(letter_idx + 1)
-                    flowables.append(Paragraph(
-                        f"({prefix})&nbsp;&nbsp;{text}", recital_style,
-                    ))
+                    flowables.append(
+                        Paragraph(
+                            f"({prefix})&nbsp;&nbsp;{text}",
+                            recital_style,
+                        )
+                    )
                     letter_idx += 1
                     if letter_idx >= 10:
                         break
@@ -305,31 +344,47 @@ class ContractTemplate(BaseBriefingTemplate):
         primary = _hex(b, "primary")
 
         h_style = _ps(
-            "ContractDefsH", brand=b, fontSize=13, textColor=primary,
-            fontName="Helvetica-Bold", spaceBefore=6, spaceAfter=6,
+            "ContractDefsH",
+            brand=b,
+            fontSize=13,
+            textColor=primary,
+            fontName="Helvetica-Bold",
+            spaceBefore=6,
+            spaceAfter=6,
         )
         flowables.append(Paragraph("1. DEFINITIONS", h_style))
 
         intro_style = _ps(
-            "ContractDefsIntro", brand=b, fontSize=10,
-            textColor=_hex(b, "body_text"), spaceAfter=6,
+            "ContractDefsIntro",
+            brand=b,
+            fontSize=10,
+            textColor=_hex(b, "body_text"),
+            spaceAfter=6,
         )
-        flowables.append(Paragraph(
-            "In this Agreement, unless the context otherwise requires:",
-            intro_style,
-        ))
+        flowables.append(
+            Paragraph(
+                "In this Agreement, unless the context otherwise requires:",
+                intro_style,
+            )
+        )
 
         term_style = _ps(
-            "ContractDefTerm", brand=b, fontSize=10,
-            textColor=_hex(b, "body_text"), leading=14,
-            leftIndent=12, spaceAfter=4,
+            "ContractDefTerm",
+            brand=b,
+            fontSize=10,
+            textColor=_hex(b, "body_text"),
+            leading=14,
+            leftIndent=12,
+            spaceAfter=4,
         )
 
         for idx, (term, context) in enumerate(defs, 1):
-            flowables.append(Paragraph(
-                f"1.{idx}&nbsp;&nbsp;<b>{term}</b> means {context}",
-                term_style,
-            ))
+            flowables.append(
+                Paragraph(
+                    f"1.{idx}&nbsp;&nbsp;<b>{term}</b> means {context}",
+                    term_style,
+                )
+            )
 
         return flowables
 
@@ -352,8 +407,13 @@ class ContractTemplate(BaseBriefingTemplate):
             overview = content.get("overview", "")
             if overview:
                 h_style = _ps(
-                    "ContractClauseH", brand=b, fontSize=13, textColor=primary,
-                    fontName="Helvetica-Bold", spaceBefore=8, spaceAfter=6,
+                    "ContractClauseH",
+                    brand=b,
+                    fontSize=13,
+                    textColor=primary,
+                    fontName="Helvetica-Bold",
+                    spaceBefore=8,
+                    spaceAfter=6,
                 )
                 flowables.append(Paragraph("1. TERMS", h_style))
                 for block in parse_markdown(overview)[:30]:
@@ -365,23 +425,41 @@ class ContractTemplate(BaseBriefingTemplate):
         clause_offset = 1 if has_defs else 0
 
         clause_h_style = _ps(
-            "ContractClauseH", brand=b, fontSize=13, textColor=primary,
-            fontName="Helvetica-Bold", spaceBefore=10, spaceAfter=6,
+            "ContractClauseH",
+            brand=b,
+            fontSize=13,
+            textColor=primary,
+            fontName="Helvetica-Bold",
+            spaceBefore=10,
+            spaceAfter=6,
         )
         sub_h_style = _ps(
-            "ContractSubClauseH", brand=b, fontSize=11, textColor=primary,
-            fontName="Helvetica-Bold", spaceBefore=6, spaceAfter=3,
+            "ContractSubClauseH",
+            brand=b,
+            fontSize=11,
+            textColor=primary,
+            fontName="Helvetica-Bold",
+            spaceBefore=6,
+            spaceAfter=3,
         )
         clause_body_style = _ps(
-            "ContractClauseBody", brand=b, fontSize=10, textColor=body_c,
-            leading=15, spaceAfter=3, leftIndent=12,
+            "ContractClauseBody",
+            brand=b,
+            fontSize=10,
+            textColor=body_c,
+            leading=15,
+            spaceAfter=3,
+            leftIndent=12,
         )
 
         for clause_idx, sub in enumerate(subsystems, 1 + clause_offset):
             name = sub.get("name", f"Clause {clause_idx}")
-            flowables.append(Paragraph(
-                f"{clause_idx}. {name.upper()}", clause_h_style,
-            ))
+            flowables.append(
+                Paragraph(
+                    f"{clause_idx}. {name.upper()}",
+                    clause_h_style,
+                )
+            )
 
             blocks = sub.get("blocks") or parse_markdown(sub.get("content", ""))
             sub_clause_counter = 0
@@ -399,10 +477,12 @@ class ContractTemplate(BaseBriefingTemplate):
                 if btype == "heading" and block.get("level", 0) >= 2:
                     sub_clause_counter += 1
                     text = block.get("text", "")
-                    flowables.append(Paragraph(
-                        f"{clause_idx}.{sub_clause_counter}&nbsp;&nbsp;{text}",
-                        sub_h_style,
-                    ))
+                    flowables.append(
+                        Paragraph(
+                            f"{clause_idx}.{sub_clause_counter}&nbsp;&nbsp;{text}",
+                            sub_h_style,
+                        )
+                    )
                     continue
 
                 # Paragraphs get indented clause styling
@@ -434,10 +514,7 @@ class ContractTemplate(BaseBriefingTemplate):
         """
         subsystems = content.get("subsystems", [])
         # Schedules are subsystems that have tables
-        schedule_subs = [
-            sub for sub in subsystems
-            if sub.get("tables")
-        ]
+        schedule_subs = [sub for sub in subsystems if sub.get("tables")]
 
         if not schedule_subs:
             return []
@@ -447,32 +524,51 @@ class ContractTemplate(BaseBriefingTemplate):
         primary = _hex(b, "primary")
 
         sched_title_style = _ps(
-            "ContractSchedTitle", brand=b, fontSize=14, textColor=primary,
-            fontName="Helvetica-Bold", alignment=1, spaceBefore=8, spaceAfter=4,
+            "ContractSchedTitle",
+            brand=b,
+            fontSize=14,
+            textColor=primary,
+            fontName="Helvetica-Bold",
+            alignment=1,
+            spaceBefore=8,
+            spaceAfter=4,
         )
         flowables.append(Paragraph("SCHEDULES", sched_title_style))
         flowables.append(Spacer(1, 6 * mm))
 
         sched_h_style = _ps(
-            "ContractSchedH", brand=b, fontSize=12, textColor=primary,
-            fontName="Helvetica-Bold", spaceBefore=6, spaceAfter=4,
+            "ContractSchedH",
+            brand=b,
+            fontSize=12,
+            textColor=primary,
+            fontName="Helvetica-Bold",
+            spaceBefore=6,
+            spaceAfter=4,
         )
 
         from briefkit.elements.tables import build_data_table
 
         for sched_idx, sub in enumerate(schedule_subs, 1):
             name = sub.get("name", f"Schedule {sched_idx}")
-            flowables.append(Paragraph(
-                f"Schedule {sched_idx} \u2014 {name}", sched_h_style,
-            ))
+            flowables.append(
+                Paragraph(
+                    f"Schedule {sched_idx} \u2014 {name}",
+                    sched_h_style,
+                )
+            )
 
             for tbl in sub.get("tables", [])[:5]:
                 headers = tbl.get("headers", [])
                 rows = tbl.get("rows", [])
                 if headers and rows:
-                    flowables.extend(build_data_table(
-                        headers, rows, brand=b, content_width=self.content_width,
-                    ))
+                    flowables.extend(
+                        build_data_table(
+                            headers,
+                            rows,
+                            brand=b,
+                            content_width=self.content_width,
+                        )
+                    )
                     flowables.append(Spacer(1, 4 * mm))
 
         return flowables
@@ -492,38 +588,60 @@ class ContractTemplate(BaseBriefingTemplate):
         rule_c = HexColor(b.get("rule", "#CCCCCC"))
 
         exec_title_style = _ps(
-            "ContractExecTitle", brand=b, fontSize=14, textColor=primary,
-            fontName="Helvetica-Bold", alignment=1, spaceBefore=8, spaceAfter=8,
+            "ContractExecTitle",
+            brand=b,
+            fontSize=14,
+            textColor=primary,
+            fontName="Helvetica-Bold",
+            alignment=1,
+            spaceBefore=8,
+            spaceAfter=8,
         )
         flowables.append(Paragraph("EXECUTION", exec_title_style))
         flowables.append(Spacer(1, 4 * mm))
 
         intro_style = _ps(
-            "ContractExecIntro", brand=b, fontSize=10, textColor=body_c,
+            "ContractExecIntro",
+            brand=b,
+            fontSize=10,
+            textColor=body_c,
             spaceAfter=8,
         )
-        flowables.append(Paragraph(
-            "IN WITNESS WHEREOF, the parties have executed this Agreement "
-            "as of the date first written above.",
-            intro_style,
-        ))
+        flowables.append(
+            Paragraph(
+                "IN WITNESS WHEREOF, the parties have executed this Agreement as of the date first written above.",
+                intro_style,
+            )
+        )
         flowables.append(Spacer(1, 8 * mm))
 
         # Signature block helper
         _ps(
-            "ContractSigLabel", brand=b, fontSize=9, textColor=caption_c,
-            spaceBefore=2, spaceAfter=1,
+            "ContractSigLabel",
+            brand=b,
+            fontSize=9,
+            textColor=caption_c,
+            spaceBefore=2,
+            spaceAfter=1,
         )
         _ps(
-            "ContractSigLine", brand=b, fontSize=10, textColor=body_c,
+            "ContractSigLine",
+            brand=b,
+            fontSize=10,
+            textColor=body_c,
         )
 
         def _sig_block(party_label: str) -> list:
             """Generate a single party signature block."""
             block = []
             party_h_style = _ps(
-                "ContractPartyH", brand=b, fontSize=11, textColor=primary,
-                fontName="Helvetica-Bold", spaceBefore=6, spaceAfter=4,
+                "ContractPartyH",
+                brand=b,
+                fontSize=11,
+                textColor=primary,
+                fontName="Helvetica-Bold",
+                spaceBefore=6,
+                spaceAfter=4,
             )
             block.append(Paragraph(party_label, party_h_style))
             block.append(Spacer(1, 3 * mm))
@@ -533,15 +651,19 @@ class ContractTemplate(BaseBriefingTemplate):
                 # Label + ruled line as a table row
                 data = [[field, ""]]
                 tbl = Table(data, colWidths=[22 * mm, 80 * mm])
-                tbl.setStyle(TableStyle([
-                    ("FONTNAME", (0, 0), (0, 0), "Helvetica"),
-                    ("FONTSIZE", (0, 0), (-1, -1), 9),
-                    ("TEXTCOLOR", (0, 0), (0, 0), HexColor(b.get("caption", "#666666"))),
-                    ("LINEBELOW", (1, 0), (1, 0), 0.5, rule_c),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-                    ("TOPPADDING", (0, 0), (-1, -1), 4),
-                    ("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
-                ]))
+                tbl.setStyle(
+                    TableStyle(
+                        [
+                            ("FONTNAME", (0, 0), (0, 0), "Helvetica"),
+                            ("FONTSIZE", (0, 0), (-1, -1), 9),
+                            ("TEXTCOLOR", (0, 0), (0, 0), HexColor(b.get("caption", "#666666"))),
+                            ("LINEBELOW", (1, 0), (1, 0), 0.5, rule_c),
+                            ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                            ("TOPPADDING", (0, 0), (-1, -1), 4),
+                            ("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
+                        ]
+                    )
+                )
                 block.append(tbl)
 
             block.append(Spacer(1, 6 * mm))
@@ -557,8 +679,13 @@ class ContractTemplate(BaseBriefingTemplate):
         # Witness block
         flowables.append(Spacer(1, 6 * mm))
         witness_h_style = _ps(
-            "ContractWitnessH", brand=b, fontSize=11, textColor=primary,
-            fontName="Helvetica-Bold", spaceBefore=6, spaceAfter=4,
+            "ContractWitnessH",
+            brand=b,
+            fontSize=11,
+            textColor=primary,
+            fontName="Helvetica-Bold",
+            spaceBefore=6,
+            spaceAfter=4,
         )
         flowables.append(Paragraph("Witness", witness_h_style))
         flowables.append(Spacer(1, 3 * mm))
@@ -567,15 +694,19 @@ class ContractTemplate(BaseBriefingTemplate):
         for field in witness_fields:
             data = [[field, ""]]
             tbl = Table(data, colWidths=[30 * mm, 80 * mm])
-            tbl.setStyle(TableStyle([
-                ("FONTNAME", (0, 0), (0, 0), "Helvetica"),
-                ("FONTSIZE", (0, 0), (-1, -1), 9),
-                ("TEXTCOLOR", (0, 0), (0, 0), HexColor(b.get("caption", "#666666"))),
-                ("LINEBELOW", (1, 0), (1, 0), 0.5, rule_c),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-                ("TOPPADDING", (0, 0), (-1, -1), 4),
-                ("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
-            ]))
+            tbl.setStyle(
+                TableStyle(
+                    [
+                        ("FONTNAME", (0, 0), (0, 0), "Helvetica"),
+                        ("FONTSIZE", (0, 0), (-1, -1), 9),
+                        ("TEXTCOLOR", (0, 0), (0, 0), HexColor(b.get("caption", "#666666"))),
+                        ("LINEBELOW", (1, 0), (1, 0), 0.5, rule_c),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                        ("TOPPADDING", (0, 0), (-1, -1), 4),
+                        ("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
+                    ]
+                )
+            )
             flowables.append(tbl)
 
         return flowables
@@ -595,9 +726,12 @@ class ContractTemplate(BaseBriefingTemplate):
         doc_ids_cfg = self.config.get("doc_ids", {})
         if doc_ids_cfg.get("enabled", True):
             from briefkit.doc_ids import get_or_assign_doc_id
+
             self.doc_id = get_or_assign_doc_id(
-                self.target_path, self.level,
-                title, config=self.config,
+                self.target_path,
+                self.level,
+                title,
+                config=self.config,
             )
 
         # Header/footer state
@@ -634,7 +768,8 @@ class ContractTemplate(BaseBriefingTemplate):
             canvas.setFont("Helvetica", 7)
             canvas.setFillColor(HexColor(brand.get("caption", "#666666")))
             canvas.drawCentredString(
-                page_w / 2, 10 * mm,
+                page_w / 2,
+                10 * mm,
                 "CONFIDENTIAL",
             )
             canvas.restoreState()
@@ -648,7 +783,8 @@ class ContractTemplate(BaseBriefingTemplate):
             canvas.setFont("Helvetica", 8)
             canvas.setFillColor(HexColor(brand.get("caption", "#666666")))
             canvas.drawRightString(
-                page_w - left_m, page_h - 15 * mm,
+                page_w - left_m,
+                page_h - 15 * mm,
                 agreement_title,
             )
 
@@ -656,11 +792,13 @@ class ContractTemplate(BaseBriefingTemplate):
             canvas.setFont("Helvetica", 7)
             canvas.setFillColor(HexColor(brand.get("caption", "#666666")))
             canvas.drawString(
-                left_m, 10 * mm,
+                left_m,
+                10 * mm,
                 f"Page {doc.page}",
             )
             canvas.drawRightString(
-                page_w - right_m, 10 * mm,
+                page_w - right_m,
+                10 * mm,
                 "CONFIDENTIAL",
             )
             canvas.restoreState()

@@ -27,7 +27,6 @@ from reportlab.lib.units import mm
 from reportlab.platypus import (
     PageBreak,
     Paragraph,
-    SimpleDocTemplate,
     Spacer,
 )
 
@@ -82,8 +81,11 @@ class MinimalTemplate(BaseBriefingTemplate):
         # Optional subtitle line: date + doc ID
         caption_c = _hex(self.brand, "caption")
         meta_style = _ps(
-            "MinimalMeta", brand=self.brand,
-            fontSize=9, textColor=caption_c, alignment=1,
+            "MinimalMeta",
+            brand=self.brand,
+            fontSize=9,
+            textColor=caption_c,
+            alignment=1,
         )
         meta_parts = [self.date_str]
         if self.doc_id:
@@ -94,7 +96,7 @@ class MinimalTemplate(BaseBriefingTemplate):
         cfg = self.config
         # Pre-build body and bibliography
         body_flowables = self._build_minimal_body(content)
-        bib_flowables  = [] if should_skip(cfg, "bibliography") else self._build_minimal_bibliography(content)
+        bib_flowables = [] if should_skip(cfg, "bibliography") else self._build_minimal_bibliography(content)
 
         # TOC
         toc_entries = []
@@ -141,9 +143,7 @@ class MinimalTemplate(BaseBriefingTemplate):
             return flowables
 
         for idx, sub in enumerate(subsystems, 1):
-            flowables.append(Paragraph(
-                f"{idx}. {sub['name']}", self.styles["STYLE_H1"]
-            ))
+            flowables.append(Paragraph(f"{idx}. {sub['name']}", self.styles["STYLE_H1"]))
             flowables.append(Spacer(1, 3 * mm))
 
             blocks = sub.get("blocks") or parse_markdown(sub.get("content", ""))
@@ -158,9 +158,12 @@ class MinimalTemplate(BaseBriefingTemplate):
                     text = block.get("text", "")
                     if text:
                         quote_style = _ps(
-                            "MinimalQuote", brand=self.brand,
-                            fontSize=10, textColor=_hex(self.brand, "body_text"),
-                            leading=14, leftIndent=16,
+                            "MinimalQuote",
+                            brand=self.brand,
+                            fontSize=10,
+                            textColor=_hex(self.brand, "body_text"),
+                            leading=14,
+                            leftIndent=16,
                             fontName="Helvetica-Oblique",
                         )
                         flowables.append(Paragraph(f"\u201c{text}\u201d", quote_style))
@@ -205,9 +208,14 @@ class MinimalTemplate(BaseBriefingTemplate):
 
         body_c = _hex(self.brand, "body_text")
         ref_style = _ps(
-            "MinimalRef", brand=self.brand,
-            fontSize=9, textColor=body_c, leading=13,
-            leftIndent=14, firstLineIndent=-14, spaceAfter=3,
+            "MinimalRef",
+            brand=self.brand,
+            fontSize=9,
+            textColor=body_c,
+            leading=13,
+            leftIndent=14,
+            firstLineIndent=-14,
+            spaceAfter=3,
         )
 
         def _sort_key(src):
@@ -215,8 +223,8 @@ class MinimalTemplate(BaseBriefingTemplate):
 
         for i, src in enumerate(sorted(sources, key=_sort_key), 1):
             authors = src.get("authors", "") or ""
-            year    = src.get("year", "") or ""
-            title_  = src.get("title", "") or ""
+            year = src.get("year", "") or ""
+            title_ = src.get("title", "") or ""
 
             if authors and title_:
                 entry = f"{i}. {authors} ({year}). {title_}."
@@ -251,19 +259,22 @@ class MinimalTemplate(BaseBriefingTemplate):
         doc_ids_cfg = self.config.get("doc_ids", {})
         if doc_ids_cfg.get("enabled", True):
             from briefkit.doc_ids import get_or_assign_doc_id
+
             self.doc_id = get_or_assign_doc_id(
-                self.target_path, self.level,
-                content.get("title", ""), config=self.config,
+                self.target_path,
+                self.level,
+                content.get("title", ""),
+                config=self.config,
             )
 
         # Header/footer state (minimal: only date, no section name)
 
-        layout   = self.config.get("layout", {})
-        margins  = layout.get("margins", {})
-        top_m    = margins.get("top",    25) * mm
+        layout = self.config.get("layout", {})
+        margins = layout.get("margins", {})
+        top_m = margins.get("top", 25) * mm
         bottom_m = margins.get("bottom", 22) * mm
-        left_m   = margins.get("left",   20) * mm
-        right_m  = margins.get("right",  20) * mm
+        left_m = margins.get("left", 20) * mm
+        right_m = margins.get("right", 20) * mm
 
         doc = self._build_doc(
             pagesize=A4,

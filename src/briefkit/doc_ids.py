@@ -26,6 +26,7 @@ from pathlib import Path
 # Registry I/O
 # ---------------------------------------------------------------------------
 
+
 def load_registry(registry_path: Path) -> dict:
     """Load the document ID registry from *registry_path*. Returns empty registry if missing."""
     if registry_path.exists():
@@ -62,24 +63,22 @@ def save_registry(registry: dict, registry_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 _ALLOWED_FORMAT_FIELDS = frozenset({"prefix", "type", "group", "level", "seq", "year"})
-_FORMAT_FIELD_RE = _re.compile(r'\{(\w+)\}')
+_FORMAT_FIELD_RE = _re.compile(r"\{(\w+)\}")
+
 
 def _validate_format_string(fmt: str, allowed: frozenset[str]) -> None:
     """Raise ValueError if *fmt* contains field names outside *allowed*."""
     for m in _FORMAT_FIELD_RE.finditer(fmt):
         field = m.group(1)
         if field not in allowed:
-            raise ValueError(
-                f"Invalid format field {{{field}}} in doc_ids.format. "
-                f"Allowed fields: {sorted(allowed)}"
-            )
+            raise ValueError(f"Invalid format field {{{field}}} in doc_ids.format. Allowed fields: {sorted(allowed)}")
 
 
 def _format_doc_id(
-    level:    int,
-    seq:      int,
-    group:    str,
-    config:   dict,
+    level: int,
+    seq: int,
+    group: str,
+    config: dict,
 ) -> str:
     """
     Format a document ID string from config.doc_ids format template.
@@ -93,11 +92,11 @@ def _format_doc_id(
       {year}     — 2-digit (short) or 4-digit (full) year
     """
     doc_ids_cfg = config.get("doc_ids", {})
-    fmt      = doc_ids_cfg.get("format", "{prefix}-{type}-{group}-{level}{seq}/{year}")
-    prefix   = doc_ids_cfg.get("prefix", "DOC")
-    type_    = doc_ids_cfg.get("type",   "BRF")
-    digits   = doc_ids_cfg.get("sequence_digits", 4)
-    yr_fmt   = doc_ids_cfg.get("year_format", "short")
+    fmt = doc_ids_cfg.get("format", "{prefix}-{type}-{group}-{level}{seq}/{year}")
+    prefix = doc_ids_cfg.get("prefix", "DOC")
+    type_ = doc_ids_cfg.get("type", "BRF")
+    digits = doc_ids_cfg.get("sequence_digits", 4)
+    yr_fmt = doc_ids_cfg.get("year_format", "short")
 
     today = datetime.date.today()
     if yr_fmt == "full":
@@ -146,11 +145,12 @@ def _derive_group_code(path: Path, config: dict) -> str:
 # get_or_assign_doc_id
 # ---------------------------------------------------------------------------
 
+
 def get_or_assign_doc_id(
     target_path: str | Path,
-    level:       int,
-    title:       str,
-    config:      dict | None = None,
+    level: int,
+    title: str,
+    config: dict | None = None,
 ) -> str:
     """
     Look up an existing doc ID for *target_path*, or assign the next sequential ID.
@@ -173,6 +173,7 @@ def get_or_assign_doc_id(
     if not registry_path.is_absolute():
         # Resolve relative to project root or CWD
         from briefkit.config import find_project_root
+
         root = find_project_root() or Path.cwd()
         registry_path = root / registry_rel
 
@@ -204,14 +205,16 @@ def get_or_assign_doc_id(
 
     doc_id = _format_doc_id(level, seq, group, config)
 
-    registry.setdefault("entries", []).append({
-        "doc_id":   doc_id,
-        "path":     key,
-        "group":    group,
-        "level":    level,
-        "title":    title,
-        "assigned": datetime.date.today().isoformat(),
-    })
+    registry.setdefault("entries", []).append(
+        {
+            "doc_id": doc_id,
+            "path": key,
+            "group": group,
+            "level": level,
+            "title": title,
+            "assigned": datetime.date.today().isoformat(),
+        }
+    )
     registry.setdefault("_index", {})[key] = doc_id
 
     save_registry(registry, registry_path)
@@ -222,9 +225,10 @@ def get_or_assign_doc_id(
 # assign — batch assignment for CLI
 # ---------------------------------------------------------------------------
 
+
 def assign(
-    root:    str | Path,
-    config:  dict,
+    root: str | Path,
+    config: dict,
     dry_run: bool = False,
 ) -> int:
     """

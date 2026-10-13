@@ -27,7 +27,6 @@ from reportlab.lib.pagesizes import A3, A4, legal, letter
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     Paragraph,
-    SimpleDocTemplate,
     Spacer,
     Table,
     TableStyle,
@@ -51,16 +50,20 @@ _PAGE_SIZES = {"A4": A4, "A3": A3, "Letter": letter, "Legal": legal}
 # ---------------------------------------------------------------------------
 
 _FIELD_RE = re.compile(
-    r"(?:department|dept)[:\s]+(.+?)(?:\n|$)", re.IGNORECASE,
+    r"(?:department|dept)[:\s]+(.+?)(?:\n|$)",
+    re.IGNORECASE,
 )
 _POSITION_RE = re.compile(
-    r"(?:position|title|role)[:\s]+(.+?)(?:\n|$)", re.IGNORECASE,
+    r"(?:position|title|role)[:\s]+(.+?)(?:\n|$)",
+    re.IGNORECASE,
 )
 _REVIEWER_RE = re.compile(
-    r"(?:reviewer|supervisor|manager)[:\s]+(.+?)(?:\n|$)", re.IGNORECASE,
+    r"(?:reviewer|supervisor|manager)[:\s]+(.+?)(?:\n|$)",
+    re.IGNORECASE,
 )
 _REVIEWER_TITLE_RE = re.compile(
-    r"(?:reviewer title|supervisor title)[:\s]+(.+?)(?:\n|$)", re.IGNORECASE,
+    r"(?:reviewer title|supervisor title)[:\s]+(.+?)(?:\n|$)",
+    re.IGNORECASE,
 )
 
 # Alternating row colors
@@ -105,9 +108,12 @@ class EvaluationTemplate(BaseBriefingTemplate):
         doc_ids_cfg = self.config.get("doc_ids", {})
         if doc_ids_cfg.get("enabled", True):
             from briefkit.doc_ids import get_or_assign_doc_id
+
             self.doc_id = get_or_assign_doc_id(
-                self.target_path, self.level,
-                content.get("title", ""), config=self.config,
+                self.target_path,
+                self.level,
+                content.get("title", ""),
+                config=self.config,
             )
 
         # Header/footer state
@@ -141,7 +147,8 @@ class EvaluationTemplate(BaseBriefingTemplate):
             canvas.setFont("Helvetica", 7)
             canvas.setFillColor(caption_color)
             canvas.drawCentredString(
-                doc_inner.pagesize[0] / 2, 10 * mm,
+                doc_inner.pagesize[0] / 2,
+                10 * mm,
                 f"Page {doc_inner.page}",
             )
             canvas.restoreState()
@@ -168,10 +175,14 @@ class EvaluationTemplate(BaseBriefingTemplate):
 
         # Form title
         title_style = _ps(
-            "EvalFormTitle", brand=self.brand,
-            fontSize=14, fontName="Helvetica-Bold",
+            "EvalFormTitle",
+            brand=self.brand,
+            fontSize=14,
+            fontName="Helvetica-Bold",
             textColor=_hex(self.brand, "primary"),
-            alignment=1, spaceAfter=6, spaceBefore=2,
+            alignment=1,
+            spaceAfter=6,
+            spaceBefore=2,
         )
         story.append(Paragraph("EMPLOYEE PERFORMANCE EVALUATION", title_style))
         story.append(Spacer(1, 4 * mm))
@@ -221,19 +232,26 @@ class EvaluationTemplate(BaseBriefingTemplate):
 
         # Section heading
         heading_style = _ps(
-            "EvalSectionHead", brand=self.brand,
-            fontSize=9, fontName="Helvetica-Bold",
+            "EvalSectionHead",
+            brand=self.brand,
+            fontSize=9,
+            fontName="Helvetica-Bold",
             textColor=black,
-            spaceAfter=2, spaceBefore=2,
+            spaceAfter=2,
+            spaceBefore=2,
         )
         flowables.append(Paragraph("EMPLOYEE INFORMATION", heading_style))
         flowables.append(Spacer(1, 1 * mm))
 
         label_style = _ps(
-            "EvalMetaLabel", brand=self.brand,
-            fontSize=8, fontName="Helvetica-Bold",
-            textColor=black, leading=11,
+            "EvalMetaLabel",
+            brand=self.brand,
+            fontSize=8,
+            fontName="Helvetica-Bold",
+            textColor=black,
+            leading=11,
         )
+
         def _cell(label: str, value: str) -> Paragraph:
             safe_val = _safe_text(value) if value else " "
             return _safe_para(
@@ -262,15 +280,19 @@ class EvaluationTemplate(BaseBriefingTemplate):
         ]
 
         t = Table(table_data, colWidths=[col_width] * 3)
-        t.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), _HEADER_BG),
-            ("GRID", (0, 0), (-1, -1), _BORDER_WIDTH, _BORDER_COLOR),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("TOPPADDING", (0, 0), (-1, -1), 4),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-            ("LEFTPADDING", (0, 0), (-1, -1), 5),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 5),
-        ]))
+        t.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), _HEADER_BG),
+                    ("GRID", (0, 0), (-1, -1), _BORDER_WIDTH, _BORDER_COLOR),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("TOPPADDING", (0, 0), (-1, -1), 4),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 5),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+                ]
+            )
+        )
         flowables.append(t)
 
         return flowables
@@ -284,10 +306,13 @@ class EvaluationTemplate(BaseBriefingTemplate):
         flowables: list = []
 
         heading_style = _ps(
-            "EvalRubricHead", brand=self.brand,
-            fontSize=9, fontName="Helvetica-Bold",
+            "EvalRubricHead",
+            brand=self.brand,
+            fontSize=9,
+            fontName="Helvetica-Bold",
             textColor=black,
-            spaceAfter=2, spaceBefore=2,
+            spaceAfter=2,
+            spaceBefore=2,
         )
         flowables.append(Paragraph("PERFORMANCE RATING", heading_style))
         flowables.append(Spacer(1, 1 * mm))
@@ -300,9 +325,13 @@ class EvaluationTemplate(BaseBriefingTemplate):
         col_widths = [quality_col_w] + [rating_col_w] * 4
 
         header_style = _ps(
-            "EvalMatrixHeader", brand=self.brand,
-            fontSize=8, fontName="Helvetica-Bold",
-            textColor=white, alignment=1, leading=10,
+            "EvalMatrixHeader",
+            brand=self.brand,
+            fontSize=8,
+            fontName="Helvetica-Bold",
+            textColor=white,
+            alignment=1,
+            leading=10,
         )
         primary = _hex(self.brand, "primary")
 
@@ -310,14 +339,20 @@ class EvaluationTemplate(BaseBriefingTemplate):
         table_data = [header_row]
 
         category_style = _ps(
-            "EvalCatHead", brand=self.brand,
-            fontSize=9, fontName="Helvetica-Bold",
-            textColor=black, leading=12,
+            "EvalCatHead",
+            brand=self.brand,
+            fontSize=9,
+            fontName="Helvetica-Bold",
+            textColor=black,
+            leading=12,
         )
         criterion_style = _ps(
-            "EvalCriterion", brand=self.brand,
-            fontSize=9, fontName="Helvetica",
-            textColor=black, leading=12,
+            "EvalCriterion",
+            brand=self.brand,
+            fontSize=9,
+            fontName="Helvetica",
+            textColor=black,
+            leading=12,
         )
 
         # Track row types for alternating shading
@@ -326,10 +361,15 @@ class EvaluationTemplate(BaseBriefingTemplate):
         for cat_idx, sub in enumerate(subsystems, 1):
             # Category group header row
             cat_name = f"{cat_idx}. {_safe_text(sub.get('name', 'Category'))}"
-            table_data.append([
-                _safe_para(cat_name, category_style),
-                "", "", "", "",
-            ])
+            table_data.append(
+                [
+                    _safe_para(cat_name, category_style),
+                    "",
+                    "",
+                    "",
+                    "",
+                ]
+            )
             row_types.append("category")
 
             # Extract criteria from bullet/list items in content
@@ -341,10 +381,15 @@ class EvaluationTemplate(BaseBriefingTemplate):
                 criteria_items = [sub.get("name", "General")]
 
             for item in criteria_items:
-                table_data.append([
-                    _safe_para(f"    {_safe_text(item[:80])}", criterion_style),
-                    "", "", "", "",
-                ])
+                table_data.append(
+                    [
+                        _safe_para(f"    {_safe_text(item[:80])}", criterion_style),
+                        "",
+                        "",
+                        "",
+                        "",
+                    ]
+                )
                 row_types.append("criterion")
 
         t = Table(table_data, colWidths=col_widths, repeatRows=1)
@@ -415,15 +460,21 @@ class EvaluationTemplate(BaseBriefingTemplate):
         flowables: list = []
 
         heading_style = _ps(
-            "EvalGoalsHead", brand=self.brand,
-            fontSize=9, fontName="Helvetica-Bold",
+            "EvalGoalsHead",
+            brand=self.brand,
+            fontSize=9,
+            fontName="Helvetica-Bold",
             textColor=black,
-            spaceAfter=2, spaceBefore=2,
+            spaceAfter=2,
+            spaceBefore=2,
         )
         body_style = _ps(
-            "EvalGoalsBody", brand=self.brand,
-            fontSize=9, fontName="Helvetica",
-            textColor=black, leading=12,
+            "EvalGoalsBody",
+            brand=self.brand,
+            fontSize=9,
+            fontName="Helvetica",
+            textColor=black,
+            leading=12,
         )
 
         # Collect blockquote content as goals text
@@ -439,7 +490,8 @@ class EvaluationTemplate(BaseBriefingTemplate):
 
         # Goal area 1: Were previously set goals achieved?
         label1 = _safe_para(
-            "<b>Were previously set goals achieved?</b>", body_style,
+            "<b>Were previously set goals achieved?</b>",
+            body_style,
         )
         flowables.append(label1)
         flowables.append(Spacer(1, 1 * mm))
@@ -447,19 +499,24 @@ class EvaluationTemplate(BaseBriefingTemplate):
         goals_achieved_text = " ".join(goals_text[:3]) if goals_text else " "
         box1_data = [[_safe_para(goals_achieved_text, body_style)]]
         box1 = Table(box1_data, colWidths=[self.content_width])
-        box1.setStyle(TableStyle([
-            ("BOX", (0, 0), (-1, -1), _BORDER_WIDTH, HexColor("#999999")),
-            ("TOPPADDING", (0, 0), (-1, -1), 8),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 20),
-            ("LEFTPADDING", (0, 0), (-1, -1), 6),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 6),
-        ]))
+        box1.setStyle(
+            TableStyle(
+                [
+                    ("BOX", (0, 0), (-1, -1), _BORDER_WIDTH, HexColor("#999999")),
+                    ("TOPPADDING", (0, 0), (-1, -1), 8),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 20),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                ]
+            )
+        )
         flowables.append(box1)
         flowables.append(Spacer(1, 4 * mm))
 
         # Goal area 2: Goals for next review period
         label2 = _safe_para(
-            "<b>Goals for next review period:</b>", body_style,
+            "<b>Goals for next review period:</b>",
+            body_style,
         )
         flowables.append(label2)
         flowables.append(Spacer(1, 1 * mm))
@@ -467,13 +524,17 @@ class EvaluationTemplate(BaseBriefingTemplate):
         remaining_goals = " ".join(goals_text[3:]) if len(goals_text) > 3 else " "
         box2_data = [[_safe_para(remaining_goals, body_style)]]
         box2 = Table(box2_data, colWidths=[self.content_width])
-        box2.setStyle(TableStyle([
-            ("BOX", (0, 0), (-1, -1), _BORDER_WIDTH, HexColor("#999999")),
-            ("TOPPADDING", (0, 0), (-1, -1), 8),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 20),
-            ("LEFTPADDING", (0, 0), (-1, -1), 6),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 6),
-        ]))
+        box2.setStyle(
+            TableStyle(
+                [
+                    ("BOX", (0, 0), (-1, -1), _BORDER_WIDTH, HexColor("#999999")),
+                    ("TOPPADDING", (0, 0), (-1, -1), 8),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 20),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                ]
+            )
+        )
         flowables.append(box2)
 
         return flowables
@@ -487,15 +548,21 @@ class EvaluationTemplate(BaseBriefingTemplate):
         flowables: list = []
 
         heading_style = _ps(
-            "EvalCommentsHead", brand=self.brand,
-            fontSize=9, fontName="Helvetica-Bold",
+            "EvalCommentsHead",
+            brand=self.brand,
+            fontSize=9,
+            fontName="Helvetica-Bold",
             textColor=black,
-            spaceAfter=2, spaceBefore=2,
+            spaceAfter=2,
+            spaceBefore=2,
         )
         body_style = _ps(
-            "EvalCommentsBody", brand=self.brand,
-            fontSize=9, fontName="Helvetica",
-            textColor=black, leading=12,
+            "EvalCommentsBody",
+            brand=self.brand,
+            fontSize=9,
+            fontName="Helvetica",
+            textColor=black,
+            leading=12,
         )
 
         flowables.append(Paragraph("COMMENTS AND APPROVAL", heading_style))
@@ -504,26 +571,36 @@ class EvaluationTemplate(BaseBriefingTemplate):
         # Large comments box
         comments_data = [[_safe_para(" ", body_style)]]
         comments_box = Table(comments_data, colWidths=[self.content_width])
-        comments_box.setStyle(TableStyle([
-            ("BOX", (0, 0), (-1, -1), _BORDER_WIDTH, HexColor("#999999")),
-            ("TOPPADDING", (0, 0), (-1, -1), 8),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 40),
-            ("LEFTPADDING", (0, 0), (-1, -1), 6),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 6),
-        ]))
+        comments_box.setStyle(
+            TableStyle(
+                [
+                    ("BOX", (0, 0), (-1, -1), _BORDER_WIDTH, HexColor("#999999")),
+                    ("TOPPADDING", (0, 0), (-1, -1), 8),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 40),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                ]
+            )
+        )
         flowables.append(comments_box)
         flowables.append(Spacer(1, 6 * mm))
 
         # Dual signature row
         sig_label_style = _ps(
-            "EvalSigLabel", brand=self.brand,
-            fontSize=8, fontName="Helvetica-Bold",
-            textColor=black, leading=10,
+            "EvalSigLabel",
+            brand=self.brand,
+            fontSize=8,
+            fontName="Helvetica-Bold",
+            textColor=black,
+            leading=10,
         )
         sig_line_style = _ps(
-            "EvalSigLine", brand=self.brand,
-            fontSize=8, fontName="Helvetica",
-            textColor=black, leading=10,
+            "EvalSigLine",
+            brand=self.brand,
+            fontSize=8,
+            fontName="Helvetica",
+            textColor=black,
+            leading=10,
         )
 
         col_w = self.content_width / 4
@@ -543,13 +620,17 @@ class EvaluationTemplate(BaseBriefingTemplate):
         ]
 
         sig_table = Table(sig_data, colWidths=[col_w] * 4)
-        sig_table.setStyle(TableStyle([
-            ("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
-            ("TOPPADDING", (0, 0), (-1, -1), 3),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-            ("LEFTPADDING", (0, 0), (-1, -1), 3),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 3),
-        ]))
+        sig_table.setStyle(
+            TableStyle(
+                [
+                    ("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
+                    ("TOPPADDING", (0, 0), (-1, -1), 3),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 3),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 3),
+                ]
+            )
+        )
         flowables.append(sig_table)
 
         return flowables

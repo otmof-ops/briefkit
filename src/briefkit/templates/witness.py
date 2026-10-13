@@ -19,28 +19,24 @@ Key differences:
 
 from __future__ import annotations
 
+import html
 from pathlib import Path
 
 from reportlab.lib.colors import HexColor
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.platypus import (
-    PageBreak,
     Paragraph,
-    SimpleDocTemplate,
     Spacer,
     Table,
     TableStyle,
 )
-
-import html
 
 from briefkit.extractor import parse_markdown
 from briefkit.generator import BaseBriefingTemplate
 from briefkit.styles import (
     _hex,
     _ps,
-    _safe_para,
 )
 
 
@@ -57,7 +53,6 @@ def _witness_header_footer(canvas, doc):
     pw, ph = doc.pagesize
     lm = doc.leftMargin
     rm = doc.rightMargin
-    content_w = pw - lm - rm
 
     # Header: thin crimson rule
     canvas.setStrokeColor(HexColor("#8B0000"))
@@ -67,7 +62,7 @@ def _witness_header_footer(canvas, doc):
     # Header right: doc title
     canvas.setFont("Helvetica", 7)
     canvas.setFillColor(HexColor("#333333"))
-    title = getattr(doc, '_witness_title', 'Witness Statement')
+    title = getattr(doc, "_witness_title", "Witness Statement")
     canvas.drawRightString(pw - rm, ph - doc.topMargin + 10 * mm, title)
 
     # Footer: page number center, doc ref right
@@ -76,7 +71,7 @@ def _witness_header_footer(canvas, doc):
     canvas.setFillColor(HexColor("#666666"))
     canvas.drawCentredString(pw / 2, bottom_y + 1.5 * mm, f"Page {doc.page}")
 
-    doc_ref = getattr(doc, '_witness_doc_ref', '')
+    doc_ref = getattr(doc, "_witness_doc_ref", "")
     if doc_ref:
         canvas.drawRightString(pw - rm, bottom_y + 1.5 * mm, doc_ref)
 
@@ -109,8 +104,13 @@ class WitnessTemplate(BaseBriefingTemplate):
 
         # --- Title ---
         title_style = _ps(
-            "WitnessTitle", brand=b, fontSize=18, textColor=primary,
-            fontName="Helvetica-Bold", alignment=1, spaceAfter=4,
+            "WitnessTitle",
+            brand=b,
+            fontSize=18,
+            textColor=primary,
+            fontName="Helvetica-Bold",
+            alignment=1,
+            spaceAfter=4,
         )
         story.append(Spacer(1, 10 * mm))
         story.append(Paragraph(title, title_style))
@@ -119,20 +119,29 @@ class WitnessTemplate(BaseBriefingTemplate):
         # Subtitle / overview
         if overview:
             sub_style = _ps(
-                "WitnessSub", brand=b, fontSize=10, textColor=body_c,
-                fontName="Helvetica", alignment=1, spaceAfter=6,
+                "WitnessSub",
+                brand=b,
+                fontSize=10,
+                textColor=body_c,
+                fontName="Helvetica",
+                alignment=1,
+                spaceAfter=6,
                 leading=14,
             )
             story.append(Paragraph(overview, sub_style))
 
         # Thin rule
-        rule_data = [["" ]]
+        rule_data = [[""]]
         rule = Table(rule_data, colWidths=[self.content_width])
-        rule.setStyle(TableStyle([
-            ("LINEBELOW", (0, 0), (-1, -1), 1, HexColor("#8B0000")),
-            ("TOPPADDING", (0, 0), (-1, -1), 0),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-        ]))
+        rule.setStyle(
+            TableStyle(
+                [
+                    ("LINEBELOW", (0, 0), (-1, -1), 1, HexColor("#8B0000")),
+                    ("TOPPADDING", (0, 0), (-1, -1), 0),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ]
+            )
+        )
         story.append(rule)
         story.append(Spacer(1, 6 * mm))
 
@@ -141,7 +150,6 @@ class WitnessTemplate(BaseBriefingTemplate):
 
         # --- Body: render every subsystem ---
         for idx, sub in enumerate(subsystems):
-            name = sub.get("name", f"Section {idx + 1}")
             blocks = sub.get("blocks") or parse_markdown(sub.get("content", ""))
 
             # Render all blocks — no limit, no separate section heading
@@ -157,24 +165,39 @@ class WitnessTemplate(BaseBriefingTemplate):
                 # Render heading level 2 as section heading
                 if block["type"] == "heading" and block.get("level") == 2:
                     sh_style = _ps(
-                        "WitnessH2", brand=b, fontSize=13, textColor=primary,
-                        fontName="Helvetica-Bold", spaceBefore=10, spaceAfter=4,
+                        "WitnessH2",
+                        brand=b,
+                        fontSize=13,
+                        textColor=primary,
+                        fontName="Helvetica-Bold",
+                        spaceBefore=10,
+                        spaceAfter=4,
                     )
                     story.append(Paragraph(block.get("text", ""), sh_style))
                     continue
                 # Render heading level 3
                 if block["type"] == "heading" and block.get("level") == 3:
                     sh3_style = _ps(
-                        "WitnessH3", brand=b, fontSize=11, textColor=body_c,
-                        fontName="Helvetica-Bold", spaceBefore=6, spaceAfter=2,
+                        "WitnessH3",
+                        brand=b,
+                        fontSize=11,
+                        textColor=body_c,
+                        fontName="Helvetica-Bold",
+                        spaceBefore=6,
+                        spaceAfter=2,
                     )
                     story.append(Paragraph(block.get("text", ""), sh3_style))
                     continue
                 # Render heading level 4+
                 if block["type"] == "heading" and block.get("level", 4) >= 4:
                     sh4_style = _ps(
-                        "WitnessH4", brand=b, fontSize=10, textColor=body_c,
-                        fontName="Helvetica-Bold", spaceBefore=4, spaceAfter=2,
+                        "WitnessH4",
+                        brand=b,
+                        fontSize=10,
+                        textColor=body_c,
+                        fontName="Helvetica-Bold",
+                        spaceBefore=4,
+                        spaceAfter=2,
                     )
                     story.append(Paragraph(block.get("text", ""), sh4_style))
                     continue
@@ -184,11 +207,16 @@ class WitnessTemplate(BaseBriefingTemplate):
                     if text:
                         text = _decode_html_entities(text)
                         bq_style = _ps(
-                            "WitnessBlockquote", brand=b,
-                            fontSize=9.5, textColor=body_c,
-                            leading=13, leftIndent=20, rightIndent=20,
+                            "WitnessBlockquote",
+                            brand=b,
+                            fontSize=9.5,
+                            textColor=body_c,
+                            leading=13,
+                            leftIndent=20,
+                            rightIndent=20,
                             fontName="Helvetica-Oblique",
-                            spaceBefore=4, spaceAfter=4,
+                            spaceBefore=4,
+                            spaceAfter=4,
                         )
                         story.append(Paragraph(text, bq_style))
                     continue
@@ -203,6 +231,7 @@ class WitnessTemplate(BaseBriefingTemplate):
     def extract_content(self) -> dict:
         """Force level 3 extraction — doc_set level with numbered files."""
         from briefkit.extractor import extract_content as _ec
+
         self.content = _ec(self.target_path, level=3, config=self.config)
         return self.content
 
@@ -230,9 +259,7 @@ class WitnessTemplate(BaseBriefingTemplate):
 
         # Pass metadata to header/footer
         doc._witness_title = title
-        doc._witness_doc_ref = self.config.get("project", {}).get(
-            "doc_id_format", ""
-        )
+        doc._witness_doc_ref = self.config.get("project", {}).get("doc_id_format", "")
 
         story = self.build_story(content)
         story = self._finalize_story(story)
@@ -244,9 +271,20 @@ class WitnessTemplate(BaseBriefingTemplate):
         return self.output_path
 
     # Suppress all briefing chrome
-    def build_at_a_glance(self, *a, **kw): return []
-    def build_executive_summary(self, *a, **kw): return []
-    def build_cross_references(self, *a, **kw): return []
-    def build_index(self, *a, **kw): return []
-    def build_bibliography(self, *a, **kw): return []
-    def build_back_cover(self): return []
+    def build_at_a_glance(self, *a, **kw):
+        return []
+
+    def build_executive_summary(self, *a, **kw):
+        return []
+
+    def build_cross_references(self, *a, **kw):
+        return []
+
+    def build_index(self, *a, **kw):
+        return []
+
+    def build_bibliography(self, *a, **kw):
+        return []
+
+    def build_back_cover(self):
+        return []

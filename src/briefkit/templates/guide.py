@@ -48,7 +48,6 @@ from reportlab.lib.units import mm
 from reportlab.platypus import (
     PageBreak,
     Paragraph,
-    SimpleDocTemplate,
     Spacer,
     Table,
     TableStyle,
@@ -187,22 +186,32 @@ class GuideTemplate(BaseBriefingTemplate):
         caption_c = HexColor(_CAPTION)
 
         # TOC header box
-        toc_header_data = [[
-            Paragraph(
-                "Table of Contents",
-                _ps("GuideTocTitle", brand=self.brand,
-                    fontSize=14, fontName="Helvetica-Bold",
-                    textColor=secondary_c, leading=16.8),
-            ),
-        ]]
-        toc_header = Table(toc_header_data, colWidths=[self.content_width - 6],
-                           rowHeights=[39.685])
-        toc_header.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), HexColor(_SECTION_BG)),
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 14.173),
-            ("LINEBELOW", (0, 0), (-1, -1), 2, secondary_c),
-        ]))
+        toc_header_data = [
+            [
+                Paragraph(
+                    "Table of Contents",
+                    _ps(
+                        "GuideTocTitle",
+                        brand=self.brand,
+                        fontSize=14,
+                        fontName="Helvetica-Bold",
+                        textColor=secondary_c,
+                        leading=16.8,
+                    ),
+                ),
+            ]
+        ]
+        toc_header = Table(toc_header_data, colWidths=[self.content_width - 6], rowHeights=[39.685])
+        toc_header.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), HexColor(_SECTION_BG)),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 14.173),
+                    ("LINEBELOW", (0, 0), (-1, -1), 2, secondary_c),
+                ]
+            )
+        )
         story.append(toc_header)
         story.append(Spacer(1, 4 * mm))
 
@@ -219,48 +228,71 @@ class GuideTemplate(BaseBriefingTemplate):
             subtitle = ", ".join(sub_items[:5])[:80] if sub_items else ""
 
             # Number + title row
-            row_data = [[
-                Paragraph(
-                    f"<b>{i}</b>",
-                    _ps(f"GTocN_{i}", brand=self.brand,
-                        fontSize=14, fontName="Helvetica-Bold",
-                        textColor=secondary_c, leading=12,
-                        alignment=2),
-                ),
-                Paragraph(
-                    f'<b>{name}</b>',
-                    _ps(f"GTocT_{i}", brand=self.brand,
-                        fontSize=10, fontName="Helvetica-Bold",
-                        textColor=toc_title_c, leading=14),
-                ),
-            ]]
-            toc_row = Table(row_data, colWidths=[40, self.content_width - 46],
-                            rowHeights=[21.669])
-            toc_row.setStyle(TableStyle([
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("LEFTPADDING", (0, 0), (0, -1), 6),
-                ("LEFTPADDING", (1, 0), (1, -1), 0),
-                ("TOPPADDING", (0, 0), (-1, -1), 0),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-            ]))
+            row_data = [
+                [
+                    Paragraph(
+                        f"<b>{i}</b>",
+                        _ps(
+                            f"GTocN_{i}",
+                            brand=self.brand,
+                            fontSize=14,
+                            fontName="Helvetica-Bold",
+                            textColor=secondary_c,
+                            leading=12,
+                            alignment=2,
+                        ),
+                    ),
+                    Paragraph(
+                        f"<b>{name}</b>",
+                        _ps(
+                            f"GTocT_{i}",
+                            brand=self.brand,
+                            fontSize=10,
+                            fontName="Helvetica-Bold",
+                            textColor=toc_title_c,
+                            leading=14,
+                        ),
+                    ),
+                ]
+            ]
+            toc_row = Table(row_data, colWidths=[40, self.content_width - 46], rowHeights=[21.669])
+            toc_row.setStyle(
+                TableStyle(
+                    [
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("LEFTPADDING", (0, 0), (0, -1), 6),
+                        ("LEFTPADDING", (1, 0), (1, -1), 0),
+                        ("TOPPADDING", (0, 0), (-1, -1), 0),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                    ]
+                )
+            )
             story.append(toc_row)
 
             if subtitle:
                 sub_style = _ps(
-                    f"GTocSub_{i}", brand=self.brand,
-                    fontSize=7.5, fontName="Helvetica",
-                    textColor=caption_c, leading=9, leftIndent=46,
+                    f"GTocSub_{i}",
+                    brand=self.brand,
+                    fontSize=7.5,
+                    fontName="Helvetica",
+                    textColor=caption_c,
+                    leading=9,
+                    leftIndent=46,
                 )
                 story.append(Paragraph(subtitle, sub_style))
 
             # Separator line
             sep_data = [[""]]
             sep = Table(sep_data, colWidths=[self.content_width], rowHeights=[0.5])
-            sep.setStyle(TableStyle([
-                ("LINEBELOW", (0, 0), (-1, -1), 0.5, HexColor("#EFF4F7")),
-                ("TOPPADDING", (0, 0), (-1, -1), 0),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-            ]))
+            sep.setStyle(
+                TableStyle(
+                    [
+                        ("LINEBELOW", (0, 0), (-1, -1), 0.5, HexColor("#EFF4F7")),
+                        ("TOPPADDING", (0, 0), (-1, -1), 0),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                    ]
+                )
+            )
             story.append(sep)
             story.append(Spacer(1, 2 * mm))
 
@@ -274,29 +306,44 @@ class GuideTemplate(BaseBriefingTemplate):
             name = sub.get("name", f"Section {idx}")
 
             # Section header bar: bg #F6F7F9, 2pt blue left accent
-            sec_data = [[
-                Paragraph(
-                    f"{idx}.",
-                    _ps(f"GSecN_{idx}", brand=self.brand,
-                        fontSize=13, fontName="Helvetica-Bold",
-                        textColor=secondary_c, leading=15.6),
-                ),
-                Paragraph(
-                    name,
-                    _ps(f"GSecT_{idx}", brand=self.brand,
-                        fontSize=13, fontName="Helvetica-Bold",
-                        textColor=secondary_c, leading=15.6),
-                ),
-            ]]
-            sec_header = Table(sec_data, colWidths=[30, self.content_width - 36],
-                               rowHeights=[39.685])
-            sec_header.setStyle(TableStyle([
-                ("BACKGROUND", (0, 0), (-1, -1), HexColor(_SECTION_BG)),
-                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("LEFTPADDING", (0, 0), (0, -1), 14.173),
-                ("LEFTPADDING", (1, 0), (1, -1), 0),
-                ("LINEBELOW", (0, 0), (-1, -1), 2, secondary_c),
-            ]))
+            sec_data = [
+                [
+                    Paragraph(
+                        f"{idx}.",
+                        _ps(
+                            f"GSecN_{idx}",
+                            brand=self.brand,
+                            fontSize=13,
+                            fontName="Helvetica-Bold",
+                            textColor=secondary_c,
+                            leading=15.6,
+                        ),
+                    ),
+                    Paragraph(
+                        name,
+                        _ps(
+                            f"GSecT_{idx}",
+                            brand=self.brand,
+                            fontSize=13,
+                            fontName="Helvetica-Bold",
+                            textColor=secondary_c,
+                            leading=15.6,
+                        ),
+                    ),
+                ]
+            ]
+            sec_header = Table(sec_data, colWidths=[30, self.content_width - 36], rowHeights=[39.685])
+            sec_header.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, -1), HexColor(_SECTION_BG)),
+                        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                        ("LEFTPADDING", (0, 0), (0, -1), 14.173),
+                        ("LEFTPADDING", (1, 0), (1, -1), 0),
+                        ("LINEBELOW", (0, 0), (-1, -1), 2, secondary_c),
+                    ]
+                )
+            )
             story.append(sec_header)
             story.append(Spacer(1, 3 * mm))
 
@@ -310,22 +357,32 @@ class GuideTemplate(BaseBriefingTemplate):
                 if block["type"] == "heading" and block["level"] in (2, 3):
                     sub_text = block["text"]
                     sub_num = f"{idx}.{rendered // 10 + 1}" if rendered > 0 else f"{idx}.1"
-                    sub_data = [[
-                        Paragraph(
-                            f"{sub_num}  {sub_text}",
-                            _ps(f"GSubH_{idx}_{rendered}", brand=self.brand,
-                                fontSize=11, fontName="Helvetica-Bold",
-                                textColor=toc_title_c, leading=13.2),
-                        ),
-                    ]]
-                    sub_header = Table(sub_data, colWidths=[self.content_width - 6],
-                                       rowHeights=[25.512])
-                    sub_header.setStyle(TableStyle([
-                        ("BACKGROUND", (0, 0), (-1, -1), HexColor(_SECTION_BG)),
-                        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                        ("LEFTPADDING", (0, 0), (-1, -1), 14.173),
-                        ("ROUNDEDCORNERS", [1, 1, 0, 0]),
-                    ]))
+                    sub_data = [
+                        [
+                            Paragraph(
+                                f"{sub_num}  {sub_text}",
+                                _ps(
+                                    f"GSubH_{idx}_{rendered}",
+                                    brand=self.brand,
+                                    fontSize=11,
+                                    fontName="Helvetica-Bold",
+                                    textColor=toc_title_c,
+                                    leading=13.2,
+                                ),
+                            ),
+                        ]
+                    ]
+                    sub_header = Table(sub_data, colWidths=[self.content_width - 6], rowHeights=[25.512])
+                    sub_header.setStyle(
+                        TableStyle(
+                            [
+                                ("BACKGROUND", (0, 0), (-1, -1), HexColor(_SECTION_BG)),
+                                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                                ("LEFTPADDING", (0, 0), (-1, -1), 14.173),
+                                ("ROUNDEDCORNERS", [1, 1, 0, 0]),
+                            ]
+                        )
+                    )
                     story.append(sub_header)
                     story.append(Spacer(1, 2 * mm))
                     rendered += 1
@@ -342,10 +399,14 @@ class GuideTemplate(BaseBriefingTemplate):
             # Insights as callout boxes
             insights = sub.get("insights", [])
             for insight in insights[:2]:
-                story.append(build_callout_box(
-                    insight[:500], "insight",
-                    brand=self.brand, content_width=self.content_width,
-                ))
+                story.append(
+                    build_callout_box(
+                        insight[:500],
+                        "insight",
+                        brand=self.brand,
+                        content_width=self.content_width,
+                    )
+                )
 
             story.append(Spacer(1, 4 * mm))
 
@@ -380,8 +441,10 @@ class GuideTemplate(BaseBriefingTemplate):
             from briefkit.doc_ids import get_or_assign_doc_id
 
             self.doc_id = get_or_assign_doc_id(
-                self.target_path, self.level,
-                title, config=self.config,
+                self.target_path,
+                self.level,
+                title,
+                config=self.config,
             )
 
         # Template-specific config
@@ -404,7 +467,6 @@ class GuideTemplate(BaseBriefingTemplate):
         _guide_state["footer_left"] = classification
         _guide_state["brand"] = self.brand
 
-
         layout = self.config.get("layout", {})
         margins = layout.get("margins", {})
         top_m = margins.get("top", 25) * mm
@@ -415,9 +477,9 @@ class GuideTemplate(BaseBriefingTemplate):
         page_size = A4
         self.content_width = compute_content_width(page_size, margins)
 
-        b = self.brand
-        subject = guide_cfg.get("subject", f"Technical guide: {title}")
-        author = guide_cfg.get("author", b.get("org", "Claude Code"))
+        meta = {"subject": guide_cfg.get("subject") or f"Technical guide: {title}"}
+        if guide_cfg.get("author"):
+            meta["author"] = guide_cfg["author"]
 
         doc = self._build_doc(
             pagesize=page_size,
@@ -425,6 +487,7 @@ class GuideTemplate(BaseBriefingTemplate):
             bottomMargin=bottom_m,
             leftMargin=left_m,
             rightMargin=right_m,
+            **meta,
         )
 
         story = self.build_story(content)

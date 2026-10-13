@@ -38,12 +38,12 @@ def build_bar_chart(data, title="", brand=None, content_width=None):
     list
         List of flowables: optional Paragraph caption + Drawing.
     """
-    b         = _get_brand(brand)
-    cw        = content_width or CONTENT_WIDTH
-    styles    = build_styles(b)
+    b = _get_brand(brand)
+    cw = content_width or CONTENT_WIDTH
+    styles = build_styles(b)
     secondary = _hex(b, "secondary")
     body_text = _hex(b, "body_text")
-    bg_grey   = HexColor(b.get("code_bg", "#f5f6fa"))
+    bg_grey = HexColor(b.get("code_bg", "#f5f6fa"))
 
     flowables = []
     if title:
@@ -52,11 +52,11 @@ def build_bar_chart(data, title="", brand=None, content_width=None):
     if not data:
         return flowables
 
-    chart_width  = float(cw)
-    bar_height   = 10 * mm
-    gap          = 4 * mm
-    label_width  = 50 * mm
-    value_width  = chart_width - label_width - 10 * mm
+    chart_width = float(cw)
+    bar_height = 10 * mm
+    gap = 4 * mm
+    label_width = 50 * mm
+    value_width = chart_width - label_width - 10 * mm
     chart_height = len(data) * (bar_height + gap) + 10 * mm
 
     d = Drawing(chart_width, chart_height)
@@ -80,7 +80,10 @@ def build_bar_chart(data, title="", brand=None, content_width=None):
         bar_w = (numeric_val / max_val) * value_width
 
         bar = Rect(
-            label_width, y, bar_w, bar_height,
+            label_width,
+            y,
+            bar_w,
+            bar_height,
             fillColor=secondary,
             strokeColor=None,
         )
@@ -88,7 +91,8 @@ def build_bar_chart(data, title="", brand=None, content_width=None):
 
         # Label (left of bar, right-aligned)
         lbl = String(
-            label_width - 4, y + bar_height * 0.35,
+            label_width - 4,
+            y + bar_height * 0.35,
             str(label)[:28],
             fontName=b.get("font_body", "Helvetica"),
             fontSize=8,
@@ -99,7 +103,8 @@ def build_bar_chart(data, title="", brand=None, content_width=None):
 
         # Value (right of bar)
         val_lbl = String(
-            label_width + bar_w + 4, y + bar_height * 0.35,
+            label_width + bar_w + 4,
+            y + bar_height * 0.35,
             str(value),
             fontName=b.get("font_heading", "Helvetica-Bold"),
             fontSize=8,
@@ -131,29 +136,33 @@ def build_timeline(events, title="", brand=None, content_width=None):
         List of flowables.
     """
     b = _get_brand(brand)
-    cw        = content_width or CONTENT_WIDTH
-    primary   = _hex(b, "primary")
-    accent    = _hex(b, "accent")
+    cw = content_width or CONTENT_WIDTH
+    primary = _hex(b, "primary")
+    accent = _hex(b, "accent")
     caption_c = _hex(b, "caption")
-    bg_grey   = HexColor(b.get("code_bg", "#f5f6fa"))
+    bg_grey = HexColor(b.get("code_bg", "#f5f6fa"))
 
     flowables = []
     if not events:
         return flowables
 
-    chart_width  = float(cw)
+    chart_width = float(cw)
     chart_height = 40 * mm
-    axis_y       = chart_height * 0.55
-    tick_height  = 5 * mm
-    n            = len(events)
+    axis_y = chart_height * 0.55
+    tick_height = 5 * mm
+    n = len(events)
 
     d = Drawing(chart_width, chart_height)
     bg = Rect(0, 0, chart_width, chart_height, fillColor=bg_grey, strokeColor=None)
     d.add(bg)
 
     axis = Line(
-        10 * mm, axis_y, chart_width - 10 * mm, axis_y,
-        strokeColor=primary, strokeWidth=2,
+        10 * mm,
+        axis_y,
+        chart_width - 10 * mm,
+        axis_y,
+        strokeColor=primary,
+        strokeWidth=2,
     )
     d.add(axis)
 
@@ -164,8 +173,12 @@ def build_timeline(events, title="", brand=None, content_width=None):
         x = 10 * mm + (i * spacing if n > 1 else usable_width / 2)
 
         tick = Line(
-            x, axis_y - tick_height / 2, x, axis_y + tick_height / 2,
-            strokeColor=primary, strokeWidth=1.5,
+            x,
+            axis_y - tick_height / 2,
+            x,
+            axis_y + tick_height / 2,
+            strokeColor=primary,
+            strokeWidth=1.5,
         )
         d.add(tick)
 
@@ -174,17 +187,25 @@ def build_timeline(events, title="", brand=None, content_width=None):
 
         text_y = axis_y + tick_height + 2 * mm if i % 2 == 0 else axis_y - tick_height - 8 * mm
         year_str = String(
-            x, text_y, str(label)[:10],
-            fontName=b.get("font_heading", "Helvetica-Bold"), fontSize=8,
-            fillColor=primary, textAnchor="middle",
+            x,
+            text_y,
+            str(label)[:10],
+            fontName=b.get("font_heading", "Helvetica-Bold"),
+            fontSize=8,
+            fillColor=primary,
+            textAnchor="middle",
         )
         d.add(year_str)
 
         desc_y = text_y - 5 * mm if i % 2 == 0 else text_y + 5 * mm
         desc_str = String(
-            x, desc_y, str(desc)[:20],
-            fontName=b.get("font_body", "Helvetica"), fontSize=6,
-            fillColor=caption_c, textAnchor="middle",
+            x,
+            desc_y,
+            str(desc)[:20],
+            fontName=b.get("font_body", "Helvetica"),
+            fontSize=6,
+            fillColor=caption_c,
+            textAnchor="middle",
         )
         d.add(desc_str)
 

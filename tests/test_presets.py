@@ -1,4 +1,5 @@
 """Tests for briefkit color presets."""
+
 from __future__ import annotations
 
 import pytest
@@ -7,7 +8,6 @@ from briefkit.presets import get_preset, list_presets
 
 
 class TestPresets:
-
     def test_list_presets_non_empty(self):
         names = list_presets()
         assert len(names) > 0
@@ -31,7 +31,8 @@ class TestPresets:
 
     def test_preset_colors_are_hex(self):
         import re
-        hex_re = re.compile(r'^#[0-9A-Fa-f]{6}$')
+
+        hex_re = re.compile(r"^#[0-9A-Fa-f]{6}$")
         for name in list_presets():
             preset = get_preset(name)
             for key, val in preset.items():

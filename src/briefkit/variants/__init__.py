@@ -32,6 +32,7 @@ def collect_text(content: dict) -> str:
 # Base class
 # ---------------------------------------------------------------------------
 
+
 class DocSetVariant:
     """
     Base class for all document-set variants.

@@ -1,11 +1,11 @@
 """Tests for briefkit term extraction."""
+
 from __future__ import annotations
 
 from briefkit.terms import extract_terms
 
 
 class TestExtractTerms:
-
     def test_empty_text(self):
         terms = extract_terms("")
         assert isinstance(terms, dict)

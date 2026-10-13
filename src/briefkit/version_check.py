@@ -1,4 +1,5 @@
 """PDF version tracking — read/write briefing version from PDF metadata."""
+
 import re
 from pathlib import Path
 
@@ -22,6 +23,7 @@ def get_version(pdf_path):
     # Try pypdf first
     try:
         from pypdf import PdfReader
+
         reader = PdfReader(str(pdf_path))
         info = reader.metadata
         if info:
@@ -30,7 +32,7 @@ def get_version(pdf_path):
                 keywords = info.get("/Keywords", "") or ""
             elif hasattr(info, "keywords"):
                 keywords = info.keywords or ""
-            for pattern in [r'briefkit-v(\d+)', r'codex-briefing-v(\d+)']:
+            for pattern in [r"briefkit-v(\d+)", r"codex-briefing-v(\d+)"]:
                 m = re.search(pattern, str(keywords))
                 if m:
                     return int(m.group(1))
@@ -42,7 +44,7 @@ def get_version(pdf_path):
     # Fallback: binary scan
     try:
         raw = pdf_path.read_bytes()[:8192]
-        for pattern in [rb'briefkit-v(\d+)', rb'codex-briefing-v(\d+)']:
+        for pattern in [rb"briefkit-v(\d+)", rb"codex-briefing-v(\d+)"]:
             m = re.search(pattern, raw)
             if m:
                 return int(m.group(1))

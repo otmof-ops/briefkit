@@ -31,7 +31,6 @@ from reportlab.lib.units import mm
 from reportlab.platypus import (
     PageBreak,
     Paragraph,
-    SimpleDocTemplate,
     Spacer,
     Table,
     TableStyle,
@@ -124,10 +123,14 @@ class DeckTemplate(BaseBriefingTemplate):
 
         # Title bar — full-width band
         title_style = _ps(
-            f"DKSlideTitle{slide_num}", brand=self.brand,
-            fontSize=20, fontName="Helvetica-Bold",
-            textColor=white, alignment=0,
-            spaceBefore=0, spaceAfter=0,
+            f"DKSlideTitle{slide_num}",
+            brand=self.brand,
+            fontSize=20,
+            fontName="Helvetica-Bold",
+            textColor=white,
+            alignment=0,
+            spaceBefore=0,
+            spaceAfter=0,
         )
         title_para = Paragraph(_safe_text(name), title_style)
 
@@ -136,14 +139,18 @@ class DeckTemplate(BaseBriefingTemplate):
             colWidths=[self.content_width],
             rowHeights=[14 * mm],
         )
-        title_bar.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), primary),
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 15),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 15),
-            ("TOPPADDING", (0, 0), (-1, -1), 6),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-        ]))
+        title_bar.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), primary),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 15),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 15),
+                    ("TOPPADDING", (0, 0), (-1, -1), 6),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ]
+            )
+        )
         flowables.append(title_bar)
         flowables.append(Spacer(1, 8 * mm))
 
@@ -168,9 +175,12 @@ class DeckTemplate(BaseBriefingTemplate):
                     continue
                 fs = 18 if is_first_para else 14
                 para_style = _ps(
-                    f"DKBody{slide_num}_{rendered}", brand=self.brand,
-                    fontSize=fs, textColor=body_c,
-                    leading=fs + 6, spaceAfter=6,
+                    f"DKBody{slide_num}_{rendered}",
+                    brand=self.brand,
+                    fontSize=fs,
+                    textColor=body_c,
+                    leading=fs + 6,
+                    spaceAfter=6,
                     fontName=self.brand.get("font_body", "Helvetica"),
                 )
                 flowables.append(_safe_para(text, para_style))
@@ -180,19 +190,25 @@ class DeckTemplate(BaseBriefingTemplate):
 
             if btype == "list":
                 items = block.get("items", [])
-                for item in items[:5 - rendered]:
+                for item in items[: 5 - rendered]:
                     item_text = item if isinstance(item, str) else item.get("text", "")
                     bullet_style = _ps(
-                        f"DKBullet{slide_num}_{rendered}", brand=self.brand,
-                        fontSize=14, textColor=body_c,
-                        leading=20, spaceAfter=4,
-                        leftIndent=10, bulletIndent=0,
+                        f"DKBullet{slide_num}_{rendered}",
+                        brand=self.brand,
+                        fontSize=14,
+                        textColor=body_c,
+                        leading=20,
+                        spaceAfter=4,
+                        leftIndent=10,
+                        bulletIndent=0,
                         fontName=self.brand.get("font_body", "Helvetica"),
                     )
-                    flowables.append(_safe_para(
-                        f"\u2022  {_safe_text(str(item_text))}",
-                        bullet_style,
-                    ))
+                    flowables.append(
+                        _safe_para(
+                            f"\u2022  {_safe_text(str(item_text))}",
+                            bullet_style,
+                        )
+                    )
                     rendered += 1
                     is_first_para = False
                 continue
@@ -229,28 +245,28 @@ class DeckTemplate(BaseBriefingTemplate):
         body_c = _hex(self.brand, "body_text")
 
         header_style = _ps(
-            f"DKTblH{slide_num}", brand=self.brand,
-            fontSize=10, fontName="Helvetica-Bold",
-            textColor=white, alignment=0,
+            f"DKTblH{slide_num}",
+            brand=self.brand,
+            fontSize=10,
+            fontName="Helvetica-Bold",
+            textColor=white,
+            alignment=0,
         )
         cell_style = _ps(
-            f"DKTblC{slide_num}", brand=self.brand,
-            fontSize=10, textColor=body_c, alignment=0,
+            f"DKTblC{slide_num}",
+            brand=self.brand,
+            fontSize=10,
+            textColor=body_c,
+            alignment=0,
         )
 
         data: list[list] = []
         if headers:
-            data.append([
-                Paragraph(_safe_text(str(h)), header_style)
-                for h in headers
-            ])
+            data.append([Paragraph(_safe_text(str(h)), header_style) for h in headers])
 
         for row in rows:
             cells = row if isinstance(row, list) else row.get("cells", [])
-            data.append([
-                Paragraph(_safe_text(str(c)), cell_style)
-                for c in cells
-            ])
+            data.append([Paragraph(_safe_text(str(c)), cell_style) for c in cells])
 
         if not data:
             return flowables
@@ -296,7 +312,7 @@ class DeckTemplate(BaseBriefingTemplate):
             for marker in ("thank", "closing", "conclusion"):
                 idx = lower_guide.find(marker)
                 if idx >= 0:
-                    snippet = guide[idx: idx + 100].split("\n")[0].strip()
+                    snippet = guide[idx : idx + 100].split("\n")[0].strip()
                     if snippet:
                         closing_text = snippet
                     break
@@ -305,9 +321,12 @@ class DeckTemplate(BaseBriefingTemplate):
 
         # Closing text
         close_style = _ps(
-            "DKClosing", brand=self.brand,
-            fontSize=28, fontName="Helvetica-Bold",
-            textColor=primary, alignment=1,
+            "DKClosing",
+            brand=self.brand,
+            fontSize=28,
+            fontName="Helvetica-Bold",
+            textColor=primary,
+            alignment=1,
             spaceAfter=10,
         )
         flowables.append(_safe_para(_safe_text(closing_text), close_style))
@@ -316,9 +335,12 @@ class DeckTemplate(BaseBriefingTemplate):
         # Org name
         if org:
             org_style = _ps(
-                "DKCloseOrg", brand=self.brand,
-                fontSize=16, fontName="Helvetica-Bold",
-                textColor=primary, alignment=1,
+                "DKCloseOrg",
+                brand=self.brand,
+                fontSize=16,
+                fontName="Helvetica-Bold",
+                textColor=primary,
+                alignment=1,
                 spaceAfter=4,
             )
             flowables.append(_safe_para(_safe_text(org), org_style))
@@ -326,16 +348,21 @@ class DeckTemplate(BaseBriefingTemplate):
         # URL
         if url:
             url_style = _ps(
-                "DKCloseURL", brand=self.brand,
-                fontSize=12, textColor=caption_c,
-                alignment=1, spaceAfter=4,
+                "DKCloseURL",
+                brand=self.brand,
+                fontSize=12,
+                textColor=caption_c,
+                alignment=1,
+                spaceAfter=4,
             )
             flowables.append(_safe_para(_safe_text(url), url_style))
 
         # Date
         date_style = _ps(
-            "DKCloseDate", brand=self.brand,
-            fontSize=11, textColor=caption_c,
+            "DKCloseDate",
+            brand=self.brand,
+            fontSize=11,
+            textColor=caption_c,
             alignment=1,
         )
         flowables.append(_safe_para(self.date_str, date_style))
@@ -371,8 +398,10 @@ class DeckTemplate(BaseBriefingTemplate):
             from briefkit.doc_ids import get_or_assign_doc_id
 
             self.doc_id = get_or_assign_doc_id(
-                self.target_path, self.level,
-                title, config=self.config,
+                self.target_path,
+                self.level,
+                title,
+                config=self.config,
             )
 
         # Header/footer state

@@ -28,7 +28,6 @@ from reportlab.lib.units import mm
 from reportlab.platypus import (
     KeepTogether,
     Paragraph,
-    SimpleDocTemplate,
     Spacer,
     Table,
     TableStyle,
@@ -76,9 +75,13 @@ class QuoteTemplate(BaseBriefingTemplate):
         # Divider line
         story.append(Spacer(1, 3 * mm))
         divider = Table([[""]], colWidths=[self.content_width], rowHeights=[1.5])
-        divider.setStyle(TableStyle([
-            ("LINEABOVE", (0, 0), (-1, -1), 1.5, HexColor(b.get("primary", "#1B2A4A"))),
-        ]))
+        divider.setStyle(
+            TableStyle(
+                [
+                    ("LINEABOVE", (0, 0), (-1, -1), 1.5, HexColor(b.get("primary", "#1B2A4A"))),
+                ]
+            )
+        )
         story.append(divider)
         story.append(Spacer(1, 6 * mm))
 
@@ -90,8 +93,11 @@ class QuoteTemplate(BaseBriefingTemplate):
         overview = content.get("overview", "")
         if overview:
             client_label = _ps(
-                "QuoteClientLabel", brand=b, fontSize=10,
-                textColor=primary, fontName="Helvetica-Bold",
+                "QuoteClientLabel",
+                brand=b,
+                fontSize=10,
+                textColor=primary,
+                fontName="Helvetica-Bold",
                 spaceAfter=3,
             )
             story.append(Paragraph("CLIENT", client_label))
@@ -104,8 +110,11 @@ class QuoteTemplate(BaseBriefingTemplate):
         subsystems = content.get("subsystems", [])
         if subsystems:
             scope_label = _ps(
-                "QuoteScopeLabel", brand=b, fontSize=12,
-                textColor=primary, fontName="Helvetica-Bold",
+                "QuoteScopeLabel",
+                brand=b,
+                fontSize=12,
+                textColor=primary,
+                fontName="Helvetica-Bold",
                 spaceAfter=4,
             )
             story.append(Paragraph("SCOPE OF WORK", scope_label))
@@ -117,8 +126,11 @@ class QuoteTemplate(BaseBriefingTemplate):
         all_tables = self._collect_tables(content)
         if all_tables:
             pricing_label = _ps(
-                "QuotePricingLabel", brand=b, fontSize=12,
-                textColor=primary, fontName="Helvetica-Bold",
+                "QuotePricingLabel",
+                brand=b,
+                fontSize=12,
+                textColor=primary,
+                fontName="Helvetica-Bold",
                 spaceAfter=4,
             )
             story.append(Paragraph("PRICING", pricing_label))
@@ -142,7 +154,11 @@ class QuoteTemplate(BaseBriefingTemplate):
     # ------------------------------------------------------------------
 
     def _build_header(
-        self, org: str, project: dict, primary: HexColor, caption_c: HexColor,
+        self,
+        org: str,
+        project: dict,
+        primary: HexColor,
+        caption_c: HexColor,
     ) -> list:
         """Build header with company info left and QUOTE title right."""
         flowables: list = []
@@ -152,16 +168,22 @@ class QuoteTemplate(BaseBriefingTemplate):
         left_parts: list = []
         if org:
             org_style = _ps(
-                "QuoteOrg", brand=b, fontSize=14,
-                textColor=primary, fontName="Helvetica-Bold",
+                "QuoteOrg",
+                brand=b,
+                fontSize=14,
+                textColor=primary,
+                fontName="Helvetica-Bold",
             )
             left_parts.append(Paragraph(org, org_style))
 
         tagline = project.get("tagline", "")
         if tagline:
             tag_style = _ps(
-                "QuoteTagline", brand=b, fontSize=9,
-                textColor=caption_c, fontName="Helvetica-Oblique",
+                "QuoteTagline",
+                brand=b,
+                fontSize=9,
+                textColor=caption_c,
+                fontName="Helvetica-Oblique",
             )
             left_parts.append(Paragraph(tagline, tag_style))
 
@@ -172,18 +194,26 @@ class QuoteTemplate(BaseBriefingTemplate):
                 address_parts.append(val)
         if address_parts:
             addr_style = _ps(
-                "QuoteAddr", brand=b, fontSize=8,
-                textColor=caption_c, leading=11,
+                "QuoteAddr",
+                brand=b,
+                fontSize=8,
+                textColor=caption_c,
+                leading=11,
             )
-            left_parts.append(Paragraph(
-                "<br/>".join(_safe_text(p) for p in address_parts),
-                addr_style,
-            ))
+            left_parts.append(
+                Paragraph(
+                    "<br/>".join(_safe_text(p) for p in address_parts),
+                    addr_style,
+                )
+            )
 
         # Right side: QUOTE title
         title_style = _ps(
-            "QuoteTitle", brand=b, fontSize=24,
-            textColor=primary, fontName="Helvetica-Bold",
+            "QuoteTitle",
+            brand=b,
+            fontSize=24,
+            textColor=primary,
+            fontName="Helvetica-Bold",
             alignment=2,
         )
         right_content = Paragraph("QUOTE", title_style)
@@ -195,24 +225,32 @@ class QuoteTemplate(BaseBriefingTemplate):
                     [[p] for p in left_cell],
                     colWidths=[self.content_width * 0.6],
                 )
-                left_cell.setStyle(TableStyle([
-                    ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                    ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-                    ("TOPPADDING", (0, 0), (-1, -1), 0),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
-                ]))
+                left_cell.setStyle(
+                    TableStyle(
+                        [
+                            ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                            ("TOPPADDING", (0, 0), (-1, -1), 0),
+                            ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+                        ]
+                    )
+                )
 
             header_table = Table(
                 [[left_cell, right_content]],
                 colWidths=[self.content_width * 0.6, self.content_width * 0.4],
             )
-            header_table.setStyle(TableStyle([
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-                ("TOPPADDING", (0, 0), (-1, -1), 0),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-            ]))
+            header_table.setStyle(
+                TableStyle(
+                    [
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                        ("TOPPADDING", (0, 0), (-1, -1), 0),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                    ]
+                )
+            )
             flowables.append(header_table)
         else:
             flowables.append(right_content)
@@ -229,28 +267,39 @@ class QuoteTemplate(BaseBriefingTemplate):
         b = self.brand
 
         label_style = _ps(
-            "QuoteMetaLabel", brand=b, fontSize=9,
-            textColor=primary, fontName="Helvetica-Bold",
+            "QuoteMetaLabel",
+            brand=b,
+            fontSize=9,
+            textColor=primary,
+            fontName="Helvetica-Bold",
         )
         value_style = _ps(
-            "QuoteMetaValue", brand=b, fontSize=9,
+            "QuoteMetaValue",
+            brand=b,
+            fontSize=9,
             textColor=body_c,
         )
 
         meta_rows = []
         if self.doc_id:
-            meta_rows.append([
-                Paragraph("Quote #:", label_style),
-                Paragraph(str(self.doc_id), value_style),
-            ])
-        meta_rows.append([
-            Paragraph("Date:", label_style),
-            Paragraph(self.date_str, value_style),
-        ])
-        meta_rows.append([
-            Paragraph("Valid Until:", label_style),
-            Paragraph("Valid for 30 days", value_style),
-        ])
+            meta_rows.append(
+                [
+                    Paragraph("Quote #:", label_style),
+                    Paragraph(str(self.doc_id), value_style),
+                ]
+            )
+        meta_rows.append(
+            [
+                Paragraph("Date:", label_style),
+                Paragraph(self.date_str, value_style),
+            ]
+        )
+        meta_rows.append(
+            [
+                Paragraph("Valid Until:", label_style),
+                Paragraph("Valid for 30 days", value_style),
+            ]
+        )
 
         if meta_rows:
             meta_table = Table(
@@ -258,13 +307,17 @@ class QuoteTemplate(BaseBriefingTemplate):
                 colWidths=[self.content_width * 0.15, self.content_width * 0.35],
                 hAlign="RIGHT",
             )
-            meta_table.setStyle(TableStyle([
-                ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 4),
-                ("TOPPADDING", (0, 0), (-1, -1), 1),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ]))
+            meta_table.setStyle(
+                TableStyle(
+                    [
+                        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+                        ("TOPPADDING", (0, 0), (-1, -1), 1),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ]
+                )
+            )
             flowables.append(meta_table)
 
         return flowables
@@ -282,9 +335,13 @@ class QuoteTemplate(BaseBriefingTemplate):
         for idx, sub in enumerate(subsystems, 1):
             name = sub.get("name", f"Section {idx}")
             heading_style = _ps(
-                "QuoteScopeH", brand=b, fontSize=11,
-                textColor=primary, fontName="Helvetica-Bold",
-                spaceBefore=6, spaceAfter=3,
+                "QuoteScopeH",
+                brand=b,
+                fontSize=11,
+                textColor=primary,
+                fontName="Helvetica-Bold",
+                spaceBefore=6,
+                spaceAfter=3,
             )
             flowables.append(_safe_para(f"{idx}. {_safe_text(name)}", heading_style))
 
@@ -352,29 +409,30 @@ class QuoteTemplate(BaseBriefingTemplate):
                 sanitised = [("" if cell is None else cell) for cell in row]
                 padded = list(sanitised) + [""] * max(0, col_count - len(sanitised))
                 padded = padded[:col_count]
-                table_data.append([
-                    _safe_para(str(cell), styles["STYLE_TABLE_BODY"])
-                    for cell in padded
-                ])
+                table_data.append([_safe_para(str(cell), styles["STYLE_TABLE_BODY"]) for cell in padded])
 
             pricing_tbl = Table(
                 table_data,
                 colWidths=[col_width] * col_count,
                 repeatRows=1,
             )
-            pricing_tbl.setStyle(TableStyle([
-                ("BACKGROUND", (0, 0), (-1, 0), primary),
-                ("TEXTCOLOR", (0, 0), (-1, 0), white),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, 0), 9),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("TOPPADDING", (0, 0), (-1, -1), 4),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-                ("LEFTPADDING", (0, 0), (-1, -1), 5),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 5),
-                ("GRID", (0, 0), (-1, -1), 0.4, rule_c),
-                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [white, table_alt]),
-            ]))
+            pricing_tbl.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, 0), primary),
+                        ("TEXTCOLOR", (0, 0), (-1, 0), white),
+                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                        ("FONTSIZE", (0, 0), (-1, 0), 9),
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("TOPPADDING", (0, 0), (-1, -1), 4),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 5),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+                        ("GRID", (0, 0), (-1, -1), 0.4, rule_c),
+                        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [white, table_alt]),
+                    ]
+                )
+            )
 
             flowables.append(pricing_tbl)
             flowables.append(Spacer(1, 4 * mm))
@@ -393,22 +451,31 @@ class QuoteTemplate(BaseBriefingTemplate):
         body_c = _hex(b, "body_text")
 
         terms_label = _ps(
-            "QuoteTermsLabel", brand=b, fontSize=12,
-            textColor=primary, fontName="Helvetica-Bold",
+            "QuoteTermsLabel",
+            brand=b,
+            fontSize=12,
+            textColor=primary,
+            fontName="Helvetica-Bold",
             spaceAfter=4,
         )
         flowables.append(Paragraph("TERMS AND CONDITIONS", terms_label))
         flowables.append(Spacer(1, 2 * mm))
 
         terms_style = _ps(
-            "QuoteTerms", brand=b, fontSize=9,
-            textColor=body_c, leading=13,
+            "QuoteTerms",
+            brand=b,
+            fontSize=9,
+            textColor=body_c,
+            leading=13,
         )
         for block in parse_markdown(guide)[:20]:
             if block.get("type") == "paragraph":
-                flowables.append(_safe_para(
-                    _safe_text(block.get("text", "")), terms_style,
-                ))
+                flowables.append(
+                    _safe_para(
+                        _safe_text(block.get("text", "")),
+                        terms_style,
+                    )
+                )
             else:
                 flowables.extend(self.render_blocks([block]))
 
@@ -419,34 +486,48 @@ class QuoteTemplate(BaseBriefingTemplate):
     # ------------------------------------------------------------------
 
     def _build_acceptance_block(
-        self, org: str, body_c: HexColor, caption_c: HexColor, primary: HexColor,
+        self,
+        org: str,
+        body_c: HexColor,
+        caption_c: HexColor,
+        primary: HexColor,
     ) -> list:
         """Build an acceptance/signature block at the bottom of the quote."""
         flowables: list = []
         b = self.brand
 
         accept_label = _ps(
-            "QuoteAcceptLabel", brand=b, fontSize=12,
-            textColor=primary, fontName="Helvetica-Bold",
+            "QuoteAcceptLabel",
+            brand=b,
+            fontSize=12,
+            textColor=primary,
+            fontName="Helvetica-Bold",
             spaceAfter=4,
         )
         flowables.append(Paragraph("ACCEPTANCE", accept_label))
         flowables.append(Spacer(1, 2 * mm))
 
         accept_body = _ps(
-            "QuoteAcceptBody", brand=b, fontSize=9,
-            textColor=body_c, leading=13,
+            "QuoteAcceptBody",
+            brand=b,
+            fontSize=9,
+            textColor=body_c,
+            leading=13,
         )
-        flowables.append(Paragraph(
-            "By signing below, the client accepts this quote and agrees to the "
-            "terms and conditions outlined above.",
-            accept_body,
-        ))
+        flowables.append(
+            Paragraph(
+                "By signing below, the client accepts this quote and agrees to the "
+                "terms and conditions outlined above.",
+                accept_body,
+            )
+        )
         flowables.append(Spacer(1, 10 * mm))
 
         # Signature lines
         sig_label = _ps(
-            "QuoteSigLabel", brand=b, fontSize=8,
+            "QuoteSigLabel",
+            brand=b,
+            fontSize=8,
             textColor=caption_c,
         )
 
@@ -465,13 +546,17 @@ class QuoteTemplate(BaseBriefingTemplate):
             sig_data,
             colWidths=[self.content_width * 0.55, self.content_width * 0.45],
         )
-        sig_table.setStyle(TableStyle([
-            ("LEFTPADDING", (0, 0), (-1, -1), 0),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 4),
-            ("TOPPADDING", (0, 0), (-1, -1), 8),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
-            ("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
-        ]))
+        sig_table.setStyle(
+            TableStyle(
+                [
+                    ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+                    ("TOPPADDING", (0, 0), (-1, -1), 8),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+                    ("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
+                ]
+            )
+        )
 
         flowables.append(KeepTogether([sig_table]))
 
@@ -493,8 +578,10 @@ class QuoteTemplate(BaseBriefingTemplate):
             from briefkit.doc_ids import get_or_assign_doc_id
 
             self.doc_id = get_or_assign_doc_id(
-                self.target_path, self.level,
-                content.get("title", ""), config=self.config,
+                self.target_path,
+                self.level,
+                content.get("title", ""),
+                config=self.config,
             )
 
         # Header/footer state
@@ -528,10 +615,13 @@ class QuoteTemplate(BaseBriefingTemplate):
             canvas.setFillColor(caption_color)
             if org:
                 canvas.drawString(
-                    doc_inner.leftMargin, 10 * mm, org,
+                    doc_inner.leftMargin,
+                    10 * mm,
+                    org,
                 )
             canvas.drawRightString(
-                doc_inner.pagesize[0] - doc_inner.rightMargin, 10 * mm,
+                doc_inner.pagesize[0] - doc_inner.rightMargin,
+                10 * mm,
                 f"Page {doc_inner.page}",
             )
             canvas.restoreState()

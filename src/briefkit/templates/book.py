@@ -24,13 +24,7 @@ from __future__ import annotations
 from reportlab.lib.pagesizes import A3, A4, legal, letter
 from reportlab.lib.units import mm
 from reportlab.pdfbase.pdfmetrics import stringWidth
-from reportlab.platypus import KeepTogether, PageBreak, Paragraph, SimpleDocTemplate, Spacer
-
-from briefkit.templates._helpers import (
-    optional_section,
-    section_break,
-    should_skip,
-)
+from reportlab.platypus import KeepTogether, PageBreak, Paragraph, Spacer
 
 from briefkit.elements.header_footer import make_header_footer
 from briefkit.extractor import parse_markdown
@@ -43,6 +37,9 @@ from briefkit.styles import (
     _hex,
     _ps,
     _safe_para,
+)
+from briefkit.templates._helpers import (
+    should_skip,
 )
 
 
@@ -62,8 +59,8 @@ class BookTemplate(BaseBriefingTemplate):
         story = []
 
         title = content.get("title", self.target_path.name.replace("-", " ").title())
-        b     = self.brand
-        primary   = _hex(b, "primary")
+        b = self.brand
+        primary = _hex(b, "primary")
         secondary = _hex(b, "secondary")
         caption_c = _hex(b, "caption")
         org = b.get("org", "")
@@ -71,14 +68,17 @@ class BookTemplate(BaseBriefingTemplate):
         copyright_str = b.get("copyright", f"\u00a9 {year}")
 
         # --- Half-title page ---
-        cw = getattr(self, 'content_width', CONTENT_WIDTH)
+        cw = getattr(self, "content_width", CONTENT_WIDTH)
         ht_size = 24
         while stringWidth(title, "Helvetica-Bold", ht_size) > cw * 0.85 and ht_size > 16:
             ht_size -= 1
         half_title_style = _ps(
-            "HalfTitle", brand=b,
-            fontSize=ht_size, textColor=primary,
-            fontName="Helvetica-Bold", alignment=1,
+            "HalfTitle",
+            brand=b,
+            fontSize=ht_size,
+            textColor=primary,
+            fontName="Helvetica-Bold",
+            alignment=1,
         )
         story.append(Spacer(1, 80 * mm))
         story.append(Paragraph(title, half_title_style))
@@ -89,21 +89,30 @@ class BookTemplate(BaseBriefingTemplate):
         while stringWidth(title, "Helvetica-Bold", ft_size) > cw * 0.80 and ft_size > 18:
             ft_size -= 1
         title_style = _ps(
-            "BookTitle", brand=b,
-            fontSize=ft_size, textColor=primary,
-            fontName="Helvetica-Bold", alignment=1,
+            "BookTitle",
+            brand=b,
+            fontSize=ft_size,
+            textColor=primary,
+            fontName="Helvetica-Bold",
+            alignment=1,
             leading=ft_size + 8,
             spaceAfter=6 * mm,
         )
         subtitle_text = self.config.get("project", {}).get("tagline", "")
         sub_style = _ps(
-            "BookSubtitle", brand=b,
-            fontSize=16, textColor=secondary,
-            fontName="Helvetica-Oblique", alignment=1,
+            "BookSubtitle",
+            brand=b,
+            fontSize=16,
+            textColor=secondary,
+            fontName="Helvetica-Oblique",
+            alignment=1,
         )
         author_style = _ps(
-            "BookAuthor", brand=b,
-            fontSize=14, textColor=caption_c, alignment=1,
+            "BookAuthor",
+            brand=b,
+            fontSize=14,
+            textColor=caption_c,
+            alignment=1,
         )
         story.append(Spacer(1, 50 * mm))
         story.append(Paragraph(title, title_style))
@@ -118,18 +127,23 @@ class BookTemplate(BaseBriefingTemplate):
 
         # --- Copyright page ---
         cp_style = _ps(
-            "CopyrightPage", brand=b,
-            fontSize=9, textColor=caption_c, leading=14,
+            "CopyrightPage",
+            brand=b,
+            fontSize=9,
+            textColor=caption_c,
+            leading=14,
         )
         story.append(Spacer(1, 120 * mm))
         story.append(Paragraph(f"First published {year}", cp_style))
         story.append(Paragraph(copyright_str, cp_style))
-        story.append(Paragraph(
-            "All rights reserved. No part of this publication may be reproduced, "
-            "stored in a retrieval system, or transmitted in any form or by any means, "
-            "without the prior written permission of the publisher.",
-            cp_style,
-        ))
+        story.append(
+            Paragraph(
+                "All rights reserved. No part of this publication may be reproduced, "
+                "stored in a retrieval system, or transmitted in any form or by any means, "
+                "without the prior written permission of the publisher.",
+                cp_style,
+            )
+        )
         story.append(Spacer(1, 10 * mm))
         if self.doc_id:
             story.append(Paragraph(f"Document ID: {self.doc_id}", cp_style))
@@ -142,14 +156,18 @@ class BookTemplate(BaseBriefingTemplate):
         # skipped sections return an empty list so they drop out of both
         # the TOC and the final story naturally.
         cfg = self.config
-        preface_flowables   = [] if should_skip(cfg, "preface")    else self._build_preface(content)
-        chapters            = self._build_chapters(content)
-        glossary_flowables  = [] if should_skip(cfg, "glossary")   else self._build_glossary(content)
-        bib_flowables       = [] if should_skip(cfg, "bibliography") else self.build_bibliography(
-            content.get("bibliography", []),
-            source_type=content.get("metrics", {}).get("source_type", "ACADEMIC"),
+        preface_flowables = [] if should_skip(cfg, "preface") else self._build_preface(content)
+        chapters = self._build_chapters(content)
+        glossary_flowables = [] if should_skip(cfg, "glossary") else self._build_glossary(content)
+        bib_flowables = (
+            []
+            if should_skip(cfg, "bibliography")
+            else self.build_bibliography(
+                content.get("bibliography", []),
+                source_type=content.get("metrics", {}).get("source_type", "ACADEMIC"),
+            )
         )
-        index_flowables     = [] if should_skip(cfg, "index")      else self._build_index(content)
+        index_flowables = [] if should_skip(cfg, "index") else self._build_index(content)
 
         # --- TOC ---
         if not should_skip(cfg, "toc"):
@@ -179,7 +197,7 @@ class BookTemplate(BaseBriefingTemplate):
         # --- Chapters (recto — each on new page) ---
         for chapter_title, chapter_flowables in chapters:
             # Update running header for this chapter
-            if hasattr(self, '_hf_state'):
+            if hasattr(self, "_hf_state"):
                 self._hf_state["section"] = chapter_title
 
             # Wrap the chapter title with its first content flowable in a
@@ -197,9 +215,7 @@ class BookTemplate(BaseBriefingTemplate):
                 first = chapter_flowables[0]
                 if hasattr(first, "keepWithNext"):
                     first.keepWithNext = False
-                story.append(KeepTogether(
-                    [title_para, Spacer(1, 2 * mm), first]
-                ))
+                story.append(KeepTogether([title_para, Spacer(1, 2 * mm), first]))
                 story.extend(chapter_flowables[1:])
             else:
                 story.append(title_para)
@@ -207,7 +223,7 @@ class BookTemplate(BaseBriefingTemplate):
             story.append(PageBreak())
 
         # Reset running header
-        if hasattr(self, '_hf_state'):
+        if hasattr(self, "_hf_state"):
             self._hf_state["section"] = content.get("title", "")
 
         # --- Back matter ---
@@ -257,7 +273,7 @@ class BookTemplate(BaseBriefingTemplate):
 
             if overview:
                 # Use first ~600 words of overview
-                words  = overview.split()
+                words = overview.split()
                 excerpt = " ".join(words[:600])
                 for block in parse_markdown(excerpt)[:20]:
                     flowables.extend(self.render_blocks([block]))
@@ -266,12 +282,14 @@ class BookTemplate(BaseBriefingTemplate):
                     flowables.extend(self.render_blocks([block]))
             else:
                 subsystems = content.get("subsystems", [])
-                flowables.append(Paragraph(
-                    f"This volume presents a comprehensive treatment of {title}. "
-                    f"It comprises {len(subsystems)} chapter(s), each addressing a "
-                    f"distinct aspect of the subject matter.",
-                    self.styles["STYLE_BODY"],
-                ))
+                flowables.append(
+                    Paragraph(
+                        f"This volume presents a comprehensive treatment of {title}. "
+                        f"It comprises {len(subsystems)} chapter(s), each addressing a "
+                        f"distinct aspect of the subject matter.",
+                        self.styles["STYLE_BODY"],
+                    )
+                )
 
         return flowables
 
@@ -351,22 +369,31 @@ class BookTemplate(BaseBriefingTemplate):
         flowables = []
         flowables.append(Paragraph("Glossary", self.styles["STYLE_H1"]))
         flowables.append(Spacer(1, 3 * mm))
-        flowables.append(Paragraph(
-            "Definitions of key technical terms used throughout this work.",
-            self.styles["STYLE_BODY"],
-        ))
+        flowables.append(
+            Paragraph(
+                "Definitions of key technical terms used throughout this work.",
+                self.styles["STYLE_BODY"],
+            )
+        )
         flowables.append(Spacer(1, 3 * mm))
 
         primary = _hex(self.brand, "primary")
         entry_style = _ps(
-            "GlossaryEntry", brand=self.brand,
-            fontSize=10, textColor=_hex(self.brand, "body_text"),
-            leading=14, spaceAfter=4,
+            "GlossaryEntry",
+            brand=self.brand,
+            fontSize=10,
+            textColor=_hex(self.brand, "body_text"),
+            leading=14,
+            spaceAfter=4,
         )
         letter_style = _ps(
-            "GlossaryLetter", brand=self.brand,
-            fontName="Helvetica-Bold", fontSize=12,
-            textColor=primary, spaceBefore=8, spaceAfter=2,
+            "GlossaryLetter",
+            brand=self.brand,
+            fontName="Helvetica-Bold",
+            fontSize=12,
+            textColor=primary,
+            spaceBefore=8,
+            spaceAfter=2,
         )
 
         sorted_terms = sorted(terms.items(), key=lambda x: x[0].lower())
@@ -379,13 +406,9 @@ class BookTemplate(BaseBriefingTemplate):
                 flowables.append(Paragraph(first, letter_style))
 
             if defn:
-                flowables.append(Paragraph(
-                    f"<b>{term}</b>: {defn}", entry_style
-                ))
+                flowables.append(Paragraph(f"<b>{term}</b>: {defn}", entry_style))
             else:
-                flowables.append(Paragraph(
-                    f"<b>{term}</b>", entry_style
-                ))
+                flowables.append(Paragraph(f"<b>{term}</b>", entry_style))
 
         return flowables
 
@@ -414,16 +437,17 @@ class BookTemplate(BaseBriefingTemplate):
     # Colophon
     # ------------------------------------------------------------------
 
-    def _build_colophon(
-        self, title: str, org: str, year: int, copyright_str: str
-    ) -> list:
+    def _build_colophon(self, title: str, org: str, year: int, copyright_str: str) -> list:
         """
         Build the colophon (final page: typesetting and production notes).
         """
         cp_style = _ps(
-            "Colophon", brand=self.brand,
-            fontSize=9, textColor=_hex(self.brand, "caption"),
-            leading=14, alignment=1,
+            "Colophon",
+            brand=self.brand,
+            fontSize=9,
+            textColor=_hex(self.brand, "caption"),
+            leading=14,
+            alignment=1,
         )
         flowables = []
         flowables.append(Spacer(1, 100 * mm))
@@ -431,9 +455,7 @@ class BookTemplate(BaseBriefingTemplate):
         if org:
             flowables.append(Paragraph(org, cp_style))
         flowables.append(Paragraph(copyright_str, cp_style))
-        flowables.append(Paragraph(
-            f"Typeset by briefkit on {self.date_str}.", cp_style
-        ))
+        flowables.append(Paragraph(f"Typeset by briefkit on {self.date_str}.", cp_style))
         return flowables
 
     # ------------------------------------------------------------------
@@ -449,9 +471,7 @@ class BookTemplate(BaseBriefingTemplate):
 
         verbose = self.config.get("_cli", {}).get("verbose", False)
 
-        content = extract_content(
-            str(self.target_path), config=self.config, level=self.level
-        )
+        content = extract_content(str(self.target_path), config=self.config, level=self.level)
         if verbose:
             n_sub = len(content.get("subsystems", []))
             wc = content.get("metrics", {}).get("word_count", 0)
@@ -460,7 +480,8 @@ class BookTemplate(BaseBriefingTemplate):
         # Doc IDs
         if self.config.get("doc_ids", {}).get("enabled", True):
             self.doc_id = get_or_assign_doc_id(
-                self.target_path, level=self.level,
+                self.target_path,
+                level=self.level,
                 title=content.get("title", self.target_path.name),
                 config=self.config,
             )

@@ -30,7 +30,6 @@ from reportlab.lib.units import mm
 from reportlab.platypus import (
     PageBreak,
     Paragraph,
-    SimpleDocTemplate,
     Spacer,
     Table,
     TableStyle,
@@ -60,8 +59,10 @@ _PAGE_SIZES = {
 # Heuristic patterns for table classification
 # ---------------------------------------------------------------------------
 
-_CURRENCY_PATTERN = re.compile(r'[\$\£\€\¥]|USD|AUD|GBP|EUR|cost|price|budget|total|amount', re.IGNORECASE)
-_DATE_PATTERN = re.compile(r'\b\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4}\b|Q[1-4]|phase|week|month|milestone|timeline', re.IGNORECASE)
+_CURRENCY_PATTERN = re.compile(r"[\$\£\€\¥]|USD|AUD|GBP|EUR|cost|price|budget|total|amount", re.IGNORECASE)
+_DATE_PATTERN = re.compile(
+    r"\b\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4}\b|Q[1-4]|phase|week|month|milestone|timeline", re.IGNORECASE
+)
 
 
 def _classify_table(tbl: dict) -> str:
@@ -70,10 +71,7 @@ def _classify_table(tbl: dict) -> str:
     header and cell content heuristics.
     """
     headers_text = " ".join(tbl.get("headers", []))
-    rows_text = " ".join(
-        " ".join(str(c) for c in row)
-        for row in tbl.get("rows", [])[:5]
-    )
+    rows_text = " ".join(" ".join(str(c) for c in row) for row in tbl.get("rows", [])[:5])
     combined = headers_text + " " + rows_text
 
     if _CURRENCY_PATTERN.search(combined):
@@ -144,6 +142,7 @@ class ProposalTemplate(BaseBriefingTemplate):
             toc_entries.append((1, "Acceptance & Sign-off"))
 
             from briefkit.generator import build_toc
+
             story.extend(build_toc(toc_entries, brand=b, content_width=self.content_width))
             story.append(PageBreak())
 
@@ -202,41 +201,63 @@ class ProposalTemplate(BaseBriefingTemplate):
         # Org name
         if org:
             org_style = _ps(
-                "ProposalCoverOrg", brand=b, fontSize=14, textColor=primary,
-                fontName="Helvetica-Bold", alignment=1, spaceAfter=6,
+                "ProposalCoverOrg",
+                brand=b,
+                fontSize=14,
+                textColor=primary,
+                fontName="Helvetica-Bold",
+                alignment=1,
+                spaceAfter=6,
             )
             flowables.append(Paragraph(org, org_style))
             flowables.append(Spacer(1, 8 * mm))
 
         # PROPOSAL — large prominent heading
         proposal_style = _ps(
-            "ProposalCoverLabel", brand=b, fontSize=28, textColor=primary,
-            fontName="Helvetica-Bold", alignment=1, spaceAfter=6,
+            "ProposalCoverLabel",
+            brand=b,
+            fontSize=28,
+            textColor=primary,
+            fontName="Helvetica-Bold",
+            alignment=1,
+            spaceAfter=6,
         )
         flowables.append(Paragraph("PROPOSAL", proposal_style))
 
         # Divider
         flowables.append(Spacer(1, 4 * mm))
         divider = Table([[""]], colWidths=[self.content_width * 0.5], rowHeights=[2])
-        divider.setStyle(TableStyle([
-            ("LINEABOVE", (0, 0), (-1, -1), 2, HexColor(b.get("primary", "#1B2A4A"))),
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-        ]))
+        divider.setStyle(
+            TableStyle(
+                [
+                    ("LINEABOVE", (0, 0), (-1, -1), 2, HexColor(b.get("primary", "#1B2A4A"))),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ]
+            )
+        )
         divider.hAlign = "CENTER"
         flowables.append(divider)
         flowables.append(Spacer(1, 8 * mm))
 
         # Project title — smaller, below PROPOSAL
         title_style = _ps(
-            "ProposalCoverTitle", brand=b, fontSize=16, textColor=primary,
-            fontName="Helvetica-Bold", alignment=1, spaceAfter=8,
+            "ProposalCoverTitle",
+            brand=b,
+            fontSize=16,
+            textColor=primary,
+            fontName="Helvetica-Bold",
+            alignment=1,
+            spaceAfter=8,
         )
         flowables.append(Paragraph(title, title_style))
 
         # Date
         flowables.append(Spacer(1, 20 * mm))
         date_style = _ps(
-            "ProposalCoverDate", brand=b, fontSize=10, textColor=body_c,
+            "ProposalCoverDate",
+            brand=b,
+            fontSize=10,
+            textColor=body_c,
             alignment=1,
         )
         flowables.append(Paragraph(self.date_str, date_style))
@@ -247,8 +268,12 @@ class ProposalTemplate(BaseBriefingTemplate):
         if tagline:
             flowables.append(Spacer(1, 6 * mm))
             tag_style = _ps(
-                "ProposalCoverTag", brand=b, fontSize=9, textColor=caption_c,
-                fontName="Helvetica-Oblique", alignment=1,
+                "ProposalCoverTag",
+                brand=b,
+                fontSize=9,
+                textColor=caption_c,
+                fontName="Helvetica-Oblique",
+                alignment=1,
             )
             flowables.append(Paragraph(tagline, tag_style))
 
@@ -268,8 +293,12 @@ class ProposalTemplate(BaseBriefingTemplate):
         if contact_text:
             flowables.append(Spacer(1, 30 * mm))
             band_style = _ps(
-                "ProposalCoverBand", brand=b, fontSize=9, textColor=white,
-                fontName="Helvetica", alignment=1,
+                "ProposalCoverBand",
+                brand=b,
+                fontSize=9,
+                textColor=white,
+                fontName="Helvetica",
+                alignment=1,
             )
             band_data = [[Paragraph(contact_text, band_style)]]
             band = Table(
@@ -277,13 +306,17 @@ class ProposalTemplate(BaseBriefingTemplate):
                 colWidths=[self.content_width],
                 rowHeights=None,
             )
-            band.setStyle(TableStyle([
-                ("BACKGROUND", (0, 0), (-1, -1), secondary),
-                ("TOPPADDING", (0, 0), (-1, -1), 8),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-                ("LEFTPADDING", (0, 0), (-1, -1), 10),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
-            ]))
+            band.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, -1), secondary),
+                        ("TOPPADDING", (0, 0), (-1, -1), 8),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                    ]
+                )
+            )
             flowables.append(band)
 
         return flowables
@@ -332,10 +365,7 @@ class ProposalTemplate(BaseBriefingTemplate):
             for block in parse_markdown(orientation)[:15]:
                 flowables.extend(self.render_blocks([block]))
         else:
-            scope_text = (
-                f"The scope of this proposal covers {len(subsystems)} "
-                f"deliverable area(s) for {title}."
-            )
+            scope_text = f"The scope of this proposal covers {len(subsystems)} deliverable area(s) for {title}."
             flowables.append(Paragraph(scope_text, self.styles["STYLE_BODY"]))
 
         # Objectives as bullet list from subsystem names
@@ -343,8 +373,12 @@ class ProposalTemplate(BaseBriefingTemplate):
             flowables.append(Spacer(1, 2 * mm))
             flowables.extend(self._heading_with_rule("Key Objectives", "STYLE_H2"))
             obj_style = _ps(
-                "ProposalObjective", brand=b, fontSize=10,
-                textColor=_hex(b, "body_text"), leading=14, leftIndent=12,
+                "ProposalObjective",
+                brand=b,
+                fontSize=10,
+                textColor=_hex(b, "body_text"),
+                leading=14,
+                leftIndent=12,
             )
             for sub in subsystems:
                 name = sub.get("name", "")
@@ -404,10 +438,12 @@ class ProposalTemplate(BaseBriefingTemplate):
 
         flowables: list = []
         flowables.extend(self._heading_with_rule("Timeline", "STYLE_H1"))
-        flowables.append(Paragraph(
-            "The following timeline outlines the key milestones and phases.",
-            self.styles["STYLE_BODY"],
-        ))
+        flowables.append(
+            Paragraph(
+                "The following timeline outlines the key milestones and phases.",
+                self.styles["STYLE_BODY"],
+            )
+        )
         flowables.append(Spacer(1, 2 * mm))
 
         from briefkit.elements.tables import build_data_table
@@ -416,11 +452,15 @@ class ProposalTemplate(BaseBriefingTemplate):
         for name, tbl in timeline_tables[:5]:
             if name:
                 flowables.append(Paragraph(name, self.styles["STYLE_H2"]))
-            flowables.extend(build_data_table(
-                tbl["headers"], tbl["rows"],
-                brand=self.brand, content_width=self.content_width,
-                header_color=secondary,
-            ))
+            flowables.extend(
+                build_data_table(
+                    tbl["headers"],
+                    tbl["rows"],
+                    brand=self.brand,
+                    content_width=self.content_width,
+                    header_color=secondary,
+                )
+            )
             flowables.append(Spacer(1, 3 * mm))
 
         return flowables
@@ -437,10 +477,12 @@ class ProposalTemplate(BaseBriefingTemplate):
 
         flowables: list = []
         flowables.extend(self._heading_with_rule("Pricing &amp; Budget", "STYLE_H1"))
-        flowables.append(Paragraph(
-            "The following table(s) detail the proposed investment.",
-            self.styles["STYLE_BODY"],
-        ))
+        flowables.append(
+            Paragraph(
+                "The following table(s) detail the proposed investment.",
+                self.styles["STYLE_BODY"],
+            )
+        )
         flowables.append(Spacer(1, 2 * mm))
 
         from briefkit.elements.tables import build_data_table
@@ -449,11 +491,15 @@ class ProposalTemplate(BaseBriefingTemplate):
         for name, tbl in pricing_tables[:5]:
             if name:
                 flowables.append(Paragraph(name, self.styles["STYLE_H2"]))
-            flowables.extend(build_data_table(
-                tbl["headers"], tbl["rows"],
-                brand=self.brand, content_width=self.content_width,
-                header_color=secondary,
-            ))
+            flowables.extend(
+                build_data_table(
+                    tbl["headers"],
+                    tbl["rows"],
+                    brand=self.brand,
+                    content_width=self.content_width,
+                    header_color=secondary,
+                )
+            )
             flowables.append(Spacer(1, 3 * mm))
 
         return flowables
@@ -492,22 +538,32 @@ class ProposalTemplate(BaseBriefingTemplate):
         flowables.extend(self._heading_with_rule("Acceptance &amp; Sign-off", "STYLE_H1"))
 
         intro_style = _ps(
-            "ProposalAcceptIntro", brand=b, fontSize=10, textColor=body_c,
+            "ProposalAcceptIntro",
+            brand=b,
+            fontSize=10,
+            textColor=body_c,
             spaceAfter=8,
         )
-        flowables.append(Paragraph(
-            "By signing below, the parties acknowledge acceptance of this "
-            "proposal including all terms, deliverables, and pricing as described.",
-            intro_style,
-        ))
+        flowables.append(
+            Paragraph(
+                "By signing below, the parties acknowledge acceptance of this "
+                "proposal including all terms, deliverables, and pricing as described.",
+                intro_style,
+            )
+        )
         flowables.append(Spacer(1, 6 * mm))
 
         def _sig_block(party_label: str) -> list:
             """Generate a single party signature block."""
             block: list = []
             party_h = _ps(
-                "ProposalPartyH", brand=b, fontSize=11, textColor=primary,
-                fontName="Helvetica-Bold", spaceBefore=6, spaceAfter=4,
+                "ProposalPartyH",
+                brand=b,
+                fontSize=11,
+                textColor=primary,
+                fontName="Helvetica-Bold",
+                spaceBefore=6,
+                spaceAfter=4,
             )
             block.append(Paragraph(party_label, party_h))
             block.append(Spacer(1, 3 * mm))
@@ -515,15 +571,19 @@ class ProposalTemplate(BaseBriefingTemplate):
             for field in ["Signed by:", "Name:", "Title:", "Date:"]:
                 data = [[field, ""]]
                 tbl = Table(data, colWidths=[22 * mm, 80 * mm])
-                tbl.setStyle(TableStyle([
-                    ("FONTNAME", (0, 0), (0, 0), "Helvetica"),
-                    ("FONTSIZE", (0, 0), (-1, -1), 9),
-                    ("TEXTCOLOR", (0, 0), (0, 0), HexColor(b.get("caption", "#666666"))),
-                    ("LINEBELOW", (1, 0), (1, 0), 0.5, rule_c),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-                    ("TOPPADDING", (0, 0), (-1, -1), 4),
-                    ("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
-                ]))
+                tbl.setStyle(
+                    TableStyle(
+                        [
+                            ("FONTNAME", (0, 0), (0, 0), "Helvetica"),
+                            ("FONTSIZE", (0, 0), (-1, -1), 9),
+                            ("TEXTCOLOR", (0, 0), (0, 0), HexColor(b.get("caption", "#666666"))),
+                            ("LINEBELOW", (1, 0), (1, 0), 0.5, rule_c),
+                            ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                            ("TOPPADDING", (0, 0), (-1, -1), 4),
+                            ("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
+                        ]
+                    )
+                )
                 block.append(tbl)
 
             block.append(Spacer(1, 6 * mm))
@@ -555,30 +615,43 @@ class ProposalTemplate(BaseBriefingTemplate):
         # Brand bar
         bar_data = [[""]]
         bar = Table(bar_data, colWidths=[self.content_width], rowHeights=[4])
-        bar.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), HexColor(b.get("primary", "#1B2A4A"))),
-        ]))
+        bar.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), HexColor(b.get("primary", "#1B2A4A"))),
+                ]
+            )
+        )
         flowables.append(bar)
         flowables.append(Spacer(1, 10 * mm))
 
         # Org name
         if org:
             org_style = _ps(
-                "ProposalBackOrg", brand=b, fontSize=14, textColor=primary,
-                fontName="Helvetica-Bold", alignment=1,
+                "ProposalBackOrg",
+                brand=b,
+                fontSize=14,
+                textColor=primary,
+                fontName="Helvetica-Bold",
+                alignment=1,
             )
             flowables.append(Paragraph(org, org_style))
 
         # Colophon
         flowables.append(Spacer(1, 4 * mm))
         colophon_style = _ps(
-            "ProposalColophon", brand=b, fontSize=8, textColor=caption_c,
+            "ProposalColophon",
+            brand=b,
+            fontSize=8,
+            textColor=caption_c,
             alignment=1,
         )
-        flowables.append(Paragraph(
-            f"Generated by briefkit on {self.date_str}.",
-            colophon_style,
-        ))
+        flowables.append(
+            Paragraph(
+                f"Generated by briefkit on {self.date_str}.",
+                colophon_style,
+            )
+        )
 
         return flowables
 
@@ -594,11 +667,15 @@ class ProposalTemplate(BaseBriefingTemplate):
             Spacer(1, 1 * mm),
         ]
         rule = Table([[""]], colWidths=[self.content_width], rowHeights=[0.5])
-        rule.setStyle(TableStyle([
-            ("LINEABOVE", (0, 0), (-1, 0), 0.5, secondary),
-            ("TOPPADDING", (0, 0), (-1, -1), 0),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-        ]))
+        rule.setStyle(
+            TableStyle(
+                [
+                    ("LINEABOVE", (0, 0), (-1, 0), 0.5, secondary),
+                    ("TOPPADDING", (0, 0), (-1, -1), 0),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                ]
+            )
+        )
         flowables.append(rule)
         flowables.append(Spacer(1, 2 * mm))
         return flowables
@@ -635,9 +712,12 @@ class ProposalTemplate(BaseBriefingTemplate):
         doc_ids_cfg = self.config.get("doc_ids", {})
         if doc_ids_cfg.get("enabled", True):
             from briefkit.doc_ids import get_or_assign_doc_id
+
             self.doc_id = get_or_assign_doc_id(
-                self.target_path, self.level,
-                title, config=self.config,
+                self.target_path,
+                self.level,
+                title,
+                config=self.config,
             )
 
         # Header/footer state
@@ -680,7 +760,8 @@ class ProposalTemplate(BaseBriefingTemplate):
             canvas.setFont("Helvetica", 8)
             canvas.setFillColor(HexColor(brand.get("caption", "#666666")))
             canvas.drawRightString(
-                page_w - right_m, page_h - 15 * mm,
+                page_w - right_m,
+                page_h - 15 * mm,
                 proposal_title,
             )
 
@@ -688,7 +769,8 @@ class ProposalTemplate(BaseBriefingTemplate):
             canvas.setFont("Helvetica", 7)
             canvas.setFillColor(HexColor(brand.get("caption", "#666666")))
             canvas.drawCentredString(
-                page_w / 2, 10 * mm,
+                page_w / 2,
+                10 * mm,
                 f"Page {doc_inner.page}",
             )
             canvas.restoreState()

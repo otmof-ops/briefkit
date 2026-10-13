@@ -30,7 +30,6 @@ from reportlab.lib.units import mm
 from reportlab.platypus import (
     PageBreak,
     Paragraph,
-    SimpleDocTemplate,
     Spacer,
     Table,
     TableStyle,
@@ -60,8 +59,12 @@ _PHASE_PATTERNS: list[tuple[str, str]] = [
 ]
 
 _ROLE_KEYWORDS = (
-    "security", "legal", "finance", "communications",
-    "procurement", "engineering",
+    "security",
+    "legal",
+    "finance",
+    "communications",
+    "procurement",
+    "engineering",
 )
 
 
@@ -103,7 +106,8 @@ class PlaybookTemplate(BaseBriefingTemplate):
     # ------------------------------------------------------------------
 
     def _group_into_phases(
-        self, subsystems: list[dict],
+        self,
+        subsystems: list[dict],
     ) -> list[dict]:
         """
         Group subsystems into phases.
@@ -127,20 +131,24 @@ class PlaybookTemplate(BaseBriefingTemplate):
         phase_num = 1
         for _pattern, title in _PHASE_PATTERNS:
             if title in phase_map:
-                phases.append({
-                    "number": phase_num,
-                    "title": title,
-                    "subsystems": phase_map[title],
-                })
+                phases.append(
+                    {
+                        "number": phase_num,
+                        "title": title,
+                        "subsystems": phase_map[title],
+                    }
+                )
                 phase_num += 1
 
         # Remaining subsystems as numbered phases
         for sub in ungrouped:
-            phases.append({
-                "number": phase_num,
-                "title": sub.get("name", f"Phase {phase_num}"),
-                "subsystems": [sub],
-            })
+            phases.append(
+                {
+                    "number": phase_num,
+                    "title": sub.get("name", f"Phase {phase_num}"),
+                    "subsystems": [sub],
+                }
+            )
             phase_num += 1
 
         return phases
@@ -157,17 +165,24 @@ class PlaybookTemplate(BaseBriefingTemplate):
 
         # Phase number in a circle (table cell with round-ish background)
         num_style = _ps(
-            "PBPhaseNum", brand=self.brand,
-            fontSize=16, fontName="Helvetica-Bold",
-            textColor=white, alignment=1,
+            "PBPhaseNum",
+            brand=self.brand,
+            fontSize=16,
+            fontName="Helvetica-Bold",
+            textColor=white,
+            alignment=1,
         )
         num_para = Paragraph(str(phase["number"]), num_style)
 
         title_style = _ps(
-            "PBPhaseTitle", brand=self.brand,
-            fontSize=18, fontName="Helvetica-Bold",
-            textColor=primary, alignment=0,
-            spaceBefore=0, spaceAfter=0,
+            "PBPhaseTitle",
+            brand=self.brand,
+            fontSize=18,
+            fontName="Helvetica-Bold",
+            textColor=primary,
+            alignment=0,
+            spaceBefore=0,
+            spaceAfter=0,
         )
         title_para = Paragraph(_safe_text(phase["title"]), title_style)
 
@@ -177,28 +192,38 @@ class PlaybookTemplate(BaseBriefingTemplate):
             colWidths=[12 * mm, self.content_width - 14 * mm],
             rowHeights=[12 * mm],
         )
-        header_tbl.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (0, 0), primary),
-            ("ROUNDEDCORNERS", [6, 6, 6, 6]),
-            ("ALIGN", (0, 0), (0, 0), "CENTER"),
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ("LEFTPADDING", (1, 0), (1, 0), 8),
-            ("TOPPADDING", (0, 0), (-1, -1), 2),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
-        ]))
+        header_tbl.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (0, 0), primary),
+                    ("ROUNDEDCORNERS", [6, 6, 6, 6]),
+                    ("ALIGN", (0, 0), (0, 0), "CENTER"),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("LEFTPADDING", (1, 0), (1, 0), 8),
+                    ("TOPPADDING", (0, 0), (-1, -1), 2),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+                ]
+            )
+        )
         flowables.append(header_tbl)
         flowables.append(Spacer(1, 2 * mm))
 
         # Accent rule
         rule_data = [[""]]
         rule_tbl = Table(
-            rule_data, colWidths=[self.content_width], rowHeights=[2],
+            rule_data,
+            colWidths=[self.content_width],
+            rowHeights=[2],
         )
-        rule_tbl.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), secondary),
-            ("TOPPADDING", (0, 0), (-1, -1), 0),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-        ]))
+        rule_tbl.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), secondary),
+                    ("TOPPADDING", (0, 0), (-1, -1), 0),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                ]
+            )
+        )
         flowables.append(rule_tbl)
         flowables.append(Spacer(1, 4 * mm))
 
@@ -216,20 +241,25 @@ class PlaybookTemplate(BaseBriefingTemplate):
 
         # Role-based header callout
         if role:
-            flowables.append(build_callout_box(
-                f"<b>Role: {_safe_text(role)}</b> — {_safe_text(name)}",
-                "insight",
-                brand=self.brand,
-                content_width=self.content_width,
-            ))
+            flowables.append(
+                build_callout_box(
+                    f"<b>Role: {_safe_text(role)}</b> — {_safe_text(name)}",
+                    "insight",
+                    brand=self.brand,
+                    content_width=self.content_width,
+                )
+            )
             flowables.append(Spacer(1, 2 * mm))
         else:
             # Regular subsystem heading
             sub_heading_style = _ps(
-                "PBSubHead", brand=self.brand,
-                fontSize=13, fontName="Helvetica-Bold",
+                "PBSubHead",
+                brand=self.brand,
+                fontSize=13,
+                fontName="Helvetica-Bold",
                 textColor=_hex(self.brand, "primary"),
-                spaceAfter=3, spaceBefore=4,
+                spaceAfter=3,
+                spaceBefore=4,
             )
             flowables.append(
                 _safe_para(_safe_text(name), sub_heading_style),
@@ -247,12 +277,14 @@ class PlaybookTemplate(BaseBriefingTemplate):
             if btype == "blockquote":
                 text = block.get("text", "")
                 if text.strip():
-                    flowables.append(build_callout_box(
-                        text[:500],
-                        "insight",
-                        brand=self.brand,
-                        content_width=self.content_width,
-                    ))
+                    flowables.append(
+                        build_callout_box(
+                            text[:500],
+                            "insight",
+                            brand=self.brand,
+                            content_width=self.content_width,
+                        )
+                    )
                 continue
 
             # Tables with secondary-colored headers
@@ -282,28 +314,28 @@ class PlaybookTemplate(BaseBriefingTemplate):
         body_c = _hex(self.brand, "body_text")
 
         header_style = _ps(
-            "PBTblHead", brand=self.brand,
-            fontSize=9, fontName="Helvetica-Bold",
-            textColor=white, alignment=0,
+            "PBTblHead",
+            brand=self.brand,
+            fontSize=9,
+            fontName="Helvetica-Bold",
+            textColor=white,
+            alignment=0,
         )
         cell_style = _ps(
-            "PBTblCell", brand=self.brand,
-            fontSize=9, textColor=body_c, alignment=0,
+            "PBTblCell",
+            brand=self.brand,
+            fontSize=9,
+            textColor=body_c,
+            alignment=0,
         )
 
         data: list[list] = []
         if headers:
-            data.append([
-                Paragraph(_safe_text(str(h)), header_style)
-                for h in headers
-            ])
+            data.append([Paragraph(_safe_text(str(h)), header_style) for h in headers])
 
         for row in rows:
             cells = row if isinstance(row, list) else row.get("cells", [])
-            data.append([
-                Paragraph(_safe_text(str(c)), cell_style)
-                for c in cells
-            ])
+            data.append([Paragraph(_safe_text(str(c)), cell_style) for c in cells])
 
         if not data:
             return flowables
@@ -377,28 +409,37 @@ class PlaybookTemplate(BaseBriefingTemplate):
         # Brand bar
         bar_data = [[""]]
         bar = Table(bar_data, colWidths=[self.content_width], rowHeights=[4])
-        bar.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), primary),
-            ("TOPPADDING", (0, 0), (-1, -1), 0),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-        ]))
+        bar.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), primary),
+                    ("TOPPADDING", (0, 0), (-1, -1), 0),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                ]
+            )
+        )
         flowables.append(bar)
         flowables.append(Spacer(1, 8 * mm))
 
         # Org name
         if org:
             org_style = _ps(
-                "PBBackOrg", brand=self.brand,
-                fontSize=14, fontName="Helvetica-Bold",
-                textColor=primary, alignment=1,
+                "PBBackOrg",
+                brand=self.brand,
+                fontSize=14,
+                fontName="Helvetica-Bold",
+                textColor=primary,
+                alignment=1,
             )
             flowables.append(_safe_para(_safe_text(org), org_style))
             flowables.append(Spacer(1, 4 * mm))
 
         # Attribution
         attr_style = _ps(
-            "PBBackAttr", brand=self.brand,
-            fontSize=9, textColor=_hex(self.brand, "caption"),
+            "PBBackAttr",
+            brand=self.brand,
+            fontSize=9,
+            textColor=_hex(self.brand, "caption"),
             alignment=1,
         )
         flowables.append(_safe_para("Generated by briefkit", attr_style))
@@ -435,8 +476,10 @@ class PlaybookTemplate(BaseBriefingTemplate):
             from briefkit.doc_ids import get_or_assign_doc_id
 
             self.doc_id = get_or_assign_doc_id(
-                self.target_path, self.level,
-                title, config=self.config,
+                self.target_path,
+                self.level,
+                title,
+                config=self.config,
             )
 
         # Header/footer state

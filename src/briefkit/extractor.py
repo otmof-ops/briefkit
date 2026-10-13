@@ -30,42 +30,42 @@ from briefkit.terms import _GENERIC_TERMS, extract_terms
 # Pre-compiled parse patterns
 # ---------------------------------------------------------------------------
 
-_RE_CODE_FENCE = re.compile(r'^```')
-_RE_HRULE = re.compile(r'^(\-{3,}|\*{3,}|_{3,})\s*$')
-_RE_TABLE_SEP = re.compile(r'^:?-+:?$')
-_RE_HEADING = re.compile(r'^(#{1,6})\s+(.+)$')
-_RE_ORDERED_LIST = re.compile(r'^(\d+)\.\s+(.+)$')
-_RE_UNORDERED_LIST = re.compile(r'^[\*\-\+]\s+(.+)$')
+_RE_CODE_FENCE = re.compile(r"^```")
+_RE_HRULE = re.compile(r"^(\-{3,}|\*{3,}|_{3,})\s*$")
+_RE_TABLE_SEP = re.compile(r"^:?-+:?$")
+_RE_HEADING = re.compile(r"^(#{1,6})\s+(.+)$")
+_RE_ORDERED_LIST = re.compile(r"^(\d+)\.\s+(.+)$")
+_RE_UNORDERED_LIST = re.compile(r"^[\*\-\+]\s+(.+)$")
 
 # Pre-compiled inline formatting patterns
-_RE_BOLD_ITALIC_AST = re.compile(r'\*{3}(.+?)\*{3}')
-_RE_BOLD_ITALIC_UND = re.compile(r'_{3}(.+?)_{3}')
-_RE_BOLD_AST = re.compile(r'\*{2}(.+?)\*{2}')
-_RE_BOLD_UND = re.compile(r'_{2}(.+?)_{2}')
-_RE_ITALIC_AST = re.compile(r'\*(.+?)\*')
-_RE_ITALIC_UND = re.compile(r'(?<!\w)_(.+?)_(?!\w)')  # word-boundary restricted
-_RE_INLINE_CODE = re.compile(r'`(.+?)`')
-_RE_MD_LINK = re.compile(r'\[([^\]]+)\]\(([^)]*)\)')
-_RE_STRIKETHROUGH = re.compile(r'~~(.+?)~~')
+_RE_BOLD_ITALIC_AST = re.compile(r"\*{3}(.+?)\*{3}")
+_RE_BOLD_ITALIC_UND = re.compile(r"_{3}(.+?)_{3}")
+_RE_BOLD_AST = re.compile(r"\*{2}(.+?)\*{2}")
+_RE_BOLD_UND = re.compile(r"_{2}(.+?)_{2}")
+_RE_ITALIC_AST = re.compile(r"\*(.+?)\*")
+_RE_ITALIC_UND = re.compile(r"(?<!\w)_(.+?)_(?!\w)")  # word-boundary restricted
+_RE_INLINE_CODE = re.compile(r"`(.+?)`")
+_RE_MD_LINK = re.compile(r"\[([^\]]+)\]\(([^)]*)\)")
+_RE_STRIKETHROUGH = re.compile(r"~~(.+?)~~")
 
 # Smart-punctuation patterns (applied after inline markdown strip,
 # before HTML emission, with code spans protected by sentinels so
 # they're never rewritten).
-_RE_SMART_APOS_MID   = re.compile(r"(?<=\w)'(?=\w)")           # don't → don\u2019t
-_RE_SMART_APOS_OPEN  = re.compile(r"(?<!\w)'(?=\w)")           # 'tis → \u2018tis
-_RE_SMART_APOS_CLOSE = re.compile(r"(?<=\w)'(?!\w)")           # kids' → kids\u2019
-_RE_SMART_DQUO_OPEN  = re.compile(r'(?<![\w"])"(?=\w)')        # "Hello → \u201cHello
-_RE_SMART_DQUO_CLOSE = re.compile(r'(?<=[\w\.,\!?])"(?![\w"])') # world." → world.\u201d
-_RE_EM_DASH          = re.compile(r"---")
-_RE_EN_DASH          = re.compile(r"(?<!-)--(?!-)")
-_RE_ELLIPSIS         = re.compile(r"\.{3}")
-_RE_NBSP_INITIAL     = re.compile(r"(\b[A-Z])\.\s+([A-Z][a-z])")  # J. Smith
+_RE_SMART_APOS_MID = re.compile(r"(?<=\w)'(?=\w)")  # don't → don\u2019t
+_RE_SMART_APOS_OPEN = re.compile(r"(?<!\w)'(?=\w)")  # 'tis → \u2018tis
+_RE_SMART_APOS_CLOSE = re.compile(r"(?<=\w)'(?!\w)")  # kids' → kids\u2019
+_RE_SMART_DQUO_OPEN = re.compile(r'(?<![\w"])"(?=\w)')  # "Hello → \u201cHello
+_RE_SMART_DQUO_CLOSE = re.compile(r'(?<=[\w\.,\!?])"(?![\w"])')  # world." → world.\u201d
+_RE_EM_DASH = re.compile(r"---")
+_RE_EN_DASH = re.compile(r"(?<!-)--(?!-)")
+_RE_ELLIPSIS = re.compile(r"\.{3}")
+_RE_NBSP_INITIAL = re.compile(r"(\b[A-Z])\.\s+([A-Z][a-z])")  # J. Smith
 
 # Sentinels for inline code and link tags (never appear in user text).
 # Using NULs guarantees the sentinels survive every regex pass intact.
-_CODE_SENTINEL_OPEN  = "\x00\x01CODE_OPEN\x00"
+_CODE_SENTINEL_OPEN = "\x00\x01CODE_OPEN\x00"
 _CODE_SENTINEL_CLOSE = "\x00\x01CODE_CLOSE\x00"
-_LINK_SENTINEL_OPEN  = "\x00\x01LINK_OPEN\x00"
+_LINK_SENTINEL_OPEN = "\x00\x01LINK_OPEN\x00"
 _LINK_SENTINEL_CLOSE = "\x00\x01LINK_CLOSE\x00"
 
 
@@ -106,10 +106,12 @@ def _strip_inline(s: str) -> str:
 
     # Step 1 — stash code spans
     code_spans: list[str] = []
+
     def _stash_code(m: re.Match) -> str:
         inner = m.group(1)
         code_spans.append(inner)
-        return f"{_CODE_SENTINEL_OPEN}{len(code_spans)-1}{_CODE_SENTINEL_CLOSE}"
+        return f"{_CODE_SENTINEL_OPEN}{len(code_spans) - 1}{_CODE_SENTINEL_CLOSE}"
+
     s = _RE_INLINE_CODE.sub(_stash_code, s)
 
     # Step 2 — escape XML special characters in remaining prose.
@@ -128,11 +130,13 @@ def _strip_inline(s: str) -> str:
     # Step 4 — stash markdown links as sentinels so smart-punctuation
     # can't rewrite the quotes around href attributes.
     link_specs: list[tuple[str, str]] = []  # (label, href)
+
     def _stash_link(m: re.Match) -> str:
         label = m.group(1)
         href = m.group(2).replace('"', "&quot;")
         link_specs.append((label, href))
-        return f"{_LINK_SENTINEL_OPEN}{len(link_specs)-1}{_LINK_SENTINEL_CLOSE}"
+        return f"{_LINK_SENTINEL_OPEN}{len(link_specs) - 1}{_LINK_SENTINEL_CLOSE}"
+
     s = _RE_MD_LINK.sub(_stash_link, s)
 
     # Step 5 — smart punctuation (sentinels are opaque to these rules)
@@ -140,10 +144,12 @@ def _strip_inline(s: str) -> str:
 
     # Step 6 — restore link sentinels as proper <link> tags
     if link_specs:
+
         def _restore_link(m: re.Match) -> str:
             idx = int(m.group(1))
             label, href = link_specs[idx]
             return f'<link href="{href}" color="#1a5fb4">{label}</link>'
+
         s = re.sub(
             re.escape(_LINK_SENTINEL_OPEN) + r"(\d+)" + re.escape(_LINK_SENTINEL_CLOSE),
             _restore_link,
@@ -152,12 +158,14 @@ def _strip_inline(s: str) -> str:
 
     # Step 7 — restore code spans as proper font tags
     if code_spans:
+
         def _restore_code(m: re.Match) -> str:
             idx = int(m.group(1))
             inner = code_spans[idx]
             # Escape the code span's own content
             inner = inner.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
             return f'<font name="Courier">{inner}</font>'
+
         s = re.sub(
             re.escape(_CODE_SENTINEL_OPEN) + r"(\d+)" + re.escape(_CODE_SENTINEL_CLOSE),
             _restore_code,
@@ -170,6 +178,7 @@ def _strip_inline(s: str) -> str:
 # ---------------------------------------------------------------------------
 # Markdown parser
 # ---------------------------------------------------------------------------
+
 
 def markdown_to_plain(s: str) -> str:
     """
@@ -189,23 +198,53 @@ def markdown_to_plain(s: str) -> str:
     s = _RE_INLINE_CODE.sub(r"\1", s)
     s = _RE_MD_LINK.sub(r"\1", s)
     s = _RE_STRIKETHROUGH.sub(r"\1", s)
-    s = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", s)          # images
-    s = re.sub(r"\*{2,3}(.+?)\*{2,3}", r"\1", s)        # bold / bold-italic
+    s = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", s)  # images
+    s = re.sub(r"\*{2,3}(.+?)\*{2,3}", r"\1", s)  # bold / bold-italic
     s = re.sub(r"_{2,3}(.+?)_{2,3}", r"\1", s)
-    s = re.sub(r"(?<![\w*])\*(?!\s)(.+?)(?<!\s)\*(?![\w*])", r"\1", s)   # italic
+    s = re.sub(r"(?<![\w*])\*(?!\s)(.+?)(?<!\s)\*(?![\w*])", r"\1", s)  # italic
     s = re.sub(r"(?<![\w_])_(?!\s)(.+?)(?<!\s)_(?![\w_])", r"\1", s)
-    s = re.sub(r"^\s{0,3}#{1,6}\s+", "", s, flags=re.MULTILINE)          # headings
-    s = re.sub(r"^\s{0,3}>\s?", "", s, flags=re.MULTILINE)               # quotes
+    s = re.sub(r"^\s{0,3}#{1,6}\s+", "", s, flags=re.MULTILINE)  # headings
+    s = re.sub(r"^\s{0,3}>\s?", "", s, flags=re.MULTILINE)  # quotes
     s = re.sub(r"^\s{0,3}([-*+]|\d+[.)])\s+", "", s, flags=re.MULTILINE)  # bullets
-    s = re.sub(r"^\s*\|.*\|\s*$", "", s, flags=re.MULTILINE)             # table rows
-    s = re.sub(r"^\s*[-=]{3,}\s*$", "", s, flags=re.MULTILINE)           # rules
+    s = re.sub(r"^\s*\|.*\|\s*$", "", s, flags=re.MULTILINE)  # table rows
+    s = re.sub(r"^\s*[-=]{3,}\s*$", "", s, flags=re.MULTILINE)  # rules
     return re.sub(r"\s+", " ", s).strip()
 
 
 _DANGLING = {
-    "a", "an", "the", "of", "to", "in", "on", "at", "by", "for", "from", "with",
-    "and", "or", "but", "as", "is", "was", "are", "were", "be", "that", "which",
-    "if", "it", "its", "this", "these", "those", "than", "then", "so", "into",
+    "a",
+    "an",
+    "the",
+    "of",
+    "to",
+    "in",
+    "on",
+    "at",
+    "by",
+    "for",
+    "from",
+    "with",
+    "and",
+    "or",
+    "but",
+    "as",
+    "is",
+    "was",
+    "are",
+    "were",
+    "be",
+    "that",
+    "which",
+    "if",
+    "it",
+    "its",
+    "this",
+    "these",
+    "those",
+    "than",
+    "then",
+    "so",
+    "into",
 }
 
 
@@ -265,11 +304,13 @@ def parse_markdown(text: str) -> list[dict]:
     def _flush_table():
         nonlocal in_table, table_headers, table_rows
         if in_table and table_headers:
-            blocks.append({
-                "type": "table",
-                "headers": table_headers,
-                "rows": table_rows,
-            })
+            blocks.append(
+                {
+                    "type": "table",
+                    "headers": table_headers,
+                    "rows": table_rows,
+                }
+            )
         in_table = False
         table_headers = []
         table_rows = []
@@ -280,11 +321,13 @@ def parse_markdown(text: str) -> list[dict]:
         # Fenced code block
         if _RE_CODE_FENCE.match(line):
             if in_code_block:
-                blocks.append({
-                    "type": "code",
-                    "lang": code_lang,
-                    "text": "\n".join(code_lines),
-                })
+                blocks.append(
+                    {
+                        "type": "code",
+                        "lang": code_lang,
+                        "text": "\n".join(code_lines),
+                    }
+                )
                 in_code_block = False
                 code_lines = []
                 code_lang = ""
@@ -336,7 +379,7 @@ def parse_markdown(text: str) -> list[dict]:
         if m:
             _flush_paragraph()
             level = len(m.group(1))
-            text  = _strip_inline(m.group(2).strip())
+            text = _strip_inline(m.group(2).strip())
             blocks.append({"type": "heading", "level": level, "text": text})
             i += 1
             continue
@@ -356,12 +399,14 @@ def parse_markdown(text: str) -> list[dict]:
         m = _RE_ORDERED_LIST.match(line)
         if m:
             _flush_paragraph()
-            blocks.append({
-                "type": "list_item",
-                "ordered": True,
-                "index": int(m.group(1)),
-                "text": _strip_inline(m.group(2).strip()),
-            })
+            blocks.append(
+                {
+                    "type": "list_item",
+                    "ordered": True,
+                    "index": int(m.group(1)),
+                    "text": _strip_inline(m.group(2).strip()),
+                }
+            )
             i += 1
             continue
 
@@ -369,12 +414,14 @@ def parse_markdown(text: str) -> list[dict]:
         m = _RE_UNORDERED_LIST.match(line)
         if m:
             _flush_paragraph()
-            blocks.append({
-                "type": "list_item",
-                "ordered": False,
-                "index": 0,
-                "text": _strip_inline(m.group(1).strip()),
-            })
+            blocks.append(
+                {
+                    "type": "list_item",
+                    "ordered": False,
+                    "index": 0,
+                    "text": _strip_inline(m.group(1).strip()),
+                }
+            )
             i += 1
             continue
 
@@ -392,7 +439,6 @@ def parse_markdown(text: str) -> list[dict]:
     _flush_table()
 
     return blocks
-
 
 
 _MAX_FILE_BYTES = 10 * 1024 * 1024  # 10 MB
@@ -417,6 +463,7 @@ def _read_file(fp: Path) -> str:
 # Doc-set content extractor
 # ---------------------------------------------------------------------------
 
+
 def _extract_doc_set_content(path: Path, config: dict) -> dict:
     """
     Read a doc-set directory and return a structured content dict.
@@ -437,36 +484,36 @@ def _extract_doc_set_content(path: Path, config: dict) -> dict:
     #
     # Any document actually cut is recorded in metrics.truncated_sections so
     # the loss is reported rather than silent.
-    max_words   = content_cfg.get("max_words_per_section", 12000)
-    if not max_words:              # 0 or None -> unlimited
+    max_words = content_cfg.get("max_words_per_section", 12000)
+    if not max_words:  # 0 or None -> unlimited
         max_words = float("inf")
-    max_terms   = content_cfg.get("max_terms_in_index", 40)
-    max_refs    = content_cfg.get("max_cross_refs", 30)
+    max_terms = content_cfg.get("max_terms_in_index", 40)
+    max_refs = content_cfg.get("max_cross_refs", 30)
     ori_pattern = content_cfg.get("orientation_doc_pattern", "00-what-is-*.md")
     num_pattern = content_cfg.get("numbered_doc_pattern", "[0-9][0-9]-*.md")
 
     result: dict[str, Any] = {
-        "title":            path.name.replace("-", " ").title(),
-        "overview":         "",
-        "subsystems":       [],
+        "title": path.name.replace("-", " ").title(),
+        "overview": "",
+        "subsystems": [],
         "brilliance_summary": "",
-        "guide_content":    "",
-        "orientation":      "",
-        "cross_refs":       [],
+        "guide_content": "",
+        "orientation": "",
+        "cross_refs": [],
         "cross_ref_labels": {},
-        "terms":            {},
-        "bibliography":     [],
+        "terms": {},
+        "bibliography": [],
         "metrics": {
-            "doc_count":        0,
-            "word_count":       0,
-            "file_count":       0,
-            "year":             str(datetime.date.today().year),
-            "pdf_count":        0,
-            "source_type":      "ACADEMIC",
+            "doc_count": 0,
+            "word_count": 0,
+            "file_count": 0,
+            "year": str(datetime.date.today().year),
+            "pdf_count": 0,
+            "source_type": "ACADEMIC",
             "avg_chapter_size": 0,
-            "citation_count":   0,
-            "table_count":      0,
-            "has_orientation":  False,
+            "citation_count": 0,
+            "table_count": 0,
+            "has_orientation": False,
             # Documents whose body was cut by max_words_per_section.
             # Empty when nothing was dropped. Reported by the CLI.
             "truncated_sections": [],
@@ -504,12 +551,12 @@ def _extract_doc_set_content(path: Path, config: dict) -> dict:
     if readme.exists():
         raw = _read_file(readme)
         total_words += _count_words(raw)
-        m = re.search(r'^#\s+(.+)$', raw, re.MULTILINE)
+        m = re.search(r"^#\s+(.+)$", raw, re.MULTILINE)
         if m:
             result["title"] = m.group(1).strip()
-        overview_match = re.search(r'^(?!#)(.{80,})', raw, re.MULTILINE)
+        overview_match = re.search(r"^(?!#)(.{80,})", raw, re.MULTILINE)
         if overview_match:
-            lines_after = raw[overview_match.start():].split("\n")
+            lines_after = raw[overview_match.start() :].split("\n")
             para_lines: list[str] = []
             for ln in lines_after:
                 if ln.strip() == "" and para_lines:
@@ -524,10 +571,7 @@ def _extract_doc_set_content(path: Path, config: dict) -> dict:
 
     # Numbered docs
     # Filter out orientation docs (00-what-is-*)
-    numbered_files = sorted(
-        f for f in path.glob(num_pattern)
-        if not f.name.startswith("00-what-is")
-    )
+    numbered_files = sorted(f for f in path.glob(num_pattern) if not f.name.startswith("00-what-is"))
     result["metrics"]["doc_count"] = len(numbered_files)
 
     chapter_sizes: list[int] = []
@@ -545,7 +589,7 @@ def _extract_doc_set_content(path: Path, config: dict) -> dict:
         word_count_so_far = 0
         needs_truncation = False
         in_tbl = False
-        in_qt  = False
+        in_qt = False
         for ln in raw.splitlines():
             if ln.startswith("|"):
                 in_tbl = True
@@ -570,38 +614,40 @@ def _extract_doc_set_content(path: Path, config: dict) -> dict:
         if needs_truncation:
             # Record the loss so it can be surfaced rather than discovered
             # later in the rendered PDF.
-            result["metrics"]["truncated_sections"].append({
-                "filename":   fp.name,
-                "words_kept": _count_words(raw_for_parse),
-                "words_total": _count_words(raw),
-                "limit":      max_words,
-            })
+            result["metrics"]["truncated_sections"].append(
+                {
+                    "filename": fp.name,
+                    "words_kept": _count_words(raw_for_parse),
+                    "words_total": _count_words(raw),
+                    "limit": max_words,
+                }
+            )
 
-        stem     = fp.stem
-        name_part = re.sub(r'^\d+-', '', stem).replace("-", " ").title()
+        stem = fp.stem
+        name_part = re.sub(r"^\d+-", "", stem).replace("-", " ").title()
 
         blocks = parse_markdown(raw_for_parse)
-        tables  = [b for b in blocks if b["type"] == "table"]
+        tables = [b for b in blocks if b["type"] == "table"]
         total_table_count += len(tables)
         insights = [b["text"] for b in blocks if b["type"] == "blockquote"]
 
-        cite_count = len(re.findall(r'\[Source', raw, re.IGNORECASE))
+        cite_count = len(re.findall(r"\[Source", raw, re.IGNORECASE))
         total_citation_count += cite_count
 
-        result["subsystems"].append({
-            "name":     name_part,
-            "filename": fp.name,
-            "content":  raw_for_parse,
-            "blocks":   blocks,
-            "tables":   tables,
-            "insights": insights,
-        })
+        result["subsystems"].append(
+            {
+                "name": name_part,
+                "filename": fp.name,
+                "content": raw_for_parse,
+                "blocks": blocks,
+                "tables": tables,
+                "insights": insights,
+            }
+        )
 
-    result["metrics"]["avg_chapter_size"] = (
-        sum(chapter_sizes) // len(chapter_sizes) if chapter_sizes else 0
-    )
+    result["metrics"]["avg_chapter_size"] = sum(chapter_sizes) // len(chapter_sizes) if chapter_sizes else 0
     result["metrics"]["citation_count"] = total_citation_count
-    result["metrics"]["table_count"]    = total_table_count
+    result["metrics"]["table_count"] = total_table_count
 
     # Collect PDF list once for reuse (fallback overview + bibliography)
     all_pdfs = sorted(path.glob("*.pdf"))
@@ -609,8 +655,7 @@ def _extract_doc_set_content(path: Path, config: dict) -> dict:
     if not result["subsystems"] and not result["overview"]:
         if all_pdfs:
             result["overview"] = (
-                f"No analysis documents found. "
-                f"Primary sources: {', '.join(pdf.name for pdf in all_pdfs[:5])}."
+                f"No analysis documents found. Primary sources: {', '.join(pdf.name for pdf in all_pdfs[:5])}."
             )
         else:
             result["overview"] = "No analysis documents found in this doc set."
@@ -635,15 +680,19 @@ def _extract_doc_set_content(path: Path, config: dict) -> dict:
     result["cross_ref_labels"] = cross_ref_labels
 
     # Term extraction — build all_text efficiently via join (avoids O(n^2) concat)
-    all_text = " ".join([
-        result.get("overview", ""),
-        result.get("brilliance_summary", ""),
-        *(sub.get("content", "") for sub in result.get("subsystems", [])),
-    ])
+    all_text = " ".join(
+        [
+            result.get("overview", ""),
+            result.get("brilliance_summary", ""),
+            *(sub.get("content", "") for sub in result.get("subsystems", [])),
+        ]
+    )
 
     # Use standalone terms module, then supplement with table-header terms
     result["terms"] = extract_terms(
-        all_text, title=result["title"], max_terms=max_terms,
+        all_text,
+        title=result["title"],
+        max_terms=max_terms,
     )
 
     # Add table-header terms not already covered
@@ -658,7 +707,7 @@ def _extract_doc_set_content(path: Path, config: dict) -> dict:
         seen_lower = {t.lower() for t in result["terms"]}
         doc_title_lower = result["title"].lower()
         for term_raw in th_terms:
-            term_clean = re.sub(r'[#\*`]', '', term_raw).strip()
+            term_clean = re.sub(r"[#\*`]", "", term_raw).strip()
             term_lower = term_clean.lower()
             if (
                 term_clean
@@ -666,7 +715,7 @@ def _extract_doc_set_content(path: Path, config: dict) -> dict:
                 and term_lower not in _GENERIC_TERMS
                 and term_lower not in seen_lower
                 and term_lower not in doc_title_lower
-                and not re.match(r'^\d+', term_clean)
+                and not re.match(r"^\d+", term_clean)
             ):
                 result["terms"][term_clean] = ""
                 seen_lower.add(term_lower)
@@ -685,36 +734,40 @@ def _extract_doc_set_content(path: Path, config: dict) -> dict:
             continue
         pdf_count += 1
         stem_pdf = pdf.stem
-        arxiv_match = re.match(r'^(\d{4}\.\d{4,5})(v\d+)?$', stem_pdf)
+        arxiv_match = re.match(r"^(\d{4}\.\d{4,5})(v\d+)?$", stem_pdf)
         if arxiv_match:
-            result["bibliography"].append({
-                "title":   f"arXiv:{arxiv_match.group(1)}",
-                "authors": "",
-                "year":    ("20" if arxiv_match.group(1)[:2] < "50" else "19") + arxiv_match.group(1)[:2],
-                "type":    "paper",
-                "doi":     "",
-            })
+            result["bibliography"].append(
+                {
+                    "title": f"arXiv:{arxiv_match.group(1)}",
+                    "authors": "",
+                    "year": ("20" if arxiv_match.group(1)[:2] < "50" else "19") + arxiv_match.group(1)[:2],
+                    "type": "paper",
+                    "doi": "",
+                }
+            )
         else:
             author, title_str, year_str = _parse_kebab_bibliography(stem_pdf)
             if year_str:
                 pdf_years.append(int(year_str))
             if author or title_str:
-                result["bibliography"].append({
-                    "title":   title_str or stem_pdf,
-                    "authors": author,
-                    "year":    year_str,
-                    "type":    "paper",
-                    "doi":     "",
-                })
+                result["bibliography"].append(
+                    {
+                        "title": title_str or stem_pdf,
+                        "authors": author,
+                        "year": year_str,
+                        "type": "paper",
+                        "doi": "",
+                    }
+                )
 
     # Inline citations via standalone module (dedup against PDF entries)
     inline_bib = extract_bibliography(all_text)
     existing_keys: set[tuple[str, str]] = set()
     for b in result["bibliography"]:
-        a = re.sub(r'\.$', '', b.get("authors", "").strip()).lower().replace("et al.", "et al")
+        a = re.sub(r"\.$", "", b.get("authors", "").strip()).lower().replace("et al.", "et al")
         existing_keys.add((a, b.get("year", "")))
     for entry in inline_bib:
-        a = re.sub(r'\.$', '', entry.get("authors", "").strip()).lower().replace("et al.", "et al")
+        a = re.sub(r"\.$", "", entry.get("authors", "").strip()).lower().replace("et al.", "et al")
         key = (a, entry.get("year", ""))
         if key not in existing_keys:
             result["bibliography"].append(entry)
@@ -723,12 +776,12 @@ def _extract_doc_set_content(path: Path, config: dict) -> dict:
     # Metrics finalization
     result["metrics"]["word_count"] = total_words
     result["metrics"]["file_count"] = sum(1 for e in path.iterdir() if e.is_file())
-    result["metrics"]["pdf_count"]  = pdf_count
+    result["metrics"]["pdf_count"] = pdf_count
 
     if pdf_years:
         result["metrics"]["year"] = str(max(pdf_years))
     else:
-        year_matches = re.findall(r'\b(19[5-9]\d|20[0-2]\d)\b', result["overview"])
+        year_matches = re.findall(r"\b(19[5-9]\d|20[0-2]\d)\b", result["overview"])
         if year_matches:
             year_counts = Counter(year_matches)
             result["metrics"]["year"] = year_counts.most_common(1)[0][0]
@@ -740,23 +793,24 @@ def _extract_doc_set_content(path: Path, config: dict) -> dict:
 # Aggregation helpers
 # ---------------------------------------------------------------------------
 
+
 def _aggregate_subject_content(path: Path, config: dict, date: datetime.date) -> dict:
     """Aggregate all doc-set content under a subject directory."""
     agg: dict[str, Any] = {
-        "title":            path.name.replace("-", " ").title(),
-        "overview":         "",
-        "subsystems":       [],
+        "title": path.name.replace("-", " ").title(),
+        "overview": "",
+        "subsystems": [],
         "brilliance_summary": "",
-        "guide_content":    "",
-        "cross_refs":       [],
+        "guide_content": "",
+        "cross_refs": [],
         "cross_ref_labels": {},
-        "terms":            {},
-        "bibliography":     [],
+        "terms": {},
+        "bibliography": [],
         "metrics": {
-            "doc_count":   0,
-            "word_count":  0,
-            "file_count":  0,
-            "year":        str(date.year),
+            "doc_count": 0,
+            "word_count": 0,
+            "file_count": 0,
+            "year": str(date.year),
             "source_type": "ACADEMIC",
         },
         "doc_sets": [],
@@ -765,7 +819,7 @@ def _aggregate_subject_content(path: Path, config: dict, date: datetime.date) ->
     readme = path / "README.md"
     if readme.exists():
         raw = _read_file(readme)
-        m   = re.search(r'^#\s+(.+)$', raw, re.MULTILINE)
+        m = re.search(r"^#\s+(.+)$", raw, re.MULTILINE)
         if m:
             agg["title"] = m.group(1).strip()
         agg["overview"] = raw[:1000]
@@ -778,9 +832,9 @@ def _aggregate_subject_content(path: Path, config: dict, date: datetime.date) ->
                 try:
                     ds = _extract_doc_set_content(child, config)
                     agg["doc_sets"].append(ds)
-                    agg["metrics"]["doc_count"]  += 1
-                    agg["metrics"]["word_count"]  += ds["metrics"]["word_count"]
-                    agg["metrics"]["file_count"]  += ds["metrics"]["file_count"]
+                    agg["metrics"]["doc_count"] += 1
+                    agg["metrics"]["word_count"] += ds["metrics"]["word_count"]
+                    agg["metrics"]["file_count"] += ds["metrics"]["file_count"]
                     agg["terms"].update(ds["terms"])
                     for ref in ds["cross_refs"]:
                         if ref not in cross_refs_seen:
@@ -797,20 +851,20 @@ def _aggregate_subject_content(path: Path, config: dict, date: datetime.date) ->
 def _aggregate_division_content(path: Path, config: dict, date: datetime.date) -> dict:
     """Aggregate all subject content under a division directory."""
     agg: dict[str, Any] = {
-        "title":            path.name.replace("-", " ").title(),
-        "overview":         "",
-        "subsystems":       [],
+        "title": path.name.replace("-", " ").title(),
+        "overview": "",
+        "subsystems": [],
         "brilliance_summary": "",
-        "guide_content":    "",
-        "cross_refs":       [],
+        "guide_content": "",
+        "cross_refs": [],
         "cross_ref_labels": {},
-        "terms":            {},
-        "bibliography":     [],
+        "terms": {},
+        "bibliography": [],
         "metrics": {
-            "doc_count":  0,
+            "doc_count": 0,
             "word_count": 0,
             "file_count": 0,
-            "year":       str(date.year),
+            "year": str(date.year),
         },
         "subjects": [],
     }
@@ -818,31 +872,33 @@ def _aggregate_division_content(path: Path, config: dict, date: datetime.date) -
     readme = path / "README.md"
     if readme.exists():
         raw = _read_file(readme)
-        m   = re.search(r'^#\s+(.+)$', raw, re.MULTILINE)
+        m = re.search(r"^#\s+(.+)$", raw, re.MULTILINE)
         if m:
             agg["title"] = m.group(1).strip()
         agg["overview"] = raw[:2000]
 
     for child in sorted(path.iterdir()):
-        if child.is_dir() and not child.is_symlink() and not child.name.startswith(".") and child.name not in ("_tools",):
+        if (
+            child.is_dir()
+            and not child.is_symlink()
+            and not child.name.startswith(".")
+            and child.name not in ("_tools",)
+        ):
             subject_data: dict[str, Any] = {
-                "name":      child.name.replace("-", " ").title(),
-                "path":      str(child),
+                "name": child.name.replace("-", " ").title(),
+                "path": str(child),
                 "doc_count": 0,
-                "overview":  "",
+                "overview": "",
             }
             sub_readme = child / "README.md"
             if sub_readme.exists():
                 raw = _read_file(sub_readme)
                 subject_data["overview"] = raw[:500]
-                m = re.search(r'^#\s+(.+)$', raw, re.MULTILINE)
+                m = re.search(r"^#\s+(.+)$", raw, re.MULTILINE)
                 if m:
                     subject_data["name"] = m.group(1).strip()
 
-            doc_sets = [
-                d for d in child.iterdir()
-                if d.is_dir() and not d.is_symlink() and not d.name.startswith(".")
-            ]
+            doc_sets = [d for d in child.iterdir() if d.is_dir() and not d.is_symlink() and not d.name.startswith(".")]
             subject_data["doc_count"] = len(doc_sets)
             agg["metrics"]["doc_count"] += len(doc_sets)
             agg["subjects"].append(subject_data)
@@ -856,20 +912,20 @@ def _aggregate_root_content(path: Path, config: dict, date: datetime.date) -> di
     default_title = project_cfg.get("name", path.name.replace("-", " ").title())
 
     agg: dict[str, Any] = {
-        "title":            default_title,
-        "overview":         "",
-        "subsystems":       [],
+        "title": default_title,
+        "overview": "",
+        "subsystems": [],
         "brilliance_summary": "",
-        "guide_content":    "",
-        "cross_refs":       [],
+        "guide_content": "",
+        "cross_refs": [],
         "cross_ref_labels": {},
-        "terms":            {},
-        "bibliography":     [],
+        "terms": {},
+        "bibliography": [],
         "metrics": {
-            "doc_count":  0,
+            "doc_count": 0,
             "word_count": 0,
             "file_count": 0,
-            "year":       str(date.year),
+            "year": str(date.year),
         },
         "divisions": [],
     }
@@ -878,7 +934,7 @@ def _aggregate_root_content(path: Path, config: dict, date: datetime.date) -> di
     if readme.exists():
         raw = _read_file(readme)
         agg["overview"] = raw[:3000]
-        m = re.search(r'^#\s+(.+)$', raw, re.MULTILINE)
+        m = re.search(r"^#\s+(.+)$", raw, re.MULTILINE)
         if m:
             agg["title"] = m.group(1).strip()
 
@@ -893,6 +949,7 @@ def _aggregate_root_content(path: Path, config: dict, date: datetime.date) -> di
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def extract_content(
     path: str | Path,
@@ -910,8 +967,8 @@ def extract_content(
     Returns a structured content dict suitable for BaseBriefingTemplate.
     """
     config = config or {}
-    p      = Path(path).resolve()
-    today  = datetime.date.today()
+    p = Path(path).resolve()
+    today = datetime.date.today()
 
     if level == 3:
         return _extract_doc_set_content(p, config)

@@ -32,7 +32,6 @@ from reportlab.lib.units import mm
 from reportlab.platypus import (
     PageBreak,
     Paragraph,
-    SimpleDocTemplate,
     Spacer,
     Table,
     TableStyle,
@@ -63,17 +62,22 @@ def _build_divider_rule(brand: dict, content_width: float) -> list:
     rule_data = [["", ""]]
     col_w = content_width / 2
     t = Table(rule_data, colWidths=[col_w, col_w], rowHeights=[1])
-    t.setStyle(TableStyle([
-        ("LINEABOVE", (0, 0), (-1, 0), 2, accent),
-        ("TOPPADDING", (0, 0), (-1, -1), 0),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-    ]))
+    t.setStyle(
+        TableStyle(
+            [
+                ("LINEABOVE", (0, 0), (-1, 0), 2, accent),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            ]
+        )
+    )
     return [Spacer(1, 6 * mm), t, Spacer(1, 6 * mm)]
 
 
 # ---------------------------------------------------------------------------
 # Template
 # ---------------------------------------------------------------------------
+
 
 class NewsletterTemplate(BaseBriefingTemplate):
     """
@@ -104,13 +108,19 @@ class NewsletterTemplate(BaseBriefingTemplate):
         # -- Accent rule below banner (below-the-fold break) --
         accent = _hex(self.brand, "accent")
         fold_rule = Table(
-            [[""]], colWidths=[self.content_width], rowHeights=[2],
+            [[""]],
+            colWidths=[self.content_width],
+            rowHeights=[2],
         )
-        fold_rule.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), accent),
-            ("TOPPADDING", (0, 0), (-1, -1), 0),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-        ]))
+        fold_rule.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), accent),
+                    ("TOPPADDING", (0, 0), (-1, -1), 0),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                ]
+            )
+        )
         story.append(fold_rule)
         story.append(Spacer(1, 3 * mm))
 
@@ -122,9 +132,12 @@ class NewsletterTemplate(BaseBriefingTemplate):
         overview = content.get("overview", "")
         if overview:
             intro_style = _ps(
-                "NLIntro", brand=self.brand,
-                fontSize=11, textColor=_hex(self.brand, "body_text"),
-                leading=16, spaceAfter=4,
+                "NLIntro",
+                brand=self.brand,
+                fontSize=11,
+                textColor=_hex(self.brand, "body_text"),
+                leading=16,
+                spaceAfter=4,
                 fontName=self.brand.get("font_body", "Helvetica"),
             )
             for block in parse_markdown(overview[:1500])[:10]:
@@ -164,9 +177,12 @@ class NewsletterTemplate(BaseBriefingTemplate):
 
         # Banner table — single row, primary background, white text
         banner_style = _ps(
-            "NLBannerText", brand=self.brand,
-            fontSize=20, fontName="Helvetica-Bold",
-            textColor=white, alignment=1,
+            "NLBannerText",
+            brand=self.brand,
+            fontSize=20,
+            fontName="Helvetica-Bold",
+            textColor=white,
+            alignment=1,
             spaceAfter=2,
         )
 
@@ -182,25 +198,33 @@ class NewsletterTemplate(BaseBriefingTemplate):
             colWidths=[self.content_width],
             rowHeights=None,
         )
-        t.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), primary),
-            ("TOPPADDING", (0, 0), (-1, -1), 12),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
-            ("LEFTPADDING", (0, 0), (-1, -1), 15),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 15),
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ]))
+        t.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), primary),
+                    ("TOPPADDING", (0, 0), (-1, -1), 12),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 15),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 15),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ]
+            )
+        )
         flowables.append(t)
 
         # Accent bar below banner
         accent = _hex(self.brand, "accent")
         accent_data = [[""]]
         at = Table(accent_data, colWidths=[self.content_width], rowHeights=[3])
-        at.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), accent),
-            ("TOPPADDING", (0, 0), (-1, -1), 0),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-        ]))
+        at.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), accent),
+                    ("TOPPADDING", (0, 0), (-1, -1), 0),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                ]
+            )
+        )
         flowables.append(at)
 
         return flowables
@@ -219,9 +243,12 @@ class NewsletterTemplate(BaseBriefingTemplate):
             date_parts.append(f"Issue: {issue}")
 
         date_style = _ps(
-            "NLDate", brand=self.brand,
-            fontSize=9, textColor=_hex(self.brand, "caption"),
-            alignment=2, spaceAfter=2,
+            "NLDate",
+            brand=self.brand,
+            fontSize=9,
+            textColor=_hex(self.brand, "caption"),
+            alignment=2,
+            spaceAfter=2,
             fontName=self.brand.get("font_caption", "Helvetica-Oblique"),
         )
         flowables.append(Paragraph(" | ".join(date_parts), date_style))
@@ -238,32 +265,45 @@ class NewsletterTemplate(BaseBriefingTemplate):
 
         # Colored heading
         heading_style = _ps(
-            "NLFeatureHead", brand=self.brand,
-            fontSize=18, fontName="Helvetica-Bold",
+            "NLFeatureHead",
+            brand=self.brand,
+            fontSize=18,
+            fontName="Helvetica-Bold",
             textColor=_hex(self.brand, "primary"),
-            spaceAfter=6, spaceBefore=4,
+            spaceAfter=6,
+            spaceBefore=4,
         )
-        flowables.append(Paragraph(
-            _safe_text(sub.get("name", "Feature")), heading_style,
-        ))
+        flowables.append(
+            Paragraph(
+                _safe_text(sub.get("name", "Feature")),
+                heading_style,
+            )
+        )
 
         # Accent bar under heading
         accent = _hex(self.brand, "secondary")
         bar_data = [[""]]
         bar = Table(bar_data, colWidths=[self.content_width * 0.3], rowHeights=[2])
-        bar.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), accent),
-            ("TOPPADDING", (0, 0), (-1, -1), 0),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-        ]))
+        bar.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), accent),
+                    ("TOPPADDING", (0, 0), (-1, -1), 0),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                ]
+            )
+        )
         flowables.append(bar)
         flowables.append(Spacer(1, 4 * mm))
 
         # Feature body — slightly larger text
         feature_style = _ps(
-            "NLFeatureBody", brand=self.brand,
-            fontSize=11, textColor=_hex(self.brand, "body_text"),
-            leading=16, spaceAfter=4,
+            "NLFeatureBody",
+            brand=self.brand,
+            fontSize=11,
+            textColor=_hex(self.brand, "body_text"),
+            leading=16,
+            spaceAfter=4,
         )
 
         blocks = sub.get("blocks") or parse_markdown(sub.get("content", ""))
@@ -275,20 +315,25 @@ class NewsletterTemplate(BaseBriefingTemplate):
 
             if block.get("type") == "blockquote" and not pull_quote_added:
                 # Render as pull quote
-                flowables.extend(build_pull_quote(
-                    block.get("text", "")[:250],
-                    sub.get("name", ""),
-                    brand=self.brand,
-                    content_width=self.content_width,
-                ))
+                flowables.extend(
+                    build_pull_quote(
+                        block.get("text", "")[:250],
+                        sub.get("name", ""),
+                        brand=self.brand,
+                        content_width=self.content_width,
+                    )
+                )
                 pull_quote_added = True
                 rendered += 1
                 continue
 
             if block.get("type") == "paragraph":
-                flowables.append(_safe_para(
-                    block.get("text", ""), feature_style,
-                ))
+                flowables.append(
+                    _safe_para(
+                        block.get("text", ""),
+                        feature_style,
+                    )
+                )
                 rendered += 1
             else:
                 for fl in self.render_blocks([block]):
@@ -302,12 +347,14 @@ class NewsletterTemplate(BaseBriefingTemplate):
         insights = sub.get("insights", [])
         if insights:
             flowables.append(Spacer(1, 3 * mm))
-            flowables.append(build_callout_box(
-                insights[0][:400],
-                "insight",
-                brand=self.brand,
-                content_width=self.content_width,
-            ))
+            flowables.append(
+                build_callout_box(
+                    insights[0][:400],
+                    "insight",
+                    brand=self.brand,
+                    content_width=self.content_width,
+                )
+            )
 
         return flowables
 
@@ -321,24 +368,34 @@ class NewsletterTemplate(BaseBriefingTemplate):
 
         # Colored heading
         heading_style = _ps(
-            f"NLArticleHead{idx}", brand=self.brand,
-            fontSize=14, fontName="Helvetica-Bold",
+            f"NLArticleHead{idx}",
+            brand=self.brand,
+            fontSize=14,
+            fontName="Helvetica-Bold",
             textColor=_hex(self.brand, "primary"),
-            spaceAfter=4, spaceBefore=2,
+            spaceAfter=4,
+            spaceBefore=2,
         )
-        flowables.append(Paragraph(
-            _safe_text(sub.get("name", f"Article {idx}")), heading_style,
-        ))
+        flowables.append(
+            Paragraph(
+                _safe_text(sub.get("name", f"Article {idx}")),
+                heading_style,
+            )
+        )
 
         # Thin accent bar
         accent = _hex(self.brand, "secondary")
         bar_data = [[""]]
         bar = Table(bar_data, colWidths=[self.content_width * 0.2], rowHeights=[1.5])
-        bar.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), accent),
-            ("TOPPADDING", (0, 0), (-1, -1), 0),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-        ]))
+        bar.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), accent),
+                    ("TOPPADDING", (0, 0), (-1, -1), 0),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                ]
+            )
+        )
         flowables.append(bar)
         flowables.append(Spacer(1, 3 * mm))
 
@@ -352,12 +409,14 @@ class NewsletterTemplate(BaseBriefingTemplate):
 
             # Convert blockquotes to callout boxes
             if block.get("type") == "blockquote" and not has_pull_quote:
-                flowables.extend(build_pull_quote(
-                    block.get("text", "")[:200],
-                    sub.get("name", ""),
-                    brand=self.brand,
-                    content_width=self.content_width,
-                ))
+                flowables.extend(
+                    build_pull_quote(
+                        block.get("text", "")[:200],
+                        sub.get("name", ""),
+                        brand=self.brand,
+                        content_width=self.content_width,
+                    )
+                )
                 has_pull_quote = True
                 rendered += 1
                 continue
@@ -373,12 +432,14 @@ class NewsletterTemplate(BaseBriefingTemplate):
         insights = sub.get("insights", [])
         if insights:
             flowables.append(Spacer(1, 2 * mm))
-            flowables.append(build_callout_box(
-                insights[0][:300],
-                "learn",
-                brand=self.brand,
-                content_width=self.content_width,
-            ))
+            flowables.append(
+                build_callout_box(
+                    insights[0][:300],
+                    "learn",
+                    brand=self.brand,
+                    content_width=self.content_width,
+                )
+            )
 
         return flowables
 
@@ -394,11 +455,15 @@ class NewsletterTemplate(BaseBriefingTemplate):
         primary = _hex(self.brand, "primary")
         rule_data = [[""]]
         t = Table(rule_data, colWidths=[self.content_width], rowHeights=[2])
-        t.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), primary),
-            ("TOPPADDING", (0, 0), (-1, -1), 0),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-        ]))
+        t.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), primary),
+                    ("TOPPADDING", (0, 0), (-1, -1), 0),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                ]
+            )
+        )
         flowables.append(t)
         flowables.append(Spacer(1, 4 * mm))
 
@@ -406,9 +471,12 @@ class NewsletterTemplate(BaseBriefingTemplate):
         org = self.brand.get("org", "")
         url = self.brand.get("url", "")
         footer_style = _ps(
-            "NLFooterInfo", brand=self.brand,
-            fontSize=8, textColor=_hex(self.brand, "caption"),
-            alignment=1, leading=12,
+            "NLFooterInfo",
+            brand=self.brand,
+            fontSize=8,
+            textColor=_hex(self.brand, "caption"),
+            alignment=1,
+            leading=12,
         )
 
         footer_parts = []
@@ -417,33 +485,44 @@ class NewsletterTemplate(BaseBriefingTemplate):
         footer_parts.append(self.date_str)
         if url:
             footer_parts.append(_safe_text(url))
-        flowables.append(Paragraph(
-            " | ".join(footer_parts), footer_style,
-        ))
+        flowables.append(
+            Paragraph(
+                " | ".join(footer_parts),
+                footer_style,
+            )
+        )
         flowables.append(Spacer(1, 3 * mm))
 
         # "Unsubscribe" style note
         unsub_style = _ps(
-            "NLUnsub", brand=self.brand,
-            fontSize=7, textColor=_hex(self.brand, "rule"),
+            "NLUnsub",
+            brand=self.brand,
+            fontSize=7,
+            textColor=_hex(self.brand, "rule"),
             alignment=1,
         )
-        flowables.append(Paragraph(
-            "You are receiving this because you are part of the distribution list. "
-            "To unsubscribe, contact the editor.",
-            unsub_style,
-        ))
+        flowables.append(
+            Paragraph(
+                "You are receiving this because you are part of the distribution list. "
+                "To unsubscribe, contact the editor.",
+                unsub_style,
+            )
+        )
 
         # Copyright
         copyright_text = self.brand.get("copyright", "")
         if copyright_text:
             import datetime
+
             year = datetime.date.today().year
             cr_text = copyright_text.replace("{year}", str(year))
             cr_style = _ps(
-                "NLCopyright", brand=self.brand,
-                fontSize=7, textColor=_hex(self.brand, "rule"),
-                alignment=1, spaceBefore=2,
+                "NLCopyright",
+                brand=self.brand,
+                fontSize=7,
+                textColor=_hex(self.brand, "rule"),
+                alignment=1,
+                spaceBefore=2,
             )
             flowables.append(Paragraph(_safe_text(cr_text), cr_style))
 
@@ -464,9 +543,12 @@ class NewsletterTemplate(BaseBriefingTemplate):
         doc_ids_cfg = self.config.get("doc_ids", {})
         if doc_ids_cfg.get("enabled", True):
             from briefkit.doc_ids import get_or_assign_doc_id
+
             self.doc_id = get_or_assign_doc_id(
-                self.target_path, self.level,
-                title, config=self.config,
+                self.target_path,
+                self.level,
+                title,
+                config=self.config,
             )
 
         # Populate header/footer state

@@ -1,4 +1,5 @@
 """Shared test fixtures for BriefKit tests."""
+
 from pathlib import Path
 
 import pytest
@@ -36,6 +37,7 @@ def default_config():
     import copy
 
     from briefkit.config import DEFAULTS
+
     return copy.deepcopy(DEFAULTS)
 
 

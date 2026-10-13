@@ -33,7 +33,6 @@ from reportlab.platypus import SimpleDocTemplate
 
 from briefkit.elements.callout import build_callout_box, build_pull_quote
 
-
 # The real trigger: inline markup left open, as produced by splitting a
 # blockquote whose emphasis spans a line break.
 UNCLOSED_TAG_CASES = [
@@ -77,6 +76,7 @@ def _build_pdf(flowables):
 
 # --- the regression itself --------------------------------------------------
 
+
 @pytest.mark.parametrize("text", UNCLOSED_TAG_CASES)
 def test_callout_survives_unclosed_inline_tags(text):
     """The crash this module regressed on: open <b>/<i>/<u> must not raise."""
@@ -102,6 +102,7 @@ def test_all_box_types_survive_unclosed_tags(box_type):
 
 # --- defensive coverage -----------------------------------------------------
 
+
 @pytest.mark.parametrize("text", BARE_MARKUP_CASES)
 def test_callout_handles_bare_angle_brackets(text):
     """Bare < > & are tolerated by ReportLab, but must stay tolerated."""
@@ -118,13 +119,15 @@ def test_intended_inline_markup_is_preserved():
 
 
 def test_multiline_callout_with_bullets():
-    text = "\n".join([
-        "**Watch for:**",
-        "- turnover <$20m",
-        "- <b>unclosed emphasis on a bullet",
-        "",
-        "Anything above that changes the treatment.",
-    ])
+    text = "\n".join(
+        [
+            "**Watch for:**",
+            "- turnover <$20m",
+            "- <b>unclosed emphasis on a bullet",
+            "",
+            "Anything above that changes the treatment.",
+        ]
+    )
     _force_layout(build_callout_box(text, "warning"))
 
 
@@ -134,6 +137,7 @@ def test_empty_and_whitespace_callouts_do_not_raise():
 
 
 # --- end to end -------------------------------------------------------------
+
 
 def test_callout_builds_into_a_real_document():
     story = [build_callout_box(t, "insight") for t in UNCLOSED_TAG_CASES + BARE_MARKUP_CASES]

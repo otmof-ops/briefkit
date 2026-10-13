@@ -29,10 +29,10 @@ from briefkit.styles import (
 # =============================================================================
 
 _hf_state = {
-    "section":     "",
-    "date":        "",
+    "section": "",
+    "date": "",
     "total_pages": None,
-    "doc_id":      "",
+    "doc_id": "",
 }
 
 
@@ -66,8 +66,10 @@ def make_header_footer(state, brand=None):
     callable
         A (canvas, doc) callback suitable for PageTemplate onPage/onLaterPages.
     """
+
     def _callback(canvas, doc):
         _draw_header_footer(canvas, doc, state, brand=brand)
+
     return _callback
 
 
@@ -75,18 +77,18 @@ def _draw_header_footer(canvas, doc, state, brand=None):
     """Internal implementation shared by both callback variants."""
     b = _get_brand(brand)
 
-    primary   = _hex(b, "primary")
-    caption   = _hex(b, "caption")
+    primary = _hex(b, "primary")
+    caption = _hex(b, "caption")
     body_text = _hex(b, "body_text")
-    rule      = _hex(b, "rule")
-    org       = b.get("org", "")
+    rule = _hex(b, "rule")
+    org = b.get("org", "")
 
     canvas.saveState()
 
     page_width, page_height = doc.pagesize
-    left   = doc.leftMargin
-    right  = page_width - doc.rightMargin
-    top    = page_height - doc.topMargin + 6 * mm
+    left = doc.leftMargin
+    right = page_width - doc.rightMargin
+    top = page_height - doc.topMargin + 6 * mm
     # Footer y origin. Clamp bottom so the copyright line never lands
     # inside typical printer no-print zones (< 10 mm from the page edge).
     # The historic formula ``doc.bottomMargin - 6 * mm`` could yield
@@ -127,17 +129,17 @@ def _draw_header_footer(canvas, doc, state, brand=None):
 
     # Page number (centre, upper line)
     page_num = doc.page
-    total    = state.get("total_pages")
+    total = state.get("total_pages")
     page_text = f"Page {page_num} of {total}" if total else f"Page {page_num}"
     canvas.setFont(body_font, 7)
     canvas.setFillColor(body_text)
     canvas.drawCentredString((left + right) / 2, bottom + 1.5 * mm, page_text)
 
     # Copyright (centre, lower line — below page number)
-    hf_doc_id   = state.get("doc_id", "")
-    year        = datetime.date.today().year
-    raw_cr      = b.get("copyright", "\u00a9 {year}")
-    copyright   = raw_cr.replace("{year}", str(year))
+    hf_doc_id = state.get("doc_id", "")
+    year = datetime.date.today().year
+    raw_cr = b.get("copyright", "\u00a9 {year}")
+    copyright = raw_cr.replace("{year}", str(year))
 
     canvas.setFont(body_font, 6)
     canvas.setFillColor(caption)
@@ -158,6 +160,7 @@ def _draw_header_footer(canvas, doc, state, brand=None):
 # =============================================================================
 # CLASSIFICATION BANNER
 # =============================================================================
+
 
 def build_classification_banner(level, path, brand=None, content_width=None):
     """
@@ -180,7 +183,7 @@ def build_classification_banner(level, path, brand=None, content_width=None):
     b = _get_brand(brand)
     cw = content_width or CONTENT_WIDTH
     primary = _hex(b, "primary")
-    org     = b.get("org", "")
+    org = b.get("org", "")
 
     level_labels = {
         1: "DIVISION",
@@ -190,22 +193,37 @@ def build_classification_banner(level, path, brand=None, content_width=None):
     }
     level_text = level_labels.get(level, "BRIEFING")
 
-    parts    = [p for p in Path(path).parts if p not in ("/", "\\")]
+    parts = [p for p in Path(path).parts if p not in ("/", "\\")]
     nav_path = " > ".join(parts[-5:]) if parts else str(path)
 
-    title_left = f'<font color="white"><b>{org} \u2014 Executive Briefing</b></font>' if org \
+    title_left = (
+        f'<font color="white"><b>{org} \u2014 Executive Briefing</b></font>'
+        if org
         else '<font color="white"><b>Executive Briefing</b></font>'
+    )
 
     banner_data = [
         [
             Paragraph(
                 title_left,
-                _ps("BannerTitle", brand=b, fontSize=11, textColor=white, fontName=b.get("font_heading", "Helvetica-Bold")),
+                _ps(
+                    "BannerTitle",
+                    brand=b,
+                    fontSize=11,
+                    textColor=white,
+                    fontName=b.get("font_heading", "Helvetica-Bold"),
+                ),
             ),
             Paragraph(
                 f'<font color="white"><b>LEVEL: {level_text}</b></font>',
-                _ps("BannerLevel", brand=b, fontSize=10, textColor=white,
-                    fontName=b.get("font_heading", "Helvetica-Bold"), alignment=2),
+                _ps(
+                    "BannerLevel",
+                    brand=b,
+                    fontSize=10,
+                    textColor=white,
+                    fontName=b.get("font_heading", "Helvetica-Bold"),
+                    alignment=2,
+                ),
             ),
         ],
         [
@@ -215,8 +233,14 @@ def build_classification_banner(level, path, brand=None, content_width=None):
             ),
             Paragraph(
                 '<font color="white">Generated by briefkit</font>',
-                _ps("BannerLib", brand=b, fontSize=8, textColor=white,
-                    fontName=b.get("font_caption", "Helvetica-Oblique"), alignment=2),
+                _ps(
+                    "BannerLib",
+                    brand=b,
+                    fontSize=8,
+                    textColor=white,
+                    fontName=b.get("font_caption", "Helvetica-Oblique"),
+                    alignment=2,
+                ),
             ),
         ],
     ]
@@ -226,13 +250,17 @@ def build_classification_banner(level, path, brand=None, content_width=None):
         colWidths=[cw * 0.65, cw * 0.35],
         rowHeights=[10 * mm, 8 * mm],
     )
-    banner.setStyle(TableStyle([
-        ("BACKGROUND",   (0, 0), (-1, -1), primary),
-        ("VALIGN",       (0, 0), (-1, -1), "MIDDLE"),
-        ("LEFTPADDING",  (0, 0), (0, -1),  8),
-        ("RIGHTPADDING", (-1, 0), (-1, -1), 8),
-        ("TOPPADDING",   (0, 0), (-1, -1), 2),
-        ("BOTTOMPADDING",(0, 0), (-1, -1), 2),
-        ("SPAN",         (0, 0), (0, 0)),
-    ]))
+    banner.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), primary),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING", (0, 0), (0, -1), 8),
+                ("RIGHTPADDING", (-1, 0), (-1, -1), 8),
+                ("TOPPADDING", (0, 0), (-1, -1), 2),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+                ("SPAN", (0, 0), (0, 0)),
+            ]
+        )
+    )
     return banner

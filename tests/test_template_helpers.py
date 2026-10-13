@@ -5,9 +5,9 @@ Tests for briefkit.templates._helpers — universal architectural controls.
 from __future__ import annotations
 
 import pytest
+from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.platypus import CondPageBreak, KeepTogether, PageBreak, Paragraph, Spacer
-from reportlab.lib.styles import ParagraphStyle
 
 from briefkit.templates._helpers import (
     DEFAULT_MAX_SPACER_MM,
@@ -24,10 +24,10 @@ from briefkit.templates._helpers import (
     should_skip,
 )
 
-
 # ---------------------------------------------------------------------------
 # should_skip
 # ---------------------------------------------------------------------------
+
 
 class TestShouldSkip:
     def test_default_false_for_every_section(self):
@@ -56,6 +56,7 @@ class TestShouldSkip:
 # ---------------------------------------------------------------------------
 # section_break_mode / min_section_space / max_spacer_mm
 # ---------------------------------------------------------------------------
+
 
 class TestConfigReaders:
     def test_section_break_mode_default(self):
@@ -88,6 +89,7 @@ class TestConfigReaders:
 # ---------------------------------------------------------------------------
 # section_break
 # ---------------------------------------------------------------------------
+
 
 class TestSectionBreak:
     def test_auto_emits_cond_page_break(self):
@@ -124,6 +126,7 @@ class TestSectionBreak:
 # optional_section
 # ---------------------------------------------------------------------------
 
+
 class TestOptionalSection:
     def test_appends_when_not_skipped(self):
         story = []
@@ -157,9 +160,12 @@ class TestOptionalSection:
         story = []
         flowables = [Paragraph("hi", ParagraphStyle("x"))]
         optional_section(
-            story, {"project": {"skip_preface": True}},
-            "preface", flowables,
-            break_before=True, break_after=True,
+            story,
+            {"project": {"skip_preface": True}},
+            "preface",
+            flowables,
+            break_before=True,
+            break_after=True,
         )
         assert story == []
 
@@ -167,6 +173,7 @@ class TestOptionalSection:
 # ---------------------------------------------------------------------------
 # chapter_opener
 # ---------------------------------------------------------------------------
+
 
 class TestChapterOpener:
     def _style(self):
@@ -210,6 +217,7 @@ class TestChapterOpener:
 # capped_spacer
 # ---------------------------------------------------------------------------
 
+
 class TestCappedSpacer:
     def test_under_cap_passes_through(self):
         sp = capped_spacer(20, config={})
@@ -231,6 +239,7 @@ class TestCappedSpacer:
 # ---------------------------------------------------------------------------
 # Registry integrity
 # ---------------------------------------------------------------------------
+
 
 class TestRegistries:
     def test_skippable_sections_unique(self):

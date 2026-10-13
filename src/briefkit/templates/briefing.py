@@ -119,7 +119,11 @@ class BriefingTemplate(BaseBriefingTemplate):
                 if insights:
                     flowables.append(
                         build_callout_box(
-                            insights[0][:500], "insight", brand=self.brand, content_width=self.content_width
+                            insights[0][:500],
+                            "insight",
+                            brand=self.brand,
+                            content_width=self.content_width,
+                            already_escaped=True,
                         )
                     )
 
@@ -215,6 +219,7 @@ class BriefingTemplate(BaseBriefingTemplate):
                                 "Engineering Brilliance Essay",
                                 brand=self.brand,
                                 content_width=self.content_width,
+                                already_escaped=True,
                             )
                         )
                         pull_count += 1

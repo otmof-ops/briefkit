@@ -11,7 +11,9 @@ brand colors, doc IDs, and hierarchy config are driven by the config dict.
 
 from __future__ import annotations
 
+import contextlib
 import datetime
+import os
 import re
 import sys
 from pathlib import Path
@@ -52,6 +54,7 @@ from briefkit.elements.tables import build_data_table  # noqa: F401 — re-expor
 from briefkit.elements.toc import build_toc  # noqa: F401 — re-exported
 from briefkit.extractor import extract_content as _extract_content
 from briefkit.extractor import parse_markdown
+from briefkit.output import resolve_output_path
 from briefkit.styles import (
     CONTENT_WIDTH,  # noqa: F401 — re-exported
     GUTTER,  # noqa: F401 — re-exported
@@ -66,15 +69,63 @@ from briefkit.styles import (
     _safe_text,
     build_styles,
     compute_content_width,
+    esc,
 )
 from briefkit.variants import auto_detect_variant, get_variant
 
-# Byte-reproducible builds: set ReportLab's global invariant flag at
-# import time so every Canvas / PDF produced by briefkit has a stable
-# /ID and (when SOURCE_DATE_EPOCH is set) a stable /CreationDate /
-# ModDate. Users who genuinely need timestamped output can unset this
-# flag before calling briefkit, or set disable_determinism in config.
-rl_config.invariant = 1
+# Untrusted markdown must never make briefkit fetch anything. Every string
+# that reaches ReportLab's paragraph parser is escaped first; this is the
+# backstop for any path that forgets: no remote host is trusted and only
+# inline ``data:`` URIs may be opened. Plain file paths (a configured logo)
+# are unaffected, since ReportLab tries the filesystem before the URL rules.
+rl_config.trustedHosts = ["-no-host-"]
+rl_config.trustedSchemes = ["data"]
+
+
+class BriefkitDocTemplate(SimpleDocTemplate):
+    """
+    ``SimpleDocTemplate`` that writes its output atomically.
+
+    ReportLab opens the output file for writing before it serialises
+    anything, so a build that failed part-way (an unresolved link
+    destination, a flowable that raised during layout) used to leave a
+    0-byte file where a good PDF had been. The document is rendered to a
+    sibling ``.part`` file and moved onto the final path only after the
+    build succeeds; on failure the partial file is removed and the
+    previous output is untouched.
+    """
+
+    def __init__(self, filename, **kw):
+        self.final_path = Path(filename)
+        self.part_path = self.final_path.with_name(f".{self.final_path.name}.{os.getpid()}.part")
+        super().__init__(str(self.part_path), **kw)
+
+    def _commit(self) -> None:
+        os.replace(self.part_path, self.final_path)
+
+    def _discard(self) -> None:
+        with contextlib.suppress(OSError):
+            self.part_path.unlink()
+
+    def build(self, flowables, **kw):
+        self.final_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            super().build(flowables, **kw)
+        except BaseException:
+            self._discard()
+            raise
+        self._commit()
+
+    def multiBuild(self, story, **kw):
+        self.final_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            result = super().multiBuild(story, **kw)
+        except BaseException:
+            self._discard()
+            raise
+        self._commit()
+        return result
+
 
 _PAGE_SIZES = {
     "A4": A4,
@@ -222,11 +273,11 @@ class BaseBriefingTemplate:
         else:
             self.level = detect_level(self.target_path, self._project_root, self.config)
 
-        output_filename = self.config.get("output", {}).get("filename", "executive-briefing.pdf")
-        if output_path:
-            self.output_path = Path(output_path)
-        else:
-            self.output_path = self.target_path / output_filename
+        # One rule for every command and template: --output wins, then
+        # output.output_dir mirrors the source tree, else next to the sources.
+        self.output_path = resolve_output_path(
+            self.target_path, self.config, override=output_path, project_root=self._project_root
+        )
 
         self.content: dict = {}
         self.date: datetime.date = datetime.date.today()
@@ -508,7 +559,7 @@ class BaseBriefingTemplate:
             who_para = section_texts.get("who", "")
 
         if what_para:
-            flowables.append(_safe_para(what_para, self.styles["STYLE_BODY"]))
+            flowables.append(_safe_para(what_para, self.styles["STYLE_BODY"], True))
             flowables.append(Spacer(1, 3 * mm))
             if overview:
                 flowables.append(_safe_para(overview[:600], self.styles["STYLE_BODY"]))
@@ -520,7 +571,7 @@ class BaseBriefingTemplate:
         else:
             flowables.append(
                 _safe_para(
-                    f"This briefing covers {_safe_text(title)}. See numbered documents for full content.",
+                    f"This briefing covers {title}. See numbered documents for full content.",
                     self.styles["STYLE_BODY"],
                 )
             )
@@ -529,7 +580,11 @@ class BaseBriefingTemplate:
             flowables.append(Spacer(1, 2 * mm))
             flowables.append(
                 build_callout_box(
-                    f"Target Audience: {who_para}", "insight", brand=self.brand, content_width=self.content_width
+                    f"Target Audience: {who_para}",
+                    "insight",
+                    brand=self.brand,
+                    content_width=self.content_width,
+                    already_escaped=True,
                 )
             )
 
@@ -552,13 +607,13 @@ class BaseBriefingTemplate:
         if overview and not takeaway_lines:
             numbered = re.findall(r"^\d+\.\s+(.{30,200})", overview, re.MULTILINE)
             for s in numbered[:5]:
-                takeaway_lines.append(f"- {s.strip()[:200]}")
+                takeaway_lines.append(f"- {esc(s.strip()[:200])}")
 
         if subsystems and not takeaway_lines:
             for sub in subsystems[:6]:
                 insights = sub.get("insights", [])
                 if insights and len(insights[0]) > 20:
-                    takeaway_lines.append(f"- <b>{_safe_text(sub['name'])}</b>: {insights[0][:150]}")
+                    takeaway_lines.append(f"- <b>{esc(sub['name'])}</b>: {insights[0][:150]}")
                 else:
                     raw = sub.get("content", "")
                     for s in re.split(r"(?<=[.!?])\s+", raw.replace("\n", " ")):
@@ -572,14 +627,14 @@ class BaseBriefingTemplate:
                             s_words = s.split()
                             if len(s_words) > 100:
                                 s = " ".join(s_words[:100]) + "\u2026"
-                            takeaway_lines.append(f"- <b>{_safe_text(sub['name'])}</b>: {s[:200]}")
+                            takeaway_lines.append(f"- <b>{esc(sub['name'])}</b>: {esc(s[:200])}")
                             break
 
         elif doc_sets and not takeaway_lines:
             for ds in doc_sets[:5]:
                 ov = ds.get("overview", "")[:120]
                 name = _safe_text(ds.get("title") or ds.get("name") or "")
-                takeaway_lines.append(f"- <b>{name}</b>: {ov}" if ov else f"- {name}")
+                takeaway_lines.append(f"- <b>{name}</b>: {esc(ov)}" if ov else f"- {name}")
 
         elif subjects and not takeaway_lines:
             for subj in subjects[:5]:
@@ -590,12 +645,18 @@ class BaseBriefingTemplate:
             for s in re.split(r"(?<=[.!?])\s+", (overview or "").replace("\n", " ")):
                 s = s.strip()
                 if len(s) > 30:
-                    takeaway_lines.append(f"- {s[:200]}")
+                    takeaway_lines.append(f"- {esc(s[:200])}")
             if not takeaway_lines:
-                takeaway_lines = [f"- See numbered documents for full analysis of {title}."]
+                takeaway_lines = [f"- See numbered documents for full analysis of {esc(title)}."]
 
         flowables.append(
-            build_callout_box("\n".join(takeaway_lines), "takeaway", brand=self.brand, content_width=self.content_width)
+            build_callout_box(
+                "\n".join(takeaway_lines),
+                "takeaway",
+                brand=self.brand,
+                content_width=self.content_width,
+                already_escaped=True,
+            )
         )
         flowables.append(Spacer(1, 3 * mm))
 
@@ -625,7 +686,15 @@ class BaseBriefingTemplate:
                 f"core concepts, key results, practical applications, and related content."
             )
 
-        flowables.append(build_callout_box(learn_text, "learn", brand=self.brand, content_width=self.content_width))
+        flowables.append(
+            build_callout_box(
+                esc(learn_text),
+                "learn",
+                brand=self.brand,
+                content_width=self.content_width,
+                already_escaped=True,
+            )
+        )
         return flowables
 
     def build_at_a_glance(self, metrics: dict, content: dict | None = None) -> list:
@@ -695,8 +764,9 @@ class BaseBriefingTemplate:
         if source_type:
             flowables.append(
                 _safe_para(
-                    f"<b>Source Classification:</b> {_safe_text(source_type)}",
+                    f"<b>Source Classification:</b> {esc(source_type)}",
                     self.styles["STYLE_BODY"],
+                    True,
                 )
             )
             flowables.append(Spacer(1, 2 * mm))
@@ -721,7 +791,7 @@ class BaseBriefingTemplate:
             return flowables
 
         for idx, sub in enumerate(subsystems, start=1):
-            heading = _safe_para(f"3.{idx} {_safe_text(sub['name'])}", self.styles["STYLE_H2"])
+            heading = _safe_para(f"3.{idx} {sub['name']}", self.styles["STYLE_H2"])
 
             blocks = sub.get("blocks") or parse_markdown(sub.get("content", ""))
             rendered_count = 0
@@ -962,9 +1032,9 @@ class BaseBriefingTemplate:
                 title = src.get("title", "Untitled") or "Untitled"
                 doi = src.get("doi", "")
 
-                citation = f"<b>{_safe_text(authors)}</b> ({year}). <i>{_safe_text(title)}</i>."
+                citation = f"<b>{authors}</b> ({year}). <i>{title}</i>."
                 if doi:
-                    citation += f" DOI: {_safe_text(doi)}"
+                    citation += f" DOI: {doi}"
 
                 flowables.append(
                     _safe_para(
@@ -1164,123 +1234,44 @@ class BaseBriefingTemplate:
         self,
         output_path: str | Path | None = None,
         **kwargs: Any,
-    ) -> SimpleDocTemplate:
+    ) -> BriefkitDocTemplate:
         """
-        Construct a ``SimpleDocTemplate`` with briefkit's standard
-        metadata, determinism, language, and producer defaults applied.
+        Construct the document template with briefkit's standard metadata,
+        determinism and language defaults applied, writing atomically.
 
-        Every template that instantiates a SimpleDocTemplate directly
-        SHOULD use this helper instead. It is the single place where
-        per-project metadata (from ``metadata:`` in ``briefkit.yml``),
-        byte-determinism (``invariant=True`` +
-        ``SOURCE_DATE_EPOCH``), and the ``/Lang`` attribute are
-        applied.
-
-        Any keyword argument accepted by SimpleDocTemplate may be
-        passed; the caller's kwargs take precedence over briefkit's
-        config-derived defaults, which in turn take precedence over
-        ReportLab's defaults.
-
-        Parameters
-        ----------
-        output_path : str or Path, optional
-            Output file path. Defaults to ``self.output_path``.
-        **kwargs :
-            Passed through to ``SimpleDocTemplate``.
-
-        Returns
-        -------
-        SimpleDocTemplate
-            Fully configured document ready for ``doc.build(story)``.
+        Every template that needs a document SHOULD use this helper. It is
+        the single place where per-project metadata (``metadata:`` in
+        ``briefkit.yml``), byte-determinism (``invariant`` plus
+        ``SOURCE_DATE_EPOCH``), the ``/Lang`` entry and the atomic write
+        are applied. Any keyword accepted by ``SimpleDocTemplate`` may be
+        passed; the caller's kwargs take precedence over the config-derived
+        defaults, which take precedence over ReportLab's own.
         """
         meta = dict(self.config.get("metadata", {}) or {})
         project = self.config.get("project", {}) or {}
 
-        # Title / author / subject / keywords fall through from config.
-        # Callers may override any of these via kwargs.
-        defaults: dict[str, Any] = {}
-        title = meta.get("title") or project.get("name") or "Briefing"
-        author = meta.get("author") or self.brand.get("org", "") or ""
-        subject = meta.get("subject") or "briefkit document"
-        creator = meta.get("creator") or "briefkit"
-        producer = meta.get("producer") or "briefkit"
         keywords = meta.get("keywords")
         if isinstance(keywords, (list, tuple)):
             keywords = ", ".join(str(k) for k in keywords)
         elif keywords is None:
             keywords = self.doc_id or ""
-        lang = meta.get("lang") or project.get("lang") or "en"
 
-        defaults.update(
-            {
-                "title": title,
-                "author": author,
-                "subject": subject,
-                "creator": creator,
-                "producer": producer,
-                "keywords": keywords,
-                "lang": lang,
-            }
-        )
-
-        # Determinism: rl_config.invariant is set at module import so
-        # every briefkit PDF has a stable /ID and stable timestamps
-        # (the latter when SOURCE_DATE_EPOCH is exported). Users who
-        # need the old non-deterministic behaviour can set
-        # project.disable_determinism: true to flip the flag per call.
-        if project.get("disable_determinism", False):
-            rl_config.invariant = 0
-        else:
-            rl_config.invariant = 1
-
-        # Caller kwargs override defaults. SimpleDocTemplate accepts
-        # **kw but silently ignores unknown keys — strip any
-        # reportlab-incompatible kwargs (lang/producer) to keep the
-        # resulting PDF info dict clean.
+        defaults: dict[str, Any] = {
+            "title": meta.get("title") or project.get("name") or "Briefing",
+            "author": meta.get("author") or self.brand.get("org", "") or "",
+            "subject": meta.get("subject") or "briefkit document",
+            "creator": meta.get("creator") or "briefkit",
+            "producer": meta.get("producer") or "briefkit",
+            "keywords": keywords,
+            "lang": meta.get("lang") or project.get("lang") or "en",
+            # Byte-reproducible output: a stable /ID, and stable timestamps
+            # when SOURCE_DATE_EPOCH is exported. project.disable_determinism
+            # restores wall-clock stamps for this document only.
+            "invariant": not project.get("disable_determinism", False),
+        }
         merged = {**defaults, **kwargs}
-        # Pull lang/producer out of the kwarg set (reportlab doesn't
-        # understand them) and apply them to the doc post-construction.
-        lang_val = merged.pop("lang", None)
-        producer_val = merged.pop("producer", None)
-
-        # Resolve output path.
         out_path = Path(output_path) if output_path else self.output_path
-
-        doc = SimpleDocTemplate(str(out_path), **merged)
-
-        # Wire /Lang and /Producer into the PDF info dict via the
-        # BaseDocTemplate's pdfinfo hook. ReportLab stores metadata in
-        # ``doc.title`` / ``doc.author`` / etc. attributes plus an
-        # ``info`` object on the Canvas. We override the producer and
-        # language by monkey-patching the existing attributes that
-        # ReportLab actually consults at build time.
-        if producer_val:
-            # ReportLab reads the producer from canvas.setProducer or
-            # from the _producer attribute on the doc. Setting it on
-            # the doc's extra info survives into the /Info dict.
-            doc._briefkit_producer = producer_val
-        if lang_val:
-            doc._briefkit_lang = lang_val
-
-        # Hook a post-build canvas tweak so producer/lang land in the
-        # final PDF info dict. We intercept afterPage or use a
-        # post-process via doc.build's custom canvasmaker.
-        _orig_handle_document_begin = doc.handle_documentBegin
-
-        def _with_meta_documentBegin():
-            _orig_handle_document_begin()
-            try:
-                canv = doc.canv
-                if producer_val:
-                    canv.setProducer(producer_val)
-                if lang_val:
-                    canv._doc.info.lang = lang_val
-            except Exception:
-                pass
-
-        doc.handle_documentBegin = _with_meta_documentBegin
-
-        return doc
+        return BriefkitDocTemplate(str(out_path), **merged)
 
     # ------------------------------------------------------------------
     # build_story — override in subclasses for different section orders

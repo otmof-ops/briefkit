@@ -23,7 +23,7 @@ from pathlib import Path
 from reportlab.lib.units import mm
 from reportlab.platypus import PageBreak, Paragraph, Spacer
 
-from briefkit.extractor import parse_markdown
+from briefkit.extractor import parse_markdown, read_source_file
 from briefkit.generator import (
     BaseBriefingTemplate,
     build_callout_box,
@@ -196,7 +196,7 @@ class ManualTemplate(BaseBriefingTemplate):
         flowables.append(Paragraph("Revision History", self.styles["STYLE_H1"]))
         flowables.append(Spacer(1, 2 * mm))
 
-        raw = found.read_text(encoding="utf-8", errors="replace")
+        raw = read_source_file(found)
 
         # Extract version entries as a table: Version | Date | Description
         version_pattern = re.compile(
@@ -245,7 +245,7 @@ class ManualTemplate(BaseBriefingTemplate):
         # Also check SAFETY.md
         safety_path = self.target_path / "SAFETY.md"
         if safety_path.exists():
-            all_text += "\n" + safety_path.read_text(encoding="utf-8", errors="replace")
+            all_text += "\n" + read_source_file(safety_path)
 
         warnings: list[tuple[str, str]] = []
         for m in _WARNING_PATTERN.finditer(all_text):
@@ -457,7 +457,7 @@ class ManualTemplate(BaseBriefingTemplate):
         # Check for a dedicated troubleshooting.md
         trouble_path = self.target_path / "troubleshooting.md"
         if trouble_path.exists():
-            all_text = trouble_path.read_text(encoding="utf-8", errors="replace") + "\n" + all_text
+            all_text = read_source_file(trouble_path) + "\n" + all_text
 
         faq_pairs: list[tuple[str, str]] = []
         for m in _FAQ_PATTERN.finditer(all_text):

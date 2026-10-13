@@ -26,7 +26,7 @@ from reportlab.platypus import PageBreak, Paragraph, Spacer
 
 from briefkit.elements.tables import build_data_table
 from briefkit.elements.toc import build_toc
-from briefkit.extractor import parse_markdown
+from briefkit.extractor import parse_markdown, read_source_file
 from briefkit.generator import BaseBriefingTemplate
 from briefkit.styles import _hex, _ps, _safe_para
 from briefkit.templates._helpers import should_skip
@@ -620,7 +620,7 @@ class AcademicTemplate(BaseBriefingTemplate):
 
         if appendix_files:
             for i, fp in enumerate(appendix_files, 1):
-                raw = fp.read_text(encoding="utf-8", errors="replace")
+                raw = read_source_file(fp)
                 label = fp.stem.replace("-", " ").title()
                 flowables.append(Paragraph(f"Appendix {chr(64 + i)}: {label}", self.styles["STYLE_H2"]))
                 flowables.append(Spacer(1, 1.5 * mm))

@@ -123,7 +123,7 @@ def build_callout_box(text, box_type="insight", brand=None, content_width=None, 
     return box
 
 
-def build_pull_quote(text, attribution="", brand=None, content_width=None):
+def build_pull_quote(text, attribution="", brand=None, content_width=None, already_escaped=False):
     """
     Build a pull-quote block with thin rules above and below.
 
@@ -187,7 +187,7 @@ def build_pull_quote(text, attribution="", brand=None, content_width=None):
     flowables.append(rule_wrapper)
     flowables.append(Spacer(1, 4 * mm))
 
-    flowables.append(_safe_para(f"\u201c{text}\u201d", pull_style))
+    flowables.append(_safe_para(f"\u201c{text}\u201d", pull_style, already_escaped))
 
     if attribution:
         attr_style = _ps(

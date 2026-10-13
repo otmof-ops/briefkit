@@ -18,12 +18,14 @@ from __future__ import annotations
 import datetime
 import re
 import sys
+import xml.sax.saxutils
 from collections import Counter
 from pathlib import Path
 from typing import Any
 
 from briefkit.bibliography import _parse_kebab_bibliography, extract_bibliography
 from briefkit.cross_refs import extract_cross_refs
+from briefkit.styles import safe_href
 from briefkit.terms import _GENERIC_TERMS, extract_terms
 
 # ---------------------------------------------------------------------------
@@ -38,15 +40,23 @@ _RE_ORDERED_LIST = re.compile(r"^(\d+)\.\s+(.+)$")
 _RE_UNORDERED_LIST = re.compile(r"^[\*\-\+]\s+(.+)$")
 
 # Pre-compiled inline formatting patterns
-_RE_BOLD_ITALIC_AST = re.compile(r"\*{3}(.+?)\*{3}")
-_RE_BOLD_ITALIC_UND = re.compile(r"_{3}(.+?)_{3}")
-_RE_BOLD_AST = re.compile(r"\*{2}(.+?)\*{2}")
-_RE_BOLD_UND = re.compile(r"_{2}(.+?)_{2}")
-_RE_ITALIC_AST = re.compile(r"\*(.+?)\*")
-_RE_ITALIC_UND = re.compile(r"(?<!\w)_(.+?)_(?!\w)")  # word-boundary restricted
+# Emphasis content must start and end on a character that is neither
+# whitespace nor the delimiter itself (CommonMark's left/right-flanking
+# rule, simplified). A signature line of underscores, a bare "5 * 3" or a
+# run of asterisks is then left as text instead of becoming unbalanced tags
+# that abort the build.
+_RE_BOLD_ITALIC_AST = re.compile(r"\*{3}(?=[^\s*])(.{1,2000}?)(?<=[^\s*])\*{3}")
+_RE_BOLD_ITALIC_UND = re.compile(r"(?<!\w)_{3}(?=[^\s_])(.{1,2000}?)(?<=[^\s_])_{3}(?!\w)")
+_RE_BOLD_AST = re.compile(r"\*{2}(?=[^\s*])(.{1,2000}?)(?<=[^\s*])\*{2}")
+_RE_BOLD_UND = re.compile(r"(?<!\w)_{2}(?=[^\s_])(.{1,2000}?)(?<=[^\s_])_{2}(?!\w)")
+_RE_ITALIC_AST = re.compile(r"\*(?=[^\s*])(.{1,2000}?)(?<=[^\s*])\*")
+_RE_ITALIC_UND = re.compile(r"(?<!\w)_(?=[^\s_])(.{1,2000}?)(?<=[^\s_])_(?!\w)")  # word-boundary restricted
 _RE_INLINE_CODE = re.compile(r"`(.+?)`")
-_RE_MD_LINK = re.compile(r"\[([^\]]+)\]\(([^)]*)\)")
-_RE_STRIKETHROUGH = re.compile(r"~~(.+?)~~")
+# One level of balanced parentheses is allowed inside the URL, as in
+# https://en.wikipedia.org/wiki/Foo_(bar), per CommonMark.
+# Bounded so an unclosed "[" in a long document cannot make the scan quadratic.
+_RE_MD_LINK = re.compile(r"\[([^\]\n]{1,400})\]\(((?:[^()\s]|\([^()]*\)){0,2000})\)")
+_RE_STRIKETHROUGH = re.compile(r"~~(?=[^\s~])(.{1,2000}?)(?<=[^\s~])~~")
 
 # Smart-punctuation patterns (applied after inline markdown strip,
 # before HTML emission, with code spans protected by sentinels so
@@ -133,8 +143,13 @@ def _strip_inline(s: str) -> str:
 
     def _stash_link(m: re.Match) -> str:
         label = m.group(1)
-        href = m.group(2).replace('"', "&quot;")
-        link_specs.append((label, href))
+        # The text was XML-escaped in step 2; validate the real URL and
+        # re-escape it for the attribute. Anything but http, https or
+        # mailto is rendered as its label, never as a link action.
+        href = safe_href(xml.sax.saxutils.unescape(m.group(2)))
+        if href is None:
+            return label
+        link_specs.append((label, xml.sax.saxutils.escape(href, {'"': "&quot;"})))
         return f"{_LINK_SENTINEL_OPEN}{len(link_specs) - 1}{_LINK_SENTINEL_CLOSE}"
 
     s = _RE_MD_LINK.sub(_stash_link, s)
@@ -199,15 +214,15 @@ def markdown_to_plain(s: str) -> str:
     s = _RE_MD_LINK.sub(r"\1", s)
     s = _RE_STRIKETHROUGH.sub(r"\1", s)
     s = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", s)  # images
-    s = re.sub(r"\*{2,3}(.+?)\*{2,3}", r"\1", s)  # bold / bold-italic
-    s = re.sub(r"_{2,3}(.+?)_{2,3}", r"\1", s)
+    s = re.sub(r"\*{2,3}(?=[^\s*])(.{1,2000}?)(?<=[^\s*])\*{2,3}", r"\1", s)  # bold / bold-italic
+    s = re.sub(r"(?<!\w)_{2,3}(?=[^\s_])(.{1,2000}?)(?<=[^\s_])_{2,3}(?!\w)", r"\1", s)
     s = re.sub(r"(?<![\w*])\*(?!\s)(.+?)(?<!\s)\*(?![\w*])", r"\1", s)  # italic
     s = re.sub(r"(?<![\w_])_(?!\s)(.+?)(?<!\s)_(?![\w_])", r"\1", s)
     s = re.sub(r"^\s{0,3}#{1,6}\s+", "", s, flags=re.MULTILINE)  # headings
     s = re.sub(r"^\s{0,3}>\s?", "", s, flags=re.MULTILINE)  # quotes
     s = re.sub(r"^\s{0,3}([-*+]|\d+[.)])\s+", "", s, flags=re.MULTILINE)  # bullets
-    s = re.sub(r"^\s*\|.*\|\s*$", "", s, flags=re.MULTILINE)  # table rows
-    s = re.sub(r"^\s*[-=]{3,}\s*$", "", s, flags=re.MULTILINE)  # rules
+    s = re.sub(r"^[ \t]*\|.*\|[ \t]*$", "", s, flags=re.MULTILINE)  # table rows
+    s = re.sub(r"^[ \t]*[-=]{3,}[ \t]*$", "", s, flags=re.MULTILINE)  # rules
     return re.sub(r"\s+", " ", s).strip()
 
 
@@ -444,6 +459,18 @@ def parse_markdown(text: str) -> list[dict]:
 _MAX_FILE_BYTES = 10 * 1024 * 1024  # 10 MB
 
 
+def read_source_file(fp: Path) -> str:
+    """
+    Read a source file the way the extractor does: symlinks, files over 10 MB
+    and unreadable files yield an empty string rather than foreign content.
+
+    Templates that pick up companion files (preface.md, glossary.md,
+    methodology.md, safety notes) must use this rather than ``read_text``, or a
+    symlink in a cloned repository puts an outside file into the PDF.
+    """
+    return _read_file(fp)
+
+
 def _read_file(fp: Path) -> str:
     """Read a file safely, skipping symlinks and oversized files."""
     if fp.is_symlink():
@@ -553,7 +580,7 @@ def _extract_doc_set_content(path: Path, config: dict) -> dict:
         total_words += _count_words(raw)
         m = re.search(r"^#\s+(.+)$", raw, re.MULTILINE)
         if m:
-            result["title"] = m.group(1).strip()
+            result["title"] = markdown_to_plain(m.group(1))
         overview_match = re.search(r"^(?!#)(.{80,})", raw, re.MULTILINE)
         if overview_match:
             lines_after = raw[overview_match.start() :].split("\n")
@@ -821,7 +848,7 @@ def _aggregate_subject_content(path: Path, config: dict, date: datetime.date) ->
         raw = _read_file(readme)
         m = re.search(r"^#\s+(.+)$", raw, re.MULTILINE)
         if m:
-            agg["title"] = m.group(1).strip()
+            agg["title"] = markdown_to_plain(m.group(1))
         agg["overview"] = raw[:1000]
 
     cross_refs_seen: set = set()
@@ -874,7 +901,7 @@ def _aggregate_division_content(path: Path, config: dict, date: datetime.date) -
         raw = _read_file(readme)
         m = re.search(r"^#\s+(.+)$", raw, re.MULTILINE)
         if m:
-            agg["title"] = m.group(1).strip()
+            agg["title"] = markdown_to_plain(m.group(1))
         agg["overview"] = raw[:2000]
 
     for child in sorted(path.iterdir()):
@@ -896,7 +923,7 @@ def _aggregate_division_content(path: Path, config: dict, date: datetime.date) -
                 subject_data["overview"] = raw[:500]
                 m = re.search(r"^#\s+(.+)$", raw, re.MULTILINE)
                 if m:
-                    subject_data["name"] = m.group(1).strip()
+                    subject_data["name"] = markdown_to_plain(m.group(1))
 
             doc_sets = [d for d in child.iterdir() if d.is_dir() and not d.is_symlink() and not d.name.startswith(".")]
             subject_data["doc_count"] = len(doc_sets)
@@ -936,7 +963,7 @@ def _aggregate_root_content(path: Path, config: dict, date: datetime.date) -> di
         agg["overview"] = raw[:3000]
         m = re.search(r"^#\s+(.+)$", raw, re.MULTILINE)
         if m:
-            agg["title"] = m.group(1).strip()
+            agg["title"] = markdown_to_plain(m.group(1))
 
     guide = path / "guide.md"
     if guide.exists():

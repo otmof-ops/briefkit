@@ -10,7 +10,7 @@ import re
 
 from reportlab.lib.colors import HexColor, white
 from reportlab.lib.units import mm
-from reportlab.platypus import Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import Spacer, Table, TableStyle
 
 from briefkit.styles import CONTENT_WIDTH, _get_brand, _hex, _safe_para, _safe_text, build_styles
 
@@ -58,7 +58,7 @@ def build_data_table(
 
     flowables = []
     if title:
-        flowables.append(Paragraph(title, styles["STYLE_CAPTION"]))
+        flowables.append(_safe_para(title, styles["STYLE_CAPTION"]))
         flowables.append(Spacer(1, 2))
 
     if not headers:

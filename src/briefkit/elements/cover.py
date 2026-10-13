@@ -13,7 +13,7 @@ from reportlab.lib.units import mm
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.platypus import PageBreak, Paragraph, Spacer, Table, TableStyle
 
-from briefkit.styles import CONTENT_WIDTH, _get_brand, _hex, _ps, build_styles
+from briefkit.styles import CONTENT_WIDTH, _get_brand, _hex, _ps, build_styles, esc
 
 
 def build_cover_page(title, subtitle, path, level, date, doc_id="", brand=None, content_width=None):
@@ -51,9 +51,13 @@ def build_cover_page(title, subtitle, path, level, date, doc_id="", brand=None, 
     accent = _hex(b, "accent")
     caption = _hex(b, "caption")
 
-    org = b.get("org", "")
-    abn = b.get("abn", "")
-    tagline = b.get("tagline", "")
+    # Everything below is data, not markup: a README heading or a directory
+    # name must print as text, never reach the parser as a tag.
+    org = esc(b.get("org", ""))
+    abn = esc(b.get("abn", ""))
+    tagline = esc(b.get("tagline", ""))
+    subtitle = esc(subtitle or "")
+    doc_id = esc(doc_id or "")
 
     level_labels = {
         1: "DIVISION BRIEFING",
@@ -66,7 +70,7 @@ def build_cover_page(title, subtitle, path, level, date, doc_id="", brand=None, 
     # Breadcrumb from filesystem path
     path_parts = Path(path).parts
     breadcrumb_parts = [p for p in path_parts if p not in ("/", "\\")][-4:]
-    breadcrumb = " \u203a ".join(breadcrumb_parts) if breadcrumb_parts else str(path)
+    breadcrumb = esc(" \u203a ".join(breadcrumb_parts) if breadcrumb_parts else str(path))
 
     flowables = []
 
@@ -134,7 +138,7 @@ def build_cover_page(title, subtitle, path, level, date, doc_id="", brand=None, 
             alignment=1,
             spaceAfter=12,
         )
-    flowables.append(Paragraph(title, title_style))
+    flowables.append(Paragraph(esc(title), title_style))
     flowables.append(Spacer(1, 6 * mm))
 
     # --- Subtitle ---
@@ -220,7 +224,7 @@ def build_cover_page(title, subtitle, path, level, date, doc_id="", brand=None, 
     flowables.append(Spacer(1, 30 * mm))
 
     # --- Date / version row ---
-    date_str = date if isinstance(date, str) else date.strftime("%d %B %Y")
+    date_str = esc(date if isinstance(date, str) else date.strftime("%d %B %Y"))
     meta_data = [
         [
             Paragraph(f"<b>Generated:</b> {date_str}", styles["STYLE_CAPTION"]),

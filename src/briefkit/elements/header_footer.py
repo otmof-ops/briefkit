@@ -21,6 +21,7 @@ from briefkit.styles import (
     _get_brand,
     _hex,
     _ps,
+    esc,
     truncate_to_width,
 )
 
@@ -197,7 +198,7 @@ def build_classification_banner(level, path, brand=None, content_width=None):
     nav_path = " > ".join(parts[-5:]) if parts else str(path)
 
     title_left = (
-        f'<font color="white"><b>{org} \u2014 Executive Briefing</b></font>'
+        f'<font color="white"><b>{esc(org)} \u2014 Executive Briefing</b></font>'
         if org
         else '<font color="white"><b>Executive Briefing</b></font>'
     )
@@ -228,7 +229,7 @@ def build_classification_banner(level, path, brand=None, content_width=None):
         ],
         [
             Paragraph(
-                f'<font color="white">{nav_path}</font>',
+                f'<font color="white">{esc(nav_path)}</font>',
                 _ps("BannerPath", brand=b, fontSize=8, textColor=white, fontName=b.get("font_mono", "Courier")),
             ),
             Paragraph(

@@ -13,10 +13,9 @@ re-exports it for convenience so callers can import either way.
 from reportlab.graphics.shapes import Drawing, Line, Rect, String
 from reportlab.lib.colors import HexColor
 from reportlab.lib.units import mm
-from reportlab.platypus import Paragraph
 
 from briefkit.elements.callout import build_pull_quote  # canonical location
-from briefkit.styles import CONTENT_WIDTH, _get_brand, _hex, build_styles
+from briefkit.styles import CONTENT_WIDTH, _get_brand, _hex, _safe_para, build_styles
 
 
 def build_bar_chart(data, title="", brand=None, content_width=None):
@@ -47,7 +46,7 @@ def build_bar_chart(data, title="", brand=None, content_width=None):
 
     flowables = []
     if title:
-        flowables.append(Paragraph(title, styles["STYLE_CAPTION"]))
+        flowables.append(_safe_para(title, styles["STYLE_CAPTION"]))
 
     if not data:
         return flowables

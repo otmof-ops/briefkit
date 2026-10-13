@@ -8,6 +8,7 @@ All styles accept a brand dict; a DEFAULT_BRAND fallback is provided.
 import functools
 import re
 import unicodedata
+import urllib.parse
 import xml.sax.saxutils
 
 from reportlab.lib.colors import HexColor, white
@@ -62,6 +63,50 @@ _SAFE_FONTS = frozenset(
         "Times-BoldItalic",
     }
 )
+
+
+_ALLOWED_LINK_SCHEMES = frozenset({"http", "https", "mailto"})
+
+
+def safe_href(url):
+    """
+    Return *url* when it may become a clickable PDF link, else ``None``.
+
+    Only ``http``, ``https`` and ``mailto`` targets become link actions.
+    Everything else is rendered as plain label text: ``javascript:``,
+    ``file:``, ``smb:``, custom scheme handlers (``ms-msdt:``), UNC paths,
+    relative paths that mean nothing inside a PDF, and ``#anchors`` that
+    have no destination to resolve to.
+    """
+    if not isinstance(url, str):
+        return None
+    cleaned = "".join(ch for ch in url.strip() if ch.isprintable() and not ch.isspace())
+    if not cleaned or cleaned.startswith(("//", "\\\\")):
+        return None
+    try:
+        parts = urllib.parse.urlsplit(cleaned)
+    except ValueError:
+        return None
+    scheme = parts.scheme.lower()
+    if scheme not in _ALLOWED_LINK_SCHEMES:
+        return None
+    if scheme in ("http", "https") and not parts.netloc:
+        return None
+    if scheme == "mailto" and not parts.path:
+        return None
+    return cleaned
+
+
+def esc(text) -> str:
+    """
+    Escape *text* completely for ReportLab's paragraph mini-XML.
+
+    For strings that are data rather than markup: a title, an organisation
+    name, a directory name, a date. Unlike :func:`_safe_text` no tag
+    survives, so an ``<img src=...>`` in a README heading is printed as
+    text, never fetched.
+    """
+    return xml.sax.saxutils.escape(str(text), {'"': "&quot;"})
 
 
 def _get_brand(brand=None):
@@ -122,9 +167,16 @@ def truncate_to_width(text, font_name, font_size, max_width):
     if stringWidth(str(text), font_name, font_size) <= max_width:
         return str(text)
     t = str(text)
-    while t and stringWidth(t + "...", font_name, font_size) > max_width:
-        t = t[:-1]
-    return t + "..." if t else "..."
+    # Binary search on the prefix length: measuring one character at a time
+    # was quadratic and took over a minute on a very long title.
+    lo, hi = 0, len(t)
+    while lo < hi:
+        mid = (lo + hi + 1) // 2
+        if stringWidth(t[:mid] + "...", font_name, font_size) <= max_width:
+            lo = mid
+        else:
+            hi = mid - 1
+    return t[:lo] + "..." if lo else "..."
 
 
 def get_layout(page_size=None):
@@ -198,10 +250,11 @@ def _safe_text(text, already_escaped: bool = False):
         # we use a non-greedy ``.+?`` bounded by ``&gt;`` instead of the
         # old ``[^&]+`` which silently dropped tags whose attribute values
         # contained ampersands.
-        text = re.sub(r"&lt;font (.+?)&gt;", r"<font \1>", text)
+        text = re.sub(r"&lt;font (.{1,200}?)&gt;", r"<font \1>", text)
         text = text.replace("&lt;/font&gt;", "</font>")
-        # Restore link tags (clickable URLs from markdown links)
-        text = re.sub(r"&lt;link (.+?)&gt;", r"<link \1>", text)
+        # Restore link tags (clickable URLs from markdown links). Their
+        # attributes are re-validated below, on both code paths.
+        text = re.sub(r"&lt;link (.{1,2000}?)&gt;", r"<link \1>", text)
         text = text.replace("&lt;/link&gt;", "</link>")
 
     # After restoring font tags, sanitize attributes to allowlist
@@ -224,7 +277,29 @@ def _safe_text(text, already_escaped: bool = False):
             parts.append(f'color="{color_match.group(1)}"')
         return f"<font {' '.join(parts)}>"
 
-    text = re.sub(r"<font ([^>]+)>", _sanitize_font_attrs, text)
+    text = re.sub(r"<font ([^>]{1,200})>", _sanitize_font_attrs, text)
+
+    # Links: keep only an href whose scheme is on the allowlist, drop every
+    # other attribute, and demote the tag to its label otherwise, so a
+    # crafted URL never becomes a live PDF action whichever path built it.
+    kept_links: list[str] = []
+
+    def _sanitize_link(match):
+        attrs, label = match.group(1), match.group(2)
+        href_match = re.search(r'href="([^"]*)"', attrs)
+        href = None
+        if href_match:
+            href = safe_href(xml.sax.saxutils.unescape(href_match.group(1), {"&quot;": '"'}))
+        if href is None:
+            return label
+        kept_links.append(f'<link href="{esc(href)}" color="#1a5fb4">')
+        return f"\x00L{len(kept_links) - 1}\x00{label}\x00/L\x00"
+
+    text = re.sub(r"<link\b([^>]{0,2000})>(.{0,5000}?)</link>", _sanitize_link, text, flags=re.DOTALL)
+    text = re.sub(r"</?link\b[^>]*>", "", text)  # unpaired remnants
+    if kept_links:
+        text = re.sub(r"\x00L(\d+)\x00", lambda m: kept_links[int(m.group(1))], text)
+        text = text.replace("\x00/L\x00", "</link>")
 
     # Close any unclosed tags (from content truncation mid-tag)
     open_tags = re.findall(r"<(b|i|u|font|strike)[^>]*>", text)
@@ -232,15 +307,18 @@ def _safe_text(text, already_escaped: bool = False):
     for tag in reversed(open_tags[len(close_tags) :]):
         text += f"</{tag}>"
 
-    # Insert zero-width spaces in very long words to prevent Paragraph overflow
+    # Insert zero-width spaces in very long words to prevent Paragraph
+    # overflow. Only text between tags is touched: a break inside
+    # ``<link href="...">`` or ``</font>`` would corrupt the markup itself.
     def _break_long_word(m):
         word = m.group(0)
-        if len(word) > 60:
-            return "&#8203;".join(word[i : i + 60] for i in range(0, len(word), 60))
-        return word
+        return "&#8203;".join(word[i : i + 60] for i in range(0, len(word), 60))
 
-    text = re.sub(r"\S{61,}", _break_long_word, text)
-    return text
+    segments = re.split(r"(<[^>]+>)", text)
+    for i, seg in enumerate(segments):
+        if seg and not seg.startswith("<"):
+            segments[i] = re.sub(r"\S{61,}", _break_long_word, seg)
+    return "".join(segments)
 
 
 def _safe_para(text, style, already_escaped: bool = False):
@@ -536,3 +614,4 @@ hex_color = _hex
 make_style = _ps
 safe_para = _safe_para
 safe_text = _safe_text
+escape_text = esc

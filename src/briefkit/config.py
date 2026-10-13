@@ -19,6 +19,7 @@ try:
 except ImportError as exc:  # pragma: no cover
     raise ImportError("PyYAML is required: pip install pyyaml") from exc
 
+from briefkit.output import validate_output_dir, validate_output_filename
 from briefkit.styles import DEFAULT_BRAND as _DEFAULT_BRAND
 
 # ---------------------------------------------------------------------------
@@ -230,10 +231,14 @@ def _validate_config(cfg: dict[str, Any]) -> list[str]:
         except (OSError, ValueError):
             pass
 
-    # Validate output_dir is not an escape path
-    output_dir = output.get("output_dir", "")
-    if output_dir and ".." in str(output_dir):
-        errors.append(f"output.output_dir must not contain '..', got: {output_dir!r}")
+    # output.filename is joined onto the source directory, so it must be a
+    # bare .pdf name; output.output_dir may not walk upwards.
+    for problem in (
+        validate_output_filename(output.get("filename", "executive-briefing.pdf")),
+        validate_output_dir(output.get("output_dir", "")),
+    ):
+        if problem:
+            errors.append(problem)
 
     # Validate glob patterns don't contain dangerous traversal
     for pat_key in ("orientation_doc_pattern", "numbered_doc_pattern"):

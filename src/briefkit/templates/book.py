@@ -27,7 +27,7 @@ from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.platypus import KeepTogether, PageBreak, Paragraph, Spacer
 
 from briefkit.elements.header_footer import make_header_footer
-from briefkit.extractor import parse_markdown
+from briefkit.extractor import parse_markdown, read_source_file
 from briefkit.generator import (
     BaseBriefingTemplate,
     build_toc,
@@ -263,7 +263,7 @@ class BookTemplate(BaseBriefingTemplate):
         flowables.append(Spacer(1, 3 * mm))
 
         if preface_path.exists():
-            raw = preface_path.read_text(encoding="utf-8", errors="replace")
+            raw = read_source_file(preface_path)
             for block in parse_markdown(raw)[:40]:
                 flowables.extend(self.render_blocks([block]))
         else:
@@ -356,7 +356,7 @@ class BookTemplate(BaseBriefingTemplate):
         """
         glossary_path = self.target_path / "glossary.md"
         if glossary_path.exists():
-            raw = glossary_path.read_text(encoding="utf-8", errors="replace")
+            raw = read_source_file(glossary_path)
             flowables = []
             for block in parse_markdown(raw):
                 flowables.extend(self.render_blocks([block]))

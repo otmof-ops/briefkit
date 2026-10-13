@@ -133,6 +133,7 @@ def _generate_one(
     config: dict[str, Any],
     dry_run: bool = False,
     output_path: str | Path | None = None,
+    content: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """
     Generate the briefing PDF for a single *directory*.
@@ -174,6 +175,10 @@ def _generate_one(
         template_name = config.get("template", {}).get("preset", "briefing")
         TemplateClass = get_template(template_name)
         tmpl = TemplateClass(directory, config=config, output_path=output_pdf)
+        if content is not None:
+            # The CLI already extracted this directory for its pre-check;
+            # reuse it rather than reading every file a second time.
+            tmpl.preloaded_content = content
         tmpl.generate()
         result["status"] = "generated"
         result["message"] = str(output_pdf)

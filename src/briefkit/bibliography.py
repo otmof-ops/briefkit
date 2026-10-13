@@ -60,7 +60,7 @@ _CITE_PATTERNS = [
     re.compile(r"([A-Z][a-z]+(?:\s+et\s+al\.?))\s*\(\s*((?:19|20)\d{2})\s*(?:,\s*p\.?\s*\d+)?\s*\)"),
     re.compile(r"([A-Z][a-z]+)\s+\(\s*((?:19|20)\d{2})\s*(?:,\s*p\.?\s*\d+)?\s*\)"),
     re.compile(r"([A-Z][a-z]+\s+and\s+[A-Z][a-z]+)\s*\(\s*((?:19|20)\d{2})\s*\)"),
-    re.compile(r"([A-Z][a-z]+(?:,\s+[A-Z][a-z]+)+,?\s+and\s+[A-Z][a-z]+)\s*\(\s*((?:19|20)\d{2})\s*\)"),
+    re.compile(r"([A-Z][a-z]+(?:,\s+[A-Z][a-z]+){1,8},?\s+and\s+[A-Z][a-z]+)\s*\(\s*((?:19|20)\d{2})\s*\)"),
     re.compile(r"\[([A-Z][a-z]+)\s+((?:19|20)\d{2})\]"),
     re.compile(r"\(([A-Z][a-z]+),\s*((?:19|20)\d{2})\s*\)"),
 ]

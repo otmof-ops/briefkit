@@ -179,7 +179,7 @@ def cmd_generate(args: argparse.Namespace) -> int:
     if pre is not None and not quiet:
         _warn_on_truncation(pre, cfg)
 
-    result = _generate_one(path, cfg, dry_run=False, output_path=output)
+    result = _generate_one(path, cfg, dry_run=False, output_path=output, content=pre)
 
     if as_json:
         print(json.dumps(result, indent=2, default=str))
@@ -1085,12 +1085,9 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def _get_version() -> str:
-    try:
-        from importlib.metadata import version  # noqa: PLC0415
+    from briefkit import __version__  # noqa: PLC0415
 
-        return f"briefkit {version('briefkit')}"
-    except Exception:  # PackageNotFoundError or ImportError  # noqa: BLE001
-        return "briefkit (unknown version)"
+    return f"briefkit {__version__}"
 
 
 # ---------------------------------------------------------------------------

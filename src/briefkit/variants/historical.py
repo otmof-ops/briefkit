@@ -14,7 +14,7 @@ from reportlab.lib.units import mm
 from reportlab.platypus import PageBreak, Spacer
 
 from briefkit.elements.tables import build_data_table
-from briefkit.styles import _safe_para
+from briefkit.styles import _get_brand, _safe_para
 from briefkit.variants import DocSetVariant, _register, collect_text
 
 # Title patterns that indicate historical figures of authority
@@ -97,7 +97,7 @@ class HistoricalVariant(DocSetVariant):
             # Also render a visual timeline drawing if enough events
             events = self._extract_timeline_events(all_content)
             if len(events) >= 2:
-                chart = _build_timeline_drawing(events[:8])
+                chart = _build_timeline_drawing(events[:8], brand)
                 if chart is not None:
                     flowables.append(chart)
         else:
@@ -239,7 +239,7 @@ class HistoricalVariant(DocSetVariant):
         return ruler_rows
 
 
-def _build_timeline_drawing(events):
+def _build_timeline_drawing(events, brand=None):
     """Attempt to build a visual horizontal timeline; returns None on failure."""
     try:
         from reportlab.graphics.shapes import Drawing, Line, String
@@ -273,7 +273,7 @@ def _build_timeline_drawing(events):
                     x,
                     axis_y + y_offset,
                     str(year),
-                    fontName="Helvetica-Bold",
+                    fontName=_get_brand(brand).get("font_heading", "Helvetica-Bold"),
                     fontSize=7,
                     fillColor=HexColor("#1B2A4A"),
                     textAnchor="middle",
@@ -284,7 +284,7 @@ def _build_timeline_drawing(events):
                     x,
                     axis_y + y_offset - 9,
                     str(desc)[:14],
-                    fontName="Helvetica",
+                    fontName=_get_brand(brand).get("font_body", "Helvetica"),
                     fontSize=6.5,
                     fillColor=HexColor("#666666"),
                     textAnchor="middle",

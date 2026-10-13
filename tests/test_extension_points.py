@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+from pathlib import Path
 
 import pytest
 
@@ -98,7 +99,7 @@ class TestVariantRules:
                 {"pattern": "docs/legal", "variant": "legal"},
             ],
         )
-        assert tmpl._display_path() == "docs/legal"
+        assert Path(tmpl._display_path()) == Path("docs/legal")  # separators differ on Windows
         assert tmpl._variant_from_rules() == "hardware"
 
     def test_double_star_matches_the_directory_itself(self, legal_fixture):

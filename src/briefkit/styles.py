@@ -66,21 +66,47 @@ _SAFE_FONTS = frozenset(
 
 
 _ALLOWED_LINK_SCHEMES = frozenset({"http", "https", "mailto"})
+_SLUG_STRIP = re.compile(r"<[^>]+>|&[#\w]+;")
+_SLUG_NUMBERING = re.compile(r"^\s*(?:\d+(?:\.\d+)*\.?)\s+")
+_SLUG_NON_WORD = re.compile(r"[^a-z0-9]+")
+
+
+def slugify(text, *, drop_numbering: bool = False) -> str:
+    """
+    A stable anchor name for a heading, GitHub style.
+
+    Markup and entities are removed, the text is lower-cased, and every run of
+    characters other than letters and digits becomes one hyphen. With
+    ``drop_numbering`` a leading "3.1 " or "4. " is removed first, so a
+    Markdown ``[see](#installation)`` reaches the heading rendered as
+    "3.1 Installation".
+    """
+    plain = _SLUG_STRIP.sub(" ", str(text))
+    if drop_numbering:
+        plain = _SLUG_NUMBERING.sub("", plain)
+    slug = _SLUG_NON_WORD.sub("-", plain.lower()).strip("-")
+    return slug or "section"
 
 
 def safe_href(url):
     """
     Return *url* when it may become a clickable PDF link, else ``None``.
 
-    Only ``http``, ``https`` and ``mailto`` targets become link actions.
+    Only ``http``, ``https`` and ``mailto`` targets become link actions, and
+    ``#anchors`` become internal jumps to the heading with that slug.
     Everything else is rendered as plain label text: ``javascript:``,
-    ``file:``, ``smb:``, custom scheme handlers (``ms-msdt:``), UNC paths,
-    relative paths that mean nothing inside a PDF, and ``#anchors`` that
-    have no destination to resolve to.
+    ``file:``, ``smb:``, custom scheme handlers (``ms-msdt:``), UNC paths and
+    relative paths that mean nothing inside a PDF.
     """
     if not isinstance(url, str):
         return None
-    cleaned = "".join(ch for ch in url.strip() if ch.isprintable() and not ch.isspace())
+    stripped = url.strip()
+    if stripped.startswith("#"):
+        # An internal destination: normalised to the slug the headings are
+        # bookmarked under. Every anchor is pre-registered at document start,
+        # so an unknown one lands on page 1 rather than aborting the build.
+        return "#" + slugify(stripped[1:])
+    cleaned = "".join(ch for ch in stripped if ch.isprintable() and not ch.isspace())
     if not cleaned or cleaned.startswith(("//", "\\\\")):
         return None
     try:

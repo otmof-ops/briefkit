@@ -5,12 +5,11 @@ Extracted and generalized from generate-briefing-v2.py _build_back_cover()
 (original lines 2754-2840).
 """
 
-import datetime
-
 from reportlab.lib.colors import white
 from reportlab.lib.units import mm
 from reportlab.platypus import PageBreak, Paragraph, Spacer, Table, TableStyle
 
+from briefkit._dates import today
 from briefkit.styles import CONTENT_WIDTH, _get_brand, _hex, _ps, _safe_text, build_styles
 
 
@@ -55,10 +54,10 @@ def build_back_cover(date=None, generator_note="", brand=None, content_width=Non
     abn = b.get("abn", "")
 
     if date is None:
-        date = datetime.date.today()
+        date = today()
     if isinstance(date, str):
         date_str = date
-        year = datetime.date.today().year
+        year = today().year
     else:
         date_str = date.strftime("%d %B %Y")
         year = date.year

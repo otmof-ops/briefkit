@@ -35,6 +35,7 @@ from reportlab.platypus import (
     TableStyle,
 )
 
+from briefkit._dates import today
 from briefkit.doc_ids import get_or_assign_doc_id
 from briefkit.elements.callout import build_callout_box, build_pull_quote  # noqa: F401 — re-exported
 from briefkit.elements.charts import build_bar_chart, build_timeline  # noqa: F401 — re-exported
@@ -318,7 +319,7 @@ class BaseBriefingTemplate:
         )
 
         self.content: dict = {}
-        self.date: datetime.date = datetime.date.today()
+        self.date: datetime.date = today()
         self.date_str: str = self.date.strftime("%d %B %Y")
         self.doc_id: str = ""
 
@@ -347,6 +348,11 @@ class BaseBriefingTemplate:
             level=self.level,
             config=self.config,
         )
+        # --title names the document; it beats the README heading everywhere
+        # the title is shown (cover, running head, /Title).
+        cli_title = (self.config.get("_cli", {}) or {}).get("title")
+        if cli_title:
+            self.content["title"] = str(cli_title)
         return self.content
 
     # ------------------------------------------------------------------
@@ -520,12 +526,17 @@ class BaseBriefingTemplate:
                 callout = build_callout_box(
                     text, "insight", brand=self.brand, content_width=self.content_width, already_escaped=True
                 )
-                # Wrap in KeepTogether so a mid-callout page break can't
-                # leave half a coloured left border on one page.
-                if isinstance(callout, list):
-                    flowables.append(KeepTogether(callout))
+                # Keep a short callout whole so a page break cannot leave half
+                # a coloured border behind. A quotation longer than roughly a
+                # page cannot live in a single-row table at all (ReportLab
+                # raises LayoutError), so it is rendered as indented paragraphs
+                # that may split.
+                if len(text) < 1500:
+                    flowables.append(KeepTogether(callout if isinstance(callout, list) else [callout]))
                 else:
-                    flowables.append(KeepTogether([callout]))
+                    for line in text.split("\n"):
+                        if line.strip():
+                            flowables.append(_safe_para(line.strip(), self.styles["STYLE_CALLOUT"], True))
 
             elif btype == "table":
                 headers = block.get("headers", [])
@@ -787,7 +798,7 @@ class BaseBriefingTemplate:
                 metric_data.append((str(chapters), "Chapters"))
             if pdf_count:
                 metric_data.append((str(pdf_count), "Source Files"))
-            if year and year != str(datetime.date.today().year):
+            if year and year != str(today().year):
                 metric_data.append((str(year), "Year"))
             if word_count:
                 metric_data.append((f"{word_count:,}", "Words Analysed"))
@@ -1109,6 +1120,23 @@ class BaseBriefingTemplate:
             content_width=self.content_width,
         )
 
+    def _display_path(self) -> str:
+        """
+        The source location as printed on the cover and banner.
+
+        Relative to the project root when there is one, else the directory
+        name alone. The absolute path used to be printed, which leaked the
+        machine's directory layout into every PDF and made the same
+        document differ between two checkouts.
+        """
+        if self._project_root is not None:
+            try:
+                rel = self.target_path.relative_to(self._project_root)
+                return str(rel) if str(rel) != "." else self.target_path.name
+            except ValueError:
+                pass
+        return self.target_path.name
+
     def _derive_subtitle(self, content: dict) -> str:
         """Derive a subtitle string for the cover page from content metadata."""
         level_subtitles = {
@@ -1234,8 +1262,12 @@ class BaseBriefingTemplate:
                 while k >= 0 and _is_plain_spacer(out[k]):
                     k -= 1
                 if k >= 0 and _is_break(out[k]):
-                    # Drop trailing plain spacers plus this duplicate break
+                    # Drop trailing plain spacers plus this duplicate break,
+                    # keeping the stronger of the two: a hard PageBreak wins
+                    # over a conditional one.
                     out = out[: k + 1]
+                    if isinstance(fl, PageBreak) and not isinstance(out[k], PageBreak):
+                        out[k] = fl
                     continue
             out.append(fl)
         return out
@@ -1295,7 +1327,7 @@ class BaseBriefingTemplate:
             keywords = self.doc_id or ""
 
         defaults: dict[str, Any] = {
-            "title": meta.get("title") or project.get("name") or "Briefing",
+            "title": meta.get("title") or (self.content or {}).get("title") or project.get("name") or "Briefing",
             "author": meta.get("author") or self.brand.get("org", "") or "",
             "subject": meta.get("subject") or "briefkit document",
             "creator": meta.get("creator") or "briefkit",
@@ -1344,7 +1376,7 @@ class BaseBriefingTemplate:
             build_cover_page(
                 title=content.get("title", self.target_path.name.replace("-", " ").title()),
                 subtitle=self._derive_subtitle(content),
-                path=str(self.target_path),
+                path=self._display_path(),
                 level=self.level,
                 date=self.date,
                 doc_id=self.doc_id,
@@ -1356,7 +1388,7 @@ class BaseBriefingTemplate:
         # Classification banner
         story.append(
             build_classification_banner(
-                self.level, str(self.target_path), brand=self.brand, content_width=self.content_width
+                self.level, self._display_path(), brand=self.brand, content_width=self.content_width
             )
         )
         story.append(Spacer(1, 6 * mm))
@@ -1509,7 +1541,6 @@ class BaseBriefingTemplate:
             bottomMargin=bottom_m,
             leftMargin=left_m,
             rightMargin=right_m,
-            title=content.get("title", "Briefing"),
             author=org,
             subject=f"Level {self.level} Briefing",
         )
@@ -1526,7 +1557,7 @@ class BaseBriefingTemplate:
         variant_name = self.config.get("_cli", {}).get("variant")
         if isinstance(variant_name, str) and variant_name.strip().lower() == "none":
             variant_name = None
-        elif not variant_name:
+        elif not variant_name and self.config.get("variants", {}).get("auto_detect", True):
             # Auto-detect from content text
             parts = [content.get("overview", ""), content.get("title", "")]
             parts.extend(sub.get("content", "") for sub in content.get("subsystems", []))

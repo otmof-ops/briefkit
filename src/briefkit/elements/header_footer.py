@@ -9,13 +9,13 @@ callers must populate before building the PDF. The make_header_footer()
 factory returns a configured callback bound to a specific brand and state.
 """
 
-import datetime
 from pathlib import Path
 
 from reportlab.lib.colors import white
 from reportlab.lib.units import mm
 from reportlab.platypus import Paragraph, Table, TableStyle
 
+from briefkit._dates import today
 from briefkit.styles import (
     CONTENT_WIDTH,
     _get_brand,
@@ -138,7 +138,7 @@ def _draw_header_footer(canvas, doc, state, brand=None):
 
     # Copyright (centre, lower line — below page number)
     hf_doc_id = state.get("doc_id", "")
-    year = datetime.date.today().year
+    year = today().year
     raw_cr = b.get("copyright", "\u00a9 {year}")
     copyright = raw_cr.replace("{year}", str(year))
 

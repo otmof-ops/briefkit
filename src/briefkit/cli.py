@@ -12,6 +12,7 @@ import argparse
 import json
 import os
 import platform
+import signal
 import subprocess
 import sys
 import textwrap
@@ -41,19 +42,30 @@ def _load_config(args: argparse.Namespace) -> dict[str, Any]:
         cfg["template"]["preset"] = args.template
 
     if getattr(args, "org", None):
+        # --org names the organisation everywhere it is shown: project.org is
+        # the documented key, brand.org is what the cover and footer read.
         cfg["project"]["org"] = args.org
+        cfg["brand"]["org"] = args.org
 
     if getattr(args, "logo", None):
+        from briefkit.config import LOGO_EXTENSIONS  # noqa: PLC0415
+
         logo_path = Path(args.logo)
-        _ALLOWED_LOGO_EXTS = {".png", ".jpg", ".jpeg", ".svg", ".gif"}
-        if not logo_path.exists():
-            print(f"Warning: Logo file not found: {logo_path}", file=sys.stderr)
-        elif logo_path.is_symlink():
+        if logo_path.is_symlink():
             print(f"Warning: Logo path is a symlink, skipping: {logo_path}", file=sys.stderr)
-        elif logo_path.suffix.lower() not in _ALLOWED_LOGO_EXTS:
-            print(f"Warning: Logo has unsupported extension: {logo_path.suffix}", file=sys.stderr)
+        elif not logo_path.is_file():
+            print(f"Warning: Logo file not found: {logo_path}", file=sys.stderr)
+        elif logo_path.suffix.lower() not in LOGO_EXTENSIONS:
+            print(
+                f"Warning: Logo must be one of {sorted(LOGO_EXTENSIONS)}, got {logo_path.suffix!r}; skipping",
+                file=sys.stderr,
+            )
         else:
             cfg["brand"]["logo"] = str(logo_path.resolve())
+
+    for warning in cfg.get("_warnings", []) or []:
+        if not getattr(args, "quiet", False):
+            print(f"Warning: {warning}", file=sys.stderr)
 
     return cfg
 
@@ -338,6 +350,18 @@ def cmd_batch(args: argparse.Namespace) -> int:
     quiet = getattr(args, "quiet", False)
     as_json = getattr(args, "json", False)
 
+    if getattr(args, "no_ids", False):
+        cfg["doc_ids"]["enabled"] = False
+    cli_cfg = cfg.setdefault("_cli", {})
+    cli_cfg["verbose"] = getattr(args, "verbose", False)
+    if getattr(args, "variant", None):
+        cli_cfg["variant"] = args.variant
+    if getattr(args, "title", None) and not quiet:
+        print("Warning: --title names a single document and is ignored by batch", file=sys.stderr)
+    if getattr(args, "output", None):
+        # For a batch, --output is the directory the tree is mirrored into.
+        cfg["output"]["output_dir"] = str(Path(args.output).resolve())
+
     stats = batch_generate(root, cfg, force=force, dry_run=dry_run, quiet=quiet or as_json)
 
     if as_json:
@@ -347,9 +371,14 @@ def cmd_batch(args: argparse.Namespace) -> int:
 
 
 def cmd_init(args: argparse.Namespace) -> int:
-    """Write a briefkit.yml with defaults in the current directory."""
+    """Write a briefkit.yml with defaults in the target directory."""
     dest = Path(args.path).resolve() if getattr(args, "path", None) else Path.cwd()
+    if not dest.is_dir():
+        print(f"Error: {dest} is not an existing directory", file=sys.stderr)
+        return 1
     config_file = dest / "briefkit.yml"
+    quiet = getattr(args, "quiet", False)
+    dry_run = getattr(args, "dry_run", False)
 
     if config_file.exists() and not getattr(args, "force", False):
         print(f"Error: {config_file} already exists. Use --force to overwrite.", file=sys.stderr)
@@ -361,7 +390,7 @@ def cmd_init(args: argparse.Namespace) -> int:
 
         project:
           name: ""          # auto-detected from directory name if blank
-          org: ""
+          org: ""           # shown on the cover, running head and back cover
           tagline: ""
           url: ""
           copyright: "© {year} {org}"
@@ -377,7 +406,7 @@ def cmd_init(args: argparse.Namespace) -> int:
           # primary: "#1B2A4A"
           # secondary: "#2E86AB"
           # accent: "#E8C547"
-          # logo: "logo.png"
+          # logo: "logo.png"   # PNG, JPEG or GIF, relative to this file
 
         license:
           preset: ""        # License for generated documents. Options:
@@ -412,8 +441,14 @@ def cmd_init(args: argparse.Namespace) -> int:
           skip_current: true
     """)
 
+    if dry_run:
+        if not quiet:
+            print(f"Would create {config_file} and {dest / '.briefkit'}/ (dry-run: nothing written)")
+        return 0
+
     config_file.write_text(template, encoding="utf-8")
-    print(f"Created {config_file}")
+    if not quiet:
+        print(f"Created {config_file}")
 
     # Also create .briefkit/ directory
     briefkit_dir = dest / ".briefkit"
@@ -495,7 +530,9 @@ def cmd_status(args: argparse.Namespace) -> int:
 
 
 def cmd_assign_ids(args: argparse.Namespace) -> int:
-    """Assign doc IDs to Markdown files without regenerating the PDF."""
+    """Register document IDs for every generated PDF under a path (registry only)."""
+    from briefkit import doc_ids as doc_ids_module  # noqa: PLC0415
+
     path = Path(args.path).resolve()
     if not path.is_dir():
         print(f"Error: {path} is not a directory", file=sys.stderr)
@@ -504,55 +541,62 @@ def cmd_assign_ids(args: argparse.Namespace) -> int:
     cfg = _load_config(args)
     quiet = getattr(args, "quiet", False)
     dry_run = getattr(args, "dry_run", False)
+    as_json = getattr(args, "json", False)
 
-    if not quiet:
-        print(f"Assigning doc IDs in: {path}")
-        if dry_run:
-            print("(dry-run — no files modified)")
-
-    try:
-        from briefkit import doc_ids as doc_ids_module  # noqa: PLC0415
-
-        count = doc_ids_module.assign(path, cfg, dry_run=dry_run)
-        if not quiet:
-            print(f"Assigned IDs to {count} document(s)")
-    except ImportError:
-        if not quiet:
-            print("(doc_ids module not yet available — stub run)")
-        count = 0
-
+    report = doc_ids_module.assign_report(path, cfg, dry_run=dry_run)
+    report["dry_run"] = dry_run
+    if as_json:
+        print(json.dumps(report, indent=2))
+    elif not quiet:
+        verb = "would be assigned" if dry_run else "assigned"
+        print(
+            f"Checked {report['checked']} generated PDF(s) under {path}: "
+            f"{report['assigned']} new ID(s) {verb}, {report['existing']} already registered."
+        )
+        if report["checked"] == 0:
+            print("  (IDs are recorded for directories that hold a generated PDF; run 'briefkit generate' first.)")
     return 0
 
 
 def cmd_quality(args: argparse.Namespace) -> int:
     """Run quality gates on an existing PDF briefing."""
+    from briefkit.quality import run_quality_gates  # noqa: PLC0415
+
     path = Path(args.path).resolve()
     cfg = _load_config(args)
     as_json = getattr(args, "json", False)
     quiet = getattr(args, "quiet", False)
 
-    # Locate the PDF
-    pdf_path = path if path.suffix.lower() == ".pdf" else path / cfg["output"]["filename"]
+    # Locate the PDF: a .pdf file, or a directory holding the configured output.
+    if path.is_dir():
+        pdf_path = path / cfg["output"]["filename"]
+    elif path.suffix.lower() == ".pdf":
+        pdf_path = path
+    else:
+        print(f"Error: {path} is neither a directory nor a .pdf file", file=sys.stderr)
+        return 1
     if not pdf_path.exists():
         print(f"Error: PDF not found: {pdf_path}", file=sys.stderr)
         return 1
 
-    if not quiet:
-        print(f"Running quality gates on: {pdf_path}")
+    if not quiet and not as_json:
+        print(f"Running quality gates on: {pdf_path}", file=sys.stderr)
 
+    level = getattr(args, "level", None) or 3
+    thresholds = dict(cfg.get("quality") or {})
+    strict = True if getattr(args, "strict", False) else None
     try:
-        from briefkit.quality import run_quality_gates  # noqa: PLC0415
+        passed, lines = run_quality_gates(pdf_path, level=level, thresholds=thresholds, strict=strict)
+        report = {"pdf": str(pdf_path), "level": level, "passed": passed, "checks": lines}
+    except Exception as exc:  # noqa: BLE001
+        report = {"pdf": str(pdf_path), "level": level, "passed": False, "checks": [f"Error: {exc}"]}
 
-        passed, lines = run_quality_gates(pdf_path)
-        report = {"pdf": str(pdf_path), "passed": passed, "checks": lines}
-    except Exception as exc:
-        report = {
-            "pdf": str(pdf_path),
-            "passed": False,
-            "checks": [f"Error: {exc}"],
-        }
-
-    _emit(report, as_json=as_json, quiet=quiet)
+    if as_json:
+        print(json.dumps(report, indent=2, default=str))
+    elif not quiet:
+        for line in report["checks"]:
+            print(f"  {line}")
+        print("quality: PASS" if report["passed"] else "quality: FAIL")
     return 0 if report.get("passed", False) else 1
 
 
@@ -675,31 +719,25 @@ def cmd_config(args: argparse.Namespace) -> int:
 
 def cmd_templates(args: argparse.Namespace) -> int:
     """List available template presets."""
+    from briefkit.templates import list_templates, template_descriptions  # noqa: PLC0415
+
     as_json = getattr(args, "json", False)
     quiet = getattr(args, "quiet", False)
 
-    try:
-        from briefkit import templates as templates_module  # noqa: PLC0415
-
-        template_list = templates_module.list_templates()
-    except ImportError:
-        print("Error: briefkit.templates unavailable.", file=sys.stderr)
-        return 1
-
+    names = list_templates()
     if as_json:
-        print(json.dumps(template_list, indent=2))
+        print(json.dumps(template_descriptions(), indent=2))
+        return 0
+    if quiet:
+        for name in names:
+            print(name)
         return 0
 
-    if not quiet:
-        print("Available templates:")
-        for t in template_list:
-            name = t["name"] if isinstance(t, dict) else t
-            desc = t.get("description", "") if isinstance(t, dict) else ""
-            if desc:
-                print(f"  {name:<20} {desc}")
-            else:
-                print(f"  {name}")
-
+    descriptions = template_descriptions()
+    print("Available templates:")
+    for name in names:
+        desc = descriptions.get(name, "")
+        print(f"  {name:<16} {desc}" if desc else f"  {name}")
     return 0
 
 
@@ -762,6 +800,8 @@ def cmd_licenses(args: argparse.Namespace) -> int:
                 comm_tag = " [commercial OK]"
             elif commercial is False:
                 comm_tag = " [non-commercial]"
+            elif commercial == "restricted":
+                comm_tag = " [use-restricted]"
             spdx_tag = f"  (SPDX: {spdx})" if spdx else ""
             print(f"    {key:<20} {name}{spdx_tag}{comm_tag}")
         print()
@@ -963,8 +1003,11 @@ def _build_parser() -> argparse.ArgumentParser:
     p_ids = subparsers.add_parser(
         "assign-ids",
         parents=[global_flags],
-        help="Assign doc IDs without regenerating the PDF",
-        description="Scan Markdown files and write or update document ID front-matter.",
+        help="Register document IDs for generated PDFs (registry only)",
+        description=(
+            "Record a document ID in the registry for every directory under PATH that holds a "
+            "generated PDF. Markdown files are not modified."
+        ),
     )
     p_ids.add_argument("path", metavar="PATH", help="Directory to process")
     p_ids.set_defaults(func=cmd_assign_ids)
@@ -980,6 +1023,19 @@ def _build_parser() -> argparse.ArgumentParser:
         "path",
         metavar="PATH",
         help="Directory containing the PDF, or direct path to a PDF file",
+    )
+    p_qual.add_argument(
+        "--level",
+        type=int,
+        choices=(1, 2, 3, 4),
+        default=None,
+        help="Briefing level whose thresholds apply (default 3)",
+    )
+    p_qual.add_argument(
+        "--strict",
+        action="store_true",
+        default=False,
+        help="Size and page thresholds fail the gate instead of warning",
     )
     p_qual.set_defaults(func=cmd_quality)
 
@@ -1047,6 +1103,10 @@ def main(argv: list[str] | None = None) -> int:
     CLI entry point.  Returns an exit code (0 = success, non-zero = failure).
     Registered as ``briefkit`` console_scripts in pyproject.toml.
     """
+    if hasattr(signal, "SIGPIPE"):
+        # `briefkit batch | head` must end quietly, not with a traceback.
+        signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+
     parser = _build_parser()
     args = parser.parse_args(argv)
 

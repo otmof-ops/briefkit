@@ -16,6 +16,31 @@ from reportlab.platypus import PageBreak, Paragraph, Spacer, Table, TableStyle
 from briefkit.styles import CONTENT_WIDTH, _get_brand, _hex, _ps, build_styles, esc
 
 
+def _logo_flowable(path, max_height, max_width):
+    """
+    An ``Image`` flowable for the configured logo, scaled to fit, or ``None``.
+
+    Only an existing, non-symlinked raster file is placed; anything else is
+    skipped so a bad logo setting degrades to the plain top bar.
+    """
+    if not path:
+        return None
+    p = Path(str(path))
+    if p.is_symlink() or not p.is_file() or p.suffix.lower() not in (".png", ".jpg", ".jpeg", ".gif"):
+        return None
+    try:
+        from reportlab.lib.utils import ImageReader
+        from reportlab.platypus import Image
+
+        width, height = ImageReader(str(p)).getSize()
+    except Exception:  # noqa: BLE001 — a corrupt image must not abort the build
+        return None
+    if not width or not height:
+        return None
+    scale = min(max_height / height, max_width / width, 1.0)
+    return Image(str(p), width=width * scale, height=height * scale)
+
+
 def build_cover_page(title, subtitle, path, level, date, doc_id="", brand=None, content_width=None):
     """
     Build the cover page flowables.
@@ -94,9 +119,16 @@ def build_cover_page(title, subtitle, path, level, date, doc_id="", brand=None, 
             ),
         ]
     ]
+    # Logo, when configured: sits at the left of the top bar beside the org.
+    logo = _logo_flowable(b.get("logo", ""), max_height=10 * mm, max_width=cw * 0.25)
+    col_widths = [cw * 0.6, cw * 0.4]
+    if logo is not None:
+        navy_bar_data[0].insert(0, logo)
+        col_widths = [logo.drawWidth + 6 * mm, cw * 0.6 - logo.drawWidth - 6 * mm, cw * 0.4]
+
     navy_bar = Table(
         navy_bar_data,
-        colWidths=[cw * 0.6, cw * 0.4],
+        colWidths=col_widths,
         rowHeights=[14 * mm],
     )
     navy_bar.setStyle(

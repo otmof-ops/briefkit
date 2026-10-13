@@ -138,7 +138,7 @@ LICENSE_PRESETS: dict[str, dict[str, str | bool | None]] = {
         "url": "https://mariadb.com/bsl11/",
         "category": "source-available",
         "notice": "Licensed under the Business Source License 1.1.",
-        "commercial": False,
+        "commercial": "restricted",
     },
     "Elastic-2.0": {
         "spdx": "Elastic-2.0",
@@ -146,7 +146,7 @@ LICENSE_PRESETS: dict[str, dict[str, str | bool | None]] = {
         "url": "https://www.elastic.co/licensing/elastic-license",
         "category": "source-available",
         "notice": "Licensed under the Elastic License 2.0.",
-        "commercial": False,
+        "commercial": "restricted",
     },
     "SSPL-1.0": {
         "spdx": "SSPL-1.0",
@@ -154,7 +154,7 @@ LICENSE_PRESETS: dict[str, dict[str, str | bool | None]] = {
         "url": "https://www.mongodb.com/licensing/server-side-public-license",
         "category": "source-available",
         "notice": "Licensed under the SSPL v1.",
-        "commercial": False,
+        "commercial": "restricted",
     },
     # ── Creative Commons Licenses ────────────────────────────────────
     "CC0-1.0": {

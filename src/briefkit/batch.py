@@ -72,6 +72,21 @@ def _output_path(directory: Path, config: dict[str, Any]) -> Path:
     return resolve_output_path(directory, config, project_root=find_project_root(directory))
 
 
+#: Files beside the numbered docs that also feed the PDF, so a change to
+#: any of them makes the output stale.
+COMPANION_FILES = frozenset(
+    {
+        "README.md",
+        "engineering-brilliance.md",
+        "guide.md",
+        "preface.md",
+        "glossary.md",
+        "methodology.md",
+        ".source-type",
+    }
+)
+
+
 def _is_current(directory: Path, output_pdf: Path, config: dict[str, Any]) -> bool:
     """
     Return True if *output_pdf* exists and is newer than all source Markdown
@@ -87,8 +102,22 @@ def _is_current(directory: Path, output_pdf: Path, config: dict[str, Any]) -> bo
     for entry in directory.iterdir():
         if not entry.is_file():
             continue
-        if fnmatch.fnmatch(entry.name, pattern) or fnmatch.fnmatch(entry.name, orientation_pattern):
+        if (
+            fnmatch.fnmatch(entry.name, pattern)
+            or fnmatch.fnmatch(entry.name, orientation_pattern)
+            or entry.name in COMPANION_FILES
+        ):
             if entry.stat().st_mtime > pdf_mtime:
+                return False
+
+    # A changed briefkit.yml (preset, template, margins) changes every PDF.
+    from briefkit.config import find_project_root  # noqa: PLC0415
+
+    root = find_project_root(directory)
+    if root is not None:
+        for name in ("briefkit.yml", "briefkit.yaml"):
+            cfg_file = root / name
+            if cfg_file.is_file() and cfg_file.stat().st_mtime > pdf_mtime:
                 return False
 
     return True
@@ -150,7 +179,7 @@ def _generate_one(
         result["message"] = str(output_pdf)
     except Exception as exc:  # noqa: BLE001
         result["status"] = "error"
-        result["message"] = str(exc)
+        result["message"] = f"{type(exc).__name__}: {exc}"
 
     result["elapsed"] = time.monotonic() - t0
     return result
@@ -207,6 +236,7 @@ def batch_generate(
         "generated": 0,
         "skipped": 0,
         "failed": 0,
+        "dry_run": dry_run,
         "results": [],
         "elapsed": 0.0,
     }
@@ -285,9 +315,10 @@ def _print_summary(stats: dict[str, Any]) -> None:
     failed = stats["failed"]
     elapsed = stats["elapsed"]
 
+    verb = "would be generated" if stats.get("dry_run") else "generated"
     print()
     print(f"  Batch complete in {elapsed:.1f}s")
-    print(f"  {total} target(s) found — {generated} generated, {skipped} skipped, {failed} failed")
+    print(f"  {total} target(s) found — {generated} {verb}, {skipped} skipped, {failed} failed")
 
     if failed:
         print("\n  Failed directories:")
